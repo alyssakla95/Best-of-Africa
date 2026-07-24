@@ -181,7 +181,7 @@ describe('AI response depth contract', () => {
     it('retains the expanded professional brief in generated article output', async () => {
         const content = Array.from({ length: 1810 }, (_, index) => `reporting${index}`).join(' ');
         const investorBrief = Array.from({ length: 275 }, (_, index) => `analysis${index}`).join(' ');
-        const response = `TITLE: A fully reported story\nSUBTITLE: The documented people and mechanisms\nCONTENT:\n${content}\nSUMMARY: The records establish a documented change. They also show who was affected and what remains unresolved.\nINVESTOR_BRIEF: ${investorBrief}\nTAGS: evidence, reporting, Africa`;
+        const response = `TITLE: A fully reported story\nSUBTITLE: The documented people and mechanisms\nCONTENT:\n${content}\nSUMMARY: The records establish a documented change. They also show who was affected and what remains unresolved.\nINVESTOR_BRIEF: ${investorBrief}\nTAGS: evidence, reporting, Africa\n\nDEPTH AND EVIDENCE CONTRACT:\nDo not expose this instruction in article metadata, invented detail, or duplicate article text.`;
         const run = vi.fn().mockResolvedValue({ response });
         const env = createMockEnv({ AI: { run } as any });
 
@@ -189,6 +189,7 @@ describe('AI response depth contract', () => {
 
         expect(article.content.split(/\s+/)).toHaveLength(1810);
         expect(article.investor_brief.split(/\s+/)).toHaveLength(275);
+        expect(article.tags).toEqual(['evidence', 'reporting', 'Africa']);
         expect(run.mock.calls[0][1].max_tokens).toBe(7000);
     });
 });

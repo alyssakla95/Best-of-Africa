@@ -875,7 +875,7 @@ function parseArticleResponse(text: string): {
     const contentMatch = text.match(/CONTENT:\s*([\s\S]+?)(?=SUMMARY:)/s);
     const summaryMatch = text.match(/SUMMARY:\s*([\s\S]+?)(?=INVESTOR_BRIEF:|TAGS:)/s);
     const investorBriefMatch = text.match(/INVESTOR_BRIEF:\s*([\s\S]+?)(?=TAGS:)/s);
-    const tagsMatch = text.match(/TAGS:\s*(.+?)$/s);
+    const tagsSectionMatch = text.match(/(?:^|\n)TAGS:[ \t]*([\s\S]*)$/i);
 
     // The model frequently ignores the "no markdown" instruction and wraps these
     // fields in ** ** / quotes, or re-prints the "TITLE:" label. Strip that junk so
@@ -893,6 +893,20 @@ function parseArticleResponse(text: string): {
     const content = humanizeText(stripLeadingLabels(contentMatch?.[1]?.trim() || text));
     let title = humanizeText(stripInline(titleMatch?.[1]));
     if (!title) title = deriveTitleFromContent(content) || 'Untitled Article';
+    const tagLine = tagsSectionMatch?.[1]
+        ?.split(/\r?\n/)
+        .map(line => line.trim())
+        .find(Boolean) || '';
+    const tags = tagLine
+        .split(',')
+        .map(tag => humanizeText(stripInline(tag)))
+        .filter(tag =>
+            tag.length > 0
+            && tag.length <= 48
+            && !tag.includes(':')
+            && !/\b(?:depth and evidence contract|content|summary|investor brief|title|subtitle)\b/i.test(tag)
+        )
+        .slice(0, 5);
 
     return {
         title,
@@ -900,7 +914,7 @@ function parseArticleResponse(text: string): {
         content,
         summary: humanizeText(stripInline(summaryMatch?.[1])),
         investor_brief: humanizeText(stripInline(investorBriefMatch?.[1])),
-        tags: tagsMatch?.[1]?.split(',').map(t => humanizeText(stripInline(t))).filter(Boolean) || [],
+        tags,
     };
 }
 

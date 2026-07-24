@@ -29,6 +29,22 @@ describe('AI response depth contract', () => {
         expect(run.mock.calls[0][1].response_format).toEqual(responseFormat);
     });
 
+    it('repairs malformed structured output without requiring a depth profile', async () => {
+        const run = vi.fn()
+            .mockResolvedValueOnce({ response: 'not-json' })
+            .mockResolvedValueOnce({ response: '{"ok":true}' });
+        const env = createMockEnv({ AI: { run } as any });
+
+        const result = await callConfiguredAI(env, {
+            prompt: 'Return JSON.',
+            structured_output: true,
+        });
+
+        expect(result).toBe('{"ok":true}');
+        expect(run).toHaveBeenCalledTimes(2);
+        expect(run.mock.calls[1][1].prompt).toContain('does not satisfy the requested structured-output schema');
+    });
+
     it('counts words and flags an underdeveloped reader-facing analysis', () => {
         expect(countResponseWords('one two\nthree')).toBe(3);
         expect(shouldExpandAIResponse('A short unsupported answer.', 'deep-analysis')).toBe(true);

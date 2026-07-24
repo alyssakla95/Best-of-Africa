@@ -194,11 +194,14 @@ export async function callConfiguredAI(env: Env, options: AICallOptions): Promis
     const malformedStructure = Boolean(options.structured_output && !isValidStructuredOutput(first));
     if (!malformedStructure && !shouldExpandAIResponse(first, options.response_profile)) return first;
 
-    const contract = RESPONSE_PROFILES[options.response_profile!];
+    const contract = options.response_profile ? RESPONSE_PROFILES[options.response_profile] : null;
     const structuredInstruction = options.structured_output
         ? 'Return one complete replacement JSON value matching the original schema. Output JSON only, with every brace and bracket closed.'
         : 'Return the complete rewritten response under the original format.';
-    const expansionPrompt = `The draft below is materially underdeveloped (${countResponseWords(first)} words; the requested analytical floor is ${contract.minimumWords} words when evidence permits).
+    const repairReason = contract
+        ? `The draft below is materially underdeveloped (${countResponseWords(first)} words; the requested analytical floor is ${contract.minimumWords} words when evidence permits).`
+        : 'The draft below does not satisfy the requested structured-output schema.';
+    const expansionPrompt = `${repairReason}
 
 Rewrite it as a complete response under the original instructions and schema. Add depth only from the original supplied evidence. Preserve every supported detail, state the evidence for each conclusion, add counter-evidence and limitations, and never pad or invent. Return only the finished deliverable without internal reasoning or process narration. If the evidence genuinely cannot support the requested depth, state the precise missing evidence instead.
 

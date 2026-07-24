@@ -1,4 +1,7 @@
-const CACHE_NAME = 'boa-reader-data-v1';
+// Increment when a previously valid cached response can hide newly available
+// reader content. v1 may contain empty article feeds saved before automated
+// editorial publication was enabled.
+const CACHE_NAME = 'boa-reader-data-v2';
 const CACHE_PREFIX = '/__boa_reader_cache__/';
 
 interface CacheEnvelope<T> {

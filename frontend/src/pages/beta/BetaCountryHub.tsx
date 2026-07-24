@@ -26,21 +26,6 @@ import { PhotoCredit } from '../../components/PhotoCredit';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
-/**
- * Generate stable-looking placeholder scores for the paywall blur preview.
- * Uses a simple hash of the country code so values differ per country
- * but are never the real data.
- */
-const previewScores = (code: string): number[] => {
-  const base = code.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return [
-    40 + (base * 7) % 45,
-    35 + (base * 11) % 50,
-    38 + (base * 13) % 48,
-    42 + (base * 17) % 44,
-  ];
-};
-
 const formatEvidenceValue = (value: number, unit: string) => {
   if (unit === 'USD') return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }).format(value);
   if (unit === 'USD per person') return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
@@ -48,23 +33,6 @@ const formatEvidenceValue = (value: number, unit: string) => {
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-const ScoreBar = ({ label, value, delay = 0 }: { label: string; value: number; delay?: number }) => (
-  <div>
-    <div className="flex justify-between items-center mb-2">
-      <span className="text-sm text-primary/60">{label}</span>
-      <span className="text-sm font-bold text-accent">{value}<span className="text-primary/30 font-normal">/100</span></span>
-    </div>
-    <div className="h-1.5 bg-background/8 rounded-full overflow-hidden">
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${value}%` }}
-        transition={{ duration: 0.9, ease: 'easeOut', delay }}
-        className="h-full bg-gradient-to-r from-[#0F1F3D]/50 to-[#0F1F3D] rounded-full"
-      />
-    </div>
-  </div>
-);
 
 // Deterministic local fallback so broken/missing article heroes show a real
 // editorial photo (not a flickering random pick or the branded "B" box).

@@ -479,29 +479,58 @@ router.get('/intelligence/recommendations', async (c) => {
         c.env,
         CACHE_KEYS.adminContentRecs,
         async () => {
-            // 1. Get recent internal coverage (what we DID write)
-            const recent = await c.env.DB.prepare('SELECT title FROM articles ORDER BY created_at DESC LIMIT 20').all<{ title: string }>();
-            const internalContext = recent.results.map(r => r.title).join('; ');
+            // Measured coverage gaps only. An earlier version asked the model to
+            // imagine "trending" topics from parametric knowledge — fabricated
+            // recommendations presented as analysis. Every recommendation here
+            // is computed from the actual publication record.
+            const gaps: string[] = [];
 
-            // 2. Mock: In a real scenario, this queries a "Trending News" vector index.
-            // Since we don't have a separate "News Stream" index yet, we'll prompt the to hallucinate 
-            // "Missed Opportunities" based on its knowledge of current African affairs + typical blind spots.
-            // Ideally: We search the `articles` table for "Emerging Tech" and see low results.
-
-            try {
-                const prompt = `You are an Editor-in-Chief. Identify content gaps.
-
-Our Recent Articles: ${internalContext}
-
-Task: Compare this against top current trends in African AgriTech, Fintech, and Mining. Identify 3 specific "Missed Content Opportunities" that are trending globally but missing from our list. Return JSON array.`;
-
-                const raw = await callConfiguredAI(c.env, { prompt, max_tokens: 150, temperature: 0.5 });
-                const match = (raw || '').match(/\[.*\]/s);
-                return match ? JSON.parse(match[0]) : [];
-            } catch (e) {
-                console.error("Failed to generate recommendations:", e);
-                return [];
+            // 1. Thinnest sector coverage over the last 30 days.
+            const sectorRows = await c.env.DB.prepare(`
+                SELECT s.name, COUNT(a.id) AS recent
+                FROM sectors s
+                LEFT JOIN articles a ON a.sector_id = s.id AND a.status = 'published'
+                    AND a.published_at >= datetime('now', '-30 days')
+                GROUP BY s.id
+                ORDER BY recent ASC, s.name ASC
+            `).all<{ name: string; recent: number }>();
+            const sectors = sectorRows.results || [];
+            if (sectors.length) {
+                const busiest = Math.max(...sectors.map(row => Number(row.recent)));
+                for (const row of sectors.filter(r => Number(r.recent) <= Math.max(1, busiest * 0.1)).slice(0, 2)) {
+                    const count = Number(row.recent);
+                    gaps.push(`${row.name} has ${count} published ${count === 1 ? 'story' : 'stories'} in the last 30 days — the thinnest sector coverage on record (busiest sector: ${busiest}).`);
+                }
             }
+
+            // 2. Countries with no published coverage in the last 30 days.
+            const silent = await c.env.DB.prepare(`
+                SELECT c.name
+                FROM countries c
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM articles a
+                    WHERE a.country_code = c.code AND a.status = 'published'
+                        AND a.published_at >= datetime('now', '-30 days')
+                )
+                ORDER BY c.name
+                LIMIT 6
+            `).all<{ name: string }>();
+            const silentNames = (silent.results || []).map(row => row.name);
+            if (silentNames.length) {
+                gaps.push(`No published coverage in the last 30 days for: ${silentNames.join(', ')}${silentNames.length === 6 ? ' (and possibly more)' : ''}.`);
+            }
+
+            // 3. Published articles invisible to sector filters and trends.
+            const unclassified = await c.env.DB.prepare(`
+                SELECT COUNT(*) AS n FROM articles
+                WHERE status = 'published' AND (sector_id IS NULL OR sector_id = '')
+            `).first<{ n: number }>();
+            const unclassifiedCount = Number(unclassified?.n || 0);
+            if (unclassifiedCount > 0) {
+                gaps.push(`${unclassifiedCount} published ${unclassifiedCount === 1 ? 'article has' : 'articles have'} no sector classification and are invisible to sector filters, trends and dossiers.`);
+            }
+
+            return gaps;
         },
         { ttl: 3600 } // 1 hour
     );

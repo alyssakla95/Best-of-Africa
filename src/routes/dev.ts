@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
-import { generateCountryBrief, storeReport } from '../lib/reports';
+import { generateCountryBrief, generateReportHTML, storeReport } from '../lib/reports';
 import { matchCountryByName } from '../lib/ai';
 
 const router = new Hono<{ Bindings: Env }>();
@@ -123,7 +123,7 @@ router.post('/test-image', devAuthGuard, async (c) => {
 router.get('/generate-reports', devAuthGuard, async (c) => {
     const report = await generateCountryBrief(c.env, 'ZA');
     // Save to DB
-    const id = await storeReport(c.env, report, "<html>placeholder</html>");
+    const id = await storeReport(c.env, report, generateReportHTML(report));
     return c.json({ success: true, report_id: id, report });
 });
 

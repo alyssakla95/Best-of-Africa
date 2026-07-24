@@ -32,8 +32,8 @@ export const AdminIntelligenceTab: React.FC = () => {
             <CardHeader className="bg-muted/30 pb-6 border-b border-border/50">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="text-xl font-serif font-bold">Intelligence: Missed Opportunities</CardTitle>
-                        <CardDescription>Identified emerging trends not currently covered by our news stream.</CardDescription>
+                        <CardTitle className="text-xl font-serif font-bold">Intelligence: Coverage Gaps</CardTitle>
+                        <CardDescription>Measured gaps in the actual publication record — thinnest sectors, silent countries and unclassified stories.</CardDescription>
                     </div>
                     <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
                         <UpdateIcon className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -43,18 +43,18 @@ export const AdminIntelligenceTab: React.FC = () => {
             </CardHeader>
             <CardContent className="p-6">
                 {loading ? (
-                    <div className="text-center text-muted-foreground">Analyzing recent coverage...</div>
+                    <div className="text-center text-muted-foreground">Measuring recent coverage...</div>
                 ) : recs.length > 0 ? (
                     <div className="space-y-4">
                         {recs.map((rec, i) => (
                             <div key={i} className="p-4 rounded-xl border border-accent/20 bg-accent/5">
-                                <Badge className="mb-2 bg-accent/10 text-accent border-accent/20">Opportunity {i+1}</Badge>
+                                <Badge className="mb-2 bg-accent/10 text-accent border-accent/20">Gap {i+1}</Badge>
                                 <p className="text-foreground font-medium">{rec}</p>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center text-muted-foreground">No missed opportunities identified. Coverage is complete.</div>
+                    <div className="text-center text-muted-foreground">No measurable coverage gaps identified.</div>
                 )}
             </CardContent>
         </Card>

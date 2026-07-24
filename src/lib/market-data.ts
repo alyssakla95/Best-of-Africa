@@ -60,8 +60,8 @@ export async function getCommodityPrices(env: Env): Promise<CommodityPrice[]> {
             const prices: CommodityPrice[] = [];
 
             try {
-                // Using metals-api.com free tier or similar
-                // Fallback to scraping or mock data
+                // metals.live free spot-price feed; an empty result is
+                // returned on failure — never fabricated prices.
                 const response = await fetch(
                     'https://api.metals.live/v1/spot',
                     { headers: { 'Accept': 'application/json' } }

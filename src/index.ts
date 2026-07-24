@@ -507,7 +507,7 @@ async function queue(batch: MessageBatch, env: Env) {
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Worker Functions (Stubs - implemented in workers/)
+// Worker dispatchers — dynamic imports keep the scheduled handler cold-start light; implementations live in workers/
 // ───────────────────────────────────────────────────────────────────────────────
 async function runIngestion(env: Env) {
     // Implemented in workers/ingestion.ts

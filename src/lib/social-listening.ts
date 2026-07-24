@@ -140,13 +140,9 @@ export async function getTrendingSearches(
         cacheKey,
         async () => {
             try {
-                // Google Trends doesn't have a public API
-                // This would need to use the unofficial API or scraping
-                // For now, return placeholder structure
-
-                // Alternative: Use SerpAPI or similar (requires API key)
-                // Or scrape trends.google.com (risky)
-
+                // Google Trends exposes no official API and no provider key is
+                // configured, so there is no verifiable trending data: return
+                // an honest empty result rather than an invented one.
                 return [];
             } catch (error) {
                 console.error('Google Trends fetch failed:', error);

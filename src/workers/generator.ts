@@ -10,6 +10,7 @@ import { generateAudioNarration } from '../lib/audio';
 import { autoTranslateArticle } from '../lib/translate';
 import { checkContentIntegrity } from '../lib';
 import { publisherNameForArticle } from '../lib/source-attribution';
+import { sourceEvidenceFailure } from '../lib/editorial-quality';
 
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -45,6 +46,14 @@ export async function generateArticleFromQueue(
     `).bind(message.ingested_item_id).run();
 
         const itemData = item as Record<string, any>;
+        const evidenceFailure = sourceEvidenceFailure(itemData.content);
+        if (evidenceFailure) {
+            await env.DB.prepare(
+                "UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?"
+            ).bind(evidenceFailure, message.ingested_item_id).run();
+            console.warn(`[generator] ${evidenceFailure}`);
+            return;
+        }
 
         // Classify the story itself. A publisher's home country or default beat is
         // provenance, not evidence that every syndicated story concerns that market.
@@ -206,7 +215,7 @@ export async function recoverPendingItems(env: Env, limit = 10): Promise<number>
         WHERE status = 'pending'
           AND article_id IS NULL
           AND created_at < datetime('now', '-15 minutes')
-        ORDER BY created_at ASC
+        ORDER BY LENGTH(COALESCE(content, '')) DESC, created_at ASC
         LIMIT ?
     `).bind(limit).all<{ id: string; source_id: string }>();
 

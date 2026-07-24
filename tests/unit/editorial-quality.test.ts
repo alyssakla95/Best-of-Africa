@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { editorialApprovalFailure } from '../../src/lib/editorial-quality';
+import {
+    editorialApprovalFailure,
+    MIN_SOURCE_EVIDENCE_CHARS,
+    sourceEvidenceFailure,
+} from '../../src/lib/editorial-quality';
 import { automaticPublicationFailure, type ModerationResult } from '../../src/lib/moderation';
 
 describe('editorial publication gate', () => {
@@ -56,5 +60,15 @@ describe('automated editorial publication gate', () => {
         }, 'issues remain'],
     ])('keeps unsafe worker output quarantined', (candidate, moderation, message) => {
         expect(automaticPublicationFailure(candidate, moderation)).toContain(message);
+    });
+});
+
+describe('source evidence generation gate', () => {
+    it('rejects snippets before long-form generation spends model capacity', () => {
+        expect(sourceEvidenceFailure('brief feed excerpt')).toContain('Insufficient source evidence');
+    });
+
+    it('accepts a substantive ingested source record', () => {
+        expect(sourceEvidenceFailure('e'.repeat(MIN_SOURCE_EVIDENCE_CHARS))).toBeNull();
     });
 });

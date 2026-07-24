@@ -160,7 +160,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
         WHERE a.status = 'pending_audit'
           AND a.moderation_status = 'pending'
           AND a.last_audited_at IS NULL
-        ORDER BY a.created_at ASC
+        ORDER BY LENGTH(COALESCE(i.content, '')) DESC, a.created_at ASC
         LIMIT ?
     `).bind(Math.max(1, Math.min(limit, 5))).all<PendingAuditArticle>();
 

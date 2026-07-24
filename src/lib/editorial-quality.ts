@@ -6,6 +6,16 @@ export interface EditorialAuditDecision {
     sourceUrl?: string | null;
 }
 
+export const MIN_SOURCE_EVIDENCE_CHARS = 3000;
+
+export function sourceEvidenceFailure(sourceContent?: string | null): string | null {
+    const evidenceChars = (sourceContent || '').replace(/\s+/g, ' ').trim().length;
+    if (evidenceChars < MIN_SOURCE_EVIDENCE_CHARS) {
+        return `Insufficient source evidence: ${evidenceChars} characters; ${MIN_SOURCE_EVIDENCE_CHARS} are required for long-form generation.`;
+    }
+    return null;
+}
+
 export function editorialApprovalFailure(decision: EditorialAuditDecision): string | null {
     if (decision.recommendation !== 'approve') return null;
     if (!decision.passed) return 'The audit did not pass.';

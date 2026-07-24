@@ -39,7 +39,12 @@
   --input: 220 13% 84%;
   --ring: 219 60% 15%;          /* navy focus ring */
 
-  --radius: 0.5rem;
+  /* Shape language: controls stay precise, cards feel tactile, and large
+     editorial surfaces receive enough curvature to read as intentional. */
+  --radius: 1rem;
+  --radius-control: 0.875rem;
+  --radius-surface: 1.5rem;
+  --radius-feature: 2rem;
   --density-gap: 2rem;
   --density-padding: 2rem;
   --density-text-base: 1rem;
@@ -279,7 +284,7 @@ body {
     overflow-x: auto;
     padding: 0.45rem;
     border: 1px solid hsl(var(--border));
-    border-radius: 0.75rem;
+    border-radius: var(--radius-surface);
     background: hsl(var(--card) / 0.96);
     box-shadow: 0 16px 45px -38px rgba(15, 31, 61, 0.6);
     scrollbar-width: none;
@@ -289,7 +294,7 @@ body {
 
   .dashboard-rail a {
     flex: 0 0 auto;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-control);
     padding: 0.65rem 0.8rem;
     color: hsl(var(--muted-foreground));
     font-size: 0.875rem;
@@ -312,7 +317,7 @@ body {
 
   .section-frame {
     border: 1px solid hsl(var(--border));
-    border-radius: 0.875rem;
+    border-radius: var(--radius-surface);
     background: hsl(var(--card));
     padding: clamp(1.5rem, 3vw, 2.5rem);
     box-shadow: 0 18px 55px -48px rgba(15, 31, 61, 0.65);
@@ -325,7 +330,7 @@ body {
 
   .control-deck {
     border: 1px solid hsl(var(--border));
-    border-radius: 0.875rem;
+    border-radius: 1.25rem;
     background: hsl(var(--card));
     padding: clamp(1.25rem, 2.5vw, 1.75rem);
     box-shadow: 0 14px 40px -34px rgba(15, 31, 61, 0.34);
@@ -365,12 +370,20 @@ body {
     max-width: 87.5rem;
   }
 
-  .route-canvas :is(.rounded-3xl, .rounded-2xl) {
-    border-radius: 0.75rem;
+  .route-canvas .rounded-3xl {
+    border-radius: var(--radius-feature);
   }
 
-  .route-canvas :is(.rounded-xl, .rounded-lg) {
-    border-radius: 0.5rem;
+  .route-canvas .rounded-2xl {
+    border-radius: var(--radius-surface);
+  }
+
+  .route-canvas .rounded-xl {
+    border-radius: 1.25rem;
+  }
+
+  .route-canvas .rounded-lg {
+    border-radius: var(--radius);
   }
 
   .route-canvas :is([class*='shadow-2xl'], [class*='shadow-xl'], [class*='shadow-\[']) {
@@ -383,7 +396,7 @@ body {
 
   .route-canvas :is(input, textarea, select) {
     min-height: 3rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-control);
     background-color: #FFFFFF;
     color: #0F1F3D;
     font-size: 1rem;
@@ -392,7 +405,7 @@ body {
   .route-canvas textarea { min-height: 8rem; }
 
   .route-canvas :is(button, a)[class*='rounded-full']:not([aria-label]) {
-    border-radius: 0.5rem;
+    border-radius: 9999px;
   }
 
   .route-canvas [class*='text-[9px]'],
@@ -486,8 +499,16 @@ body {
       white-space: normal;
     }
 
-    .route-canvas :is(.rounded-3xl, .rounded-2xl, .rounded-xl) {
-      border-radius: 0.5rem;
+    .route-canvas .rounded-3xl {
+      border-radius: 1.5rem;
+    }
+
+    .route-canvas .rounded-2xl {
+      border-radius: 1.375rem;
+    }
+
+    .route-canvas .rounded-xl {
+      border-radius: 1.25rem;
     }
   }
 
@@ -530,8 +551,8 @@ body {
     .page-container { width: calc(100% - 2rem); }
     .page-stack { gap: var(--page-section-gap); }
     .dashboard-shell { display: block; }
-    .section-frame { padding: 1.15rem; border-radius: 0.7rem; }
-    .control-deck { padding: 1rem; border-radius: 0.7rem; }
+    .section-frame { padding: 1.15rem; border-radius: 1.25rem; }
+    .control-deck { padding: 1rem; border-radius: 1.125rem; }
     .section-rule { padding-top: 2.25rem; }
     .mobile-scroll-strip {
       flex-wrap: nowrap;
@@ -556,7 +577,7 @@ body {
       overscroll-behavior-inline: contain;
       scroll-snap-type: inline proximity;
       padding: 0.4rem;
-      border-radius: 0;
+      border-radius: 1rem;
       border-inline: 0;
     }
     .dashboard-rail a {
@@ -714,6 +735,7 @@ body {
     border-inline-start: 3px solid hsl(var(--primary));
     background: hsl(var(--secondary) / 0.72);
     padding: 1.25rem 1.5rem;
+    border-radius: 0 1.25rem 1.25rem 0;
     color: hsl(var(--primary));
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.15rem;
@@ -727,7 +749,7 @@ body {
     margin: 1.5rem 0;
     overflow-x: auto;
     border: 1px solid hsl(var(--border));
-    border-radius: 0.65rem;
+    border-radius: 1.25rem;
     background: hsl(var(--navy));
     padding: 1.25rem;
     color: white;
@@ -738,7 +760,7 @@ body {
   .editorial-callout {
     margin: 1.5rem 0;
     border-inline-start: 3px solid hsl(var(--primary));
-    border-radius: 0 0.75rem 0.75rem 0;
+    border-radius: 0 1.25rem 1.25rem 0;
     background: hsl(var(--secondary) / 0.7);
     padding: 1rem 1.15rem;
   }
@@ -749,7 +771,7 @@ body {
     margin: 1.75rem 0 2rem;
     overflow-x: auto;
     border: 1px solid hsl(var(--border));
-    border-radius: 0.75rem;
+    border-radius: 1.25rem;
     background: hsl(var(--card));
     box-shadow: 0 16px 45px -40px rgba(15, 31, 61, 0.55);
   }
@@ -812,7 +834,7 @@ body {
       margin-bottom: 0.9rem;
       overflow: hidden;
       border: 1px solid hsl(var(--border));
-      border-radius: 0.75rem;
+      border-radius: 1.25rem;
       background: hsl(var(--card));
       box-shadow: 0 12px 32px -28px rgba(15, 31, 61, 0.55);
     }
@@ -948,7 +970,7 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid #0F1F3D;
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 0.5rem;
 }
 
 /* ── Respect prefers-reduced-motion: neutralise CSS animations/transitions ── */
@@ -985,7 +1007,7 @@ img[src^="/images/"],
   main [class~="p-8"], main [class~="p-10"] { padding: 1.25rem !important; }
   main [class~="px-8"], main [class~="px-10"] { padding-inline: 1.25rem !important; }
   main [class~="py-8"], main [class~="py-10"] { padding-block: 1.5rem !important; }
-  main [class~="rounded-3xl"] { border-radius: 0.8rem !important; }
+  main [class~="rounded-3xl"] { border-radius: 1.5rem !important; }
   main button, main a { -webkit-tap-highlight-color: transparent; }
   main input, main select, main textarea { min-height: 2.75rem; font-size: 1rem; }
   main img { max-width: 100%; }
@@ -996,8 +1018,8 @@ img[src^="/images/"],
   .editorial-content p { line-height: 1.72; }
 }
 
-.rounded-3xl { border-radius: 0.875rem !important; }
-.rounded-2xl { border-radius: 0.75rem !important; }
+.rounded-3xl { border-radius: var(--radius-feature) !important; }
+.rounded-2xl { border-radius: var(--radius-surface) !important; }
 .shadow-2xl { box-shadow: 0 12px 32px -24px rgba(15, 31, 61, 0.28) !important; }
 .glass-panel,
 .glass-panel-light {

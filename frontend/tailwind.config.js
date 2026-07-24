@@ -23,11 +23,11 @@ export default {
             },
             borderRadius: {
                 lg: 'var(--radius)',
-                md: 'calc(var(--radius) - 8px)',
-                sm: 'calc(var(--radius) - 12px)',
+                md: 'calc(var(--radius) - 4px)',
+                sm: 'calc(var(--radius) - 8px)',
                 xl: 'calc(var(--radius) + 4px)',
                 '2xl': 'calc(var(--radius) + 8px)',
-                '3xl': 'calc(var(--radius) + 12px)',
+                '3xl': 'calc(var(--radius) + 16px)',
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

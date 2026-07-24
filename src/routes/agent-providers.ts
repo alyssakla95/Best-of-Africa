@@ -167,7 +167,7 @@ router.post('/:id/test', async (c) => {
     try {
         if (row.provider === 'workers_ai') {
             // Workers is always available — test via binding
-            await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+            await c.env.AI.run(MODELS.FAST_TEXT_GENERATION, {
                 messages: [{ role: 'user', content: 'ping' }],
                 max_tokens: 5
             });

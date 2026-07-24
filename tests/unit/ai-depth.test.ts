@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { callConfiguredAI, countResponseWords, evaluateArticleDepth, extractAIText, fillNarrativeGap, generateArticle, isValidStructuredOutput, shouldExpandAIResponse } from '../../src/lib/ai';
+import { MODELS, callConfiguredAI, countResponseWords, evaluateArticleDepth, extractAIText, fillNarrativeGap, generateArticle, isValidStructuredOutput, shouldExpandAIResponse } from '../../src/lib/ai';
 import { createMockEnv } from '../mocks/env';
 
 describe('AI response depth contract', () => {
+    it('pins deep synthesis and fast utility work to the intended Workers AI models', () => {
+        expect(MODELS.TEXT_GENERATION).toBe('@cf/openai/gpt-oss-120b');
+        expect(MODELS.FAST_TEXT_GENERATION).toBe('@cf/zai-org/glm-4.7-flash');
+    });
+
     it('counts words and flags an underdeveloped reader-facing analysis', () => {
         expect(countResponseWords('one two\nthree')).toBe(3);
         expect(shouldExpandAIResponse('A short unsupported answer.', 'deep-analysis')).toBe(true);

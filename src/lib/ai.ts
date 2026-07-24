@@ -11,10 +11,11 @@ import { withCircuitBreaker } from './circuit-breaker';
 // ───────────────────────────────────────────────────────────────────────────────
 export const MODELS = {
     // Cloudflare describes GPT-OSS 120B as its production, general-purpose,
-    // high-reasoning Workers AI model. Reader-facing synthesis always uses it;
-    // compact classification keeps the faster Llama model below.
+    // high-reasoning Workers AI model. Reader-facing synthesis always uses it.
+    // Compact classification uses GLM-4.7 Flash: a pinned, multilingual model
+    // with long context and materially lower output cost than Llama 3.3 70B.
     TEXT_GENERATION: '@cf/openai/gpt-oss-120b',
-    FAST_TEXT_GENERATION: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+    FAST_TEXT_GENERATION: '@cf/zai-org/glm-4.7-flash',
     EMBEDDINGS: '@cf/baai/bge-base-en-v1.5',
     // Lightning is a few-step distilled SDXL — comparable quality at a fraction
     // of the neuron cost vs base SDXL (20 steps), to stretch the daily AI budget.

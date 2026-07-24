@@ -1,0 +1,1007 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ── Combined light-first navy system (Combination of both.md §1) ──
+     Page bg is light grey; cards/navbar are pure white; navy is reserved
+     for hero bands, footer, login, admin via the explicit `navy*` colours. */
+  --background: 0 0% 100%;   /* quiet editorial canvas */
+  --foreground: 219 60% 15%;   /* #0F1F3D navy text-primary */
+
+  --primary: 219 60% 15%;      /* #0F1F3D navy — high-contrast elements */
+  --primary-foreground: 0 0% 100%; /* White text on navy */
+
+  --card: 0 0% 100%;           /* Pure White cards */
+  --card-foreground: 219 60% 15%;
+
+  --accent: 219 60% 15%;        /* #0F1F3D navy accent */
+  --accent-foreground: 0 0% 100%; /* white text on navy fills */
+  /* Darker "ink" gold for SMALL TEXT ON LIGHT surfaces (kickers, labels).
+     #0F1F3D on white is ~2.4:1 — far below WCAG AA's 4.5:1 — and axe flagged
+     ~100 nodes per page. This stays ≥4.5:1 on white; keep bright --accent for
+     fills, borders, and any text on navy (where it passes at ~7:1). */
+  --accent-ink: 219 60% 15%;    /* ~#7D5C1D — ≥5:1 on white (33% measured 4.48, under the 4.5 floor) */
+
+  --secondary: 0 0% 100%;    /* pure-white secondary surface */
+  --secondary-foreground: 219 60% 15%;
+
+  --muted: 0 0% 100%;
+  --muted-foreground: 218 23% 45%; /* #586C8D — darkened to meet WCAG AA on white */
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 219 60% 15%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 13% 84%;       /* #D1D5DB light-section input border */
+  --input: 220 13% 84%;
+  --ring: 219 60% 15%;          /* navy focus ring */
+
+  --radius: 0.5rem;
+  --density-gap: 2rem;
+  --density-padding: 2rem;
+  --density-text-base: 1rem;
+  --page-gutter: clamp(1.25rem, 4vw, 2.25rem);
+  --page-section-gap: clamp(3.75rem, 7vw, 5.5rem);
+  --content-measure: 76rem;
+}
+
+/* ── Unified palette: Navy + Champagne Gold governs all pages ── */
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  :root {
+    /* Keep root clean, mapping directly above */
+  }
+
+  /* Compact Mode Overrides */
+  body[data-density='compact'] {
+    --density-gap: 1rem;
+    --density-padding: 1rem;
+    --density-text-base: 0.875rem;
+  }
+
+  .dark {
+    /* Night Theme (Dark Mode) - Just reversing the light theme for now in case someone explicitly sets dark */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 219 60% 15%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 0 0% 100%;
+    --accent-foreground: 219 60% 15%;
+    /* On dark surfaces white is the readable accent variant. */
+    --accent-ink: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 100%;
+  }
+}
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 8rem;
+    /* overflow-x: clip prevents a horizontal scrollbar WITHOUT making <html> a
+       scroll container (which `hidden` does, by coercing overflow-y to auto and
+       breaking two-finger/trackpad wheel scrolling). touch-action removed so
+       Windows precision-touchpad pan gestures aren't suppressed. */
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+
+  /* Typography System */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    /* NOTE: text-foreground intentionally removed — it overrides explicit text-white
+       on beta page headings. Each heading sets its own colour. font-sans and
+       tracking-tight are safe defaults for non-serif pages. */
+    @apply font-sans tracking-tight;
+  }
+
+  /* Beta pages use font-serif headings with white text — preserve this
+     against the font-sans base override above. The className on each
+     heading always includes font-serif and text-white which should win,
+     but explicit specificity here ensures it survives dark-mode cascades. */
+  .font-serif, [class*="font-serif"] {
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.025em;
+  }
+
+  .uppercase {
+    letter-spacing: 0.08em;
+  }
+
+
+  /* Long titles / unbroken words must never force horizontal scroll on phones. */
+  h1, h2, h3, h4 {
+    overflow-wrap: break-word;
+  }
+
+  h1 {
+    @apply text-4xl font-bold md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl font-bold md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl font-bold;
+  }
+}
+
+@layer utilities {
+  /* Readability floor -------------------------------------------------------
+     Legacy screens contain highly compressed 8–12px labels. Keep their visual
+     hierarchy, but never render meaningful interface text at caption-print
+     size. These rules also catch responsive arbitrary-size utilities. */
+  .text-xs {
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  .text-sm {
+    font-size: 0.9375rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  :is(
+    [class*="text-[8px]"],
+    [class*="text-[9px]"],
+    [class*="text-[10px]"],
+    [class*="text-[11px]"]
+  ) {
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  [class*="text-[12px]"] {
+    font-size: 0.875rem !important;
+    line-height: 1.3rem !important;
+  }
+
+  /* Prevent uppercase labels from becoming difficult to scan after their
+     tracking was tuned for much smaller type. */
+  :is(.uppercase, [class*="uppercase"])[class*="tracking-"] {
+    letter-spacing: 0.07em;
+  }
+
+  .readable-copy {
+    max-width: 72ch;
+    color: hsl(var(--foreground) / 0.82);
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    line-height: 1.75;
+  }
+
+  .readable-copy strong {
+    color: hsl(var(--primary));
+  }
+
+  /* Accent utilities resolve to navy on white and white on navy. */
+  .bg-accent.text-navy,
+  .bg-accent.text-primary { color: #FFFFFF !important; }
+
+  :is(.bg-navy, .bg-navy-deep, .bg-navy-mid, .bg-navy-card, .bg-primary, .bg-foreground) :is(.text-accent, .text-accent-ink),
+  :is(.bg-navy, .bg-navy-deep, .bg-navy-mid, .bg-navy-card, .bg-primary, .bg-foreground):is(.text-accent, .text-accent-ink) {
+    color: #FFFFFF !important;
+  }
+
+  :is(.bg-navy, .bg-navy-deep, .bg-navy-mid, .bg-navy-card, .bg-primary, .bg-foreground) .bg-accent {
+    background-color: #FFFFFF !important;
+    color: #0F1F3D !important;
+  }
+
+  :is(.bg-navy, .bg-navy-deep, .bg-navy-mid, .bg-navy-card, .bg-primary, .bg-foreground) .border-accent {
+    border-color: #FFFFFF !important;
+  }
+  /* ── Production page architecture ────────────────────────────────────────
+     These primitives separate navigation, content, and actions consistently
+     across long editorial and dashboard routes. They intentionally use fluid
+     spacing so mobile gets breathing room without desktop-sized dead zones. */
+  .page-container {
+    width: min(100% - (var(--page-gutter) * 2), var(--content-measure));
+    margin-inline: auto;
+  }
+
+  .page-stack {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--page-section-gap);
+  }
+
+  .page-section {
+    min-width: 0;
+    scroll-margin-top: 8rem;
+  }
+
+  .dashboard-shell {
+    display: grid;
+    align-items: start;
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  .dashboard-rail {
+    position: sticky;
+    top: 6.5rem;
+    z-index: 20;
+  }
+
+  .dashboard-rail nav {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0.45rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    background: hsl(var(--card) / 0.96);
+    box-shadow: 0 16px 45px -38px rgba(15, 31, 61, 0.6);
+    scrollbar-width: none;
+  }
+
+  .dashboard-rail nav::-webkit-scrollbar { display: none; }
+
+  .dashboard-rail a {
+    flex: 0 0 auto;
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.8rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .dashboard-rail a:hover,
+  .dashboard-rail a:focus-visible,
+  .dashboard-rail a[aria-current='page'] {
+    background: hsl(var(--secondary));
+    color: hsl(var(--primary));
+  }
+
+  .dashboard-rail a[aria-current='page'] {
+    box-shadow: inset 3px 0 0 hsl(var(--primary));
+  }
+
+  .section-frame {
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.875rem;
+    background: hsl(var(--card));
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    box-shadow: 0 18px 55px -48px rgba(15, 31, 61, 0.65);
+  }
+
+  .section-rule {
+    border-top: 1px solid hsl(var(--border));
+    padding-top: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .control-deck {
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.875rem;
+    background: hsl(var(--card));
+    padding: clamp(1.25rem, 2.5vw, 1.75rem);
+    box-shadow: 0 14px 40px -34px rgba(15, 31, 61, 0.34);
+  }
+
+  .content-split {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .content-split > * { min-width: 0; }
+
+  .mobile-scroll-strip {
+    display: flex;
+    max-width: 100%;
+    gap: 1.75rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+  }
+
+  .mobile-scroll-strip::-webkit-scrollbar { display: none; }
+  .mobile-scroll-strip > * { flex: 0 0 auto; scroll-snap-align: start; }
+
+  /* ── Site-wide production surface ───────────────────────────────────────
+     Every reader-facing route passes through .route-canvas. These rules turn
+     the remaining page-by-page prototype utilities into one restrained
+     editorial system without changing route logic or component data. */
+  .route-canvas {
+    min-width: 0;
+    background: #FFFFFF;
+    color: #0F1F3D;
+  }
+
+  .route-canvas :is(.max-w-6xl, .max-w-7xl) {
+    max-width: 87.5rem;
+  }
+
+  .route-canvas :is(.rounded-3xl, .rounded-2xl) {
+    border-radius: 0.75rem;
+  }
+
+  .route-canvas :is(.rounded-xl, .rounded-lg) {
+    border-radius: 0.5rem;
+  }
+
+  .route-canvas :is([class*='shadow-2xl'], [class*='shadow-xl'], [class*='shadow-\[']) {
+    box-shadow: 0 18px 50px -42px rgba(15, 31, 61, 0.55);
+  }
+
+  .route-canvas [class*='hover:-translate-y'] {
+    transform: none !important;
+  }
+
+  .route-canvas :is(input, textarea, select) {
+    min-height: 3rem;
+    border-radius: 0.5rem;
+    background-color: #FFFFFF;
+    color: #0F1F3D;
+    font-size: 1rem;
+  }
+
+  .route-canvas textarea { min-height: 8rem; }
+
+  .route-canvas :is(button, a)[class*='rounded-full']:not([aria-label]) {
+    border-radius: 0.5rem;
+  }
+
+  .route-canvas [class*='text-[9px]'],
+  .route-canvas [class*='text-[10px]'] {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+  }
+
+  .route-canvas [class*='text-[11px]'] {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+
+  .route-canvas article[class*='border'],
+  .route-canvas section[class*='border'] {
+    border-color: rgba(15, 31, 61, 0.16);
+  }
+
+  .route-canvas :is(.bg-background, .bg-card, .bg-page, .bg-surface) {
+    background-color: #FFFFFF;
+  }
+
+  .route-canvas .app-hero {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: #0F1F3D;
+    color: #FFFFFF;
+  }
+
+  .route-canvas .app-hero :is(h1, h2, h3, h4, .text-foreground, .text-navy, .text-ink) {
+    color: #FFFFFF;
+  }
+
+  .route-canvas .app-hero :is(p, .text-muted-foreground) {
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  .route-canvas .app-hero :is(input, textarea, select) {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: #FFFFFF;
+    color: #0F1F3D;
+  }
+
+  .route-canvas .app-hero :is(input, textarea)::placeholder {
+    color: rgba(15, 31, 61, 0.52);
+  }
+
+  .route-canvas .app-hero [class*='text-accent'],
+  .route-canvas .app-hero [class*='text-primary'],
+  .route-canvas .app-hero [class*='text-ink-blue'] {
+    color: #FFFFFF;
+  }
+
+  .route-canvas .app-hero [class*='bg-accent/'],
+  .route-canvas .app-hero [class*='bg-primary/'] {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .route-canvas .app-hero [class*='border-accent'],
+  .route-canvas .app-hero [class*='border-primary'] {
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  @media (max-width: 767px) {
+    .route-canvas :is(.max-w-6xl, .max-w-7xl) {
+      width: 100%;
+    }
+
+    .route-canvas h1 {
+      font-size: clamp(2.35rem, 12vw, 3.65rem);
+      line-height: 0.98;
+    }
+
+    .route-canvas h2 {
+      font-size: clamp(1.8rem, 8.5vw, 2.55rem);
+      line-height: 1.06;
+    }
+
+    .route-canvas table {
+      display: block;
+      width: 100%;
+      max-width: calc(100vw - 2rem);
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .route-canvas :is(td, th) {
+      min-width: 8rem;
+      padding: 0.875rem;
+      white-space: normal;
+    }
+
+    .route-canvas :is(.rounded-3xl, .rounded-2xl, .rounded-xl) {
+      border-radius: 0.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-shell {
+      grid-template-columns: 12rem minmax(0, 1fr);
+    }
+
+    .dashboard-rail nav {
+      flex-direction: column;
+      overflow: visible;
+      padding: 0.6rem;
+    }
+
+    .dashboard-rail a {
+      width: 100%;
+      padding: 0.72rem 0.85rem;
+    }
+
+    .content-split {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .dashboard-rail {
+      top: 4.5rem;
+      margin-inline: calc(var(--page-gutter) * -1);
+      padding: 0.8rem var(--page-gutter);
+      background: hsl(var(--background) / 0.94);
+      backdrop-filter: blur(12px);
+    }
+  }
+
+  @media (max-width: 639px) {
+    :root {
+      --page-gutter: 1rem;
+      --page-section-gap: 2.75rem;
+    }
+    .page-container { width: calc(100% - 2rem); }
+    .page-stack { gap: var(--page-section-gap); }
+    .dashboard-shell { display: block; }
+    .section-frame { padding: 1.15rem; border-radius: 0.7rem; }
+    .control-deck { padding: 1rem; border-radius: 0.7rem; }
+    .section-rule { padding-top: 2.25rem; }
+    .mobile-scroll-strip {
+      flex-wrap: nowrap;
+      margin-inline: 0;
+      gap: 1.25rem;
+      overflow-x: auto;
+      scroll-snap-type: inline mandatory;
+    }
+    .mobile-scroll-strip > * { flex: 0 0 auto; scroll-snap-align: start; }
+    .dashboard-rail {
+      position: sticky;
+      top: 4.5rem;
+      z-index: 30;
+      margin-inline: calc(var(--page-gutter) * -1);
+      padding: 0.65rem var(--page-gutter);
+      background: hsl(var(--background) / 0.96);
+      backdrop-filter: blur(14px);
+    }
+    .dashboard-rail nav {
+      display: flex;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline proximity;
+      padding: 0.4rem;
+      border-radius: 0;
+      border-inline: 0;
+    }
+    .dashboard-rail a {
+      min-height: 2.75rem;
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      scroll-snap-align: start;
+    }
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  /* Professional Platform Borders & Gold Outlines */
+  .platform-card {
+    @apply border border-border bg-card shadow-sm hover:border-secondary/50 hover:shadow-md transition-all duration-300;
+  }
+
+  /* Audio Waveform Animation */
+  @keyframes waveform {
+
+    0%,
+    100% {
+      height: 20%;
+    }
+
+    50% {
+      height: 100%;
+    }
+  }
+
+  .animate-waveform {
+    animation: waveform 0.8s ease-in-out infinite;
+  }
+
+  /* Text Balance Utility */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* ── Hero band treatment (use on EVERY full-bleed hero) ───────────────────────
+     Keeps the background photo clearly visible while text stays legible. Apply
+     `hero-photo` to the <img> and `hero-scrim` to the overlay <div>. Tweak these
+     two rules to re-grade every hero at once. The scrim is darkest at the bottom
+     (where most hero headlines sit) and lightest in the middle (so the photo
+     reads); headlines should still carry drop-shadow for safety. */
+  .hero-photo {
+    @apply opacity-90;
+  }
+  .hero-scrim {
+    @apply bg-gradient-to-t from-navy/85 via-navy/40 to-navy/55;
+  }
+
+  /* ── Editorial reading typography (article body) ─────────────────────────
+     Classic magazine moves: a serif drop cap on the opening paragraph and an
+     ornamented gold rule wherever the writer used a horizontal break. */
+  .article-body > p:first-of-type::first-letter {
+    @apply font-serif text-accent-ink font-bold;
+    /* Logical float/padding so the drop cap sits on the correct side for RTL
+       (Arabic) article bodies as well as LTR. */
+    float: inline-start;
+    font-size: 3.4em;
+    line-height: 0.82;
+    padding-inline-end: 0.12em;
+    padding-top: 0.06em;
+  }
+  .article-body hr {
+    @apply border-0 my-12 h-auto text-center;
+  }
+  .article-body hr::after {
+    content: '◆ ◆ ◆';
+    @apply text-accent text-[10px] tracking-[1.2em] block;
+    margin-left: 0.6em; /* optically recenter (tracking adds trailing space) */
+  }
+
+  /* User-facing generated content is presented as native editorial UI. The
+     source may contain lightweight authoring notation, but syntax characters
+     and pipe-delimited tables must never reach the interface. */
+  .editorial-content {
+    color: hsl(var(--foreground) / 0.86);
+  }
+
+  .editorial-content > :first-child { margin-top: 0; }
+  .editorial-content > :last-child { margin-bottom: 0; }
+
+  .editorial-content h2,
+  .editorial-content h3,
+  .editorial-content h4 {
+    margin-top: 2.25rem;
+    margin-bottom: 0.8rem;
+    color: hsl(var(--primary));
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+  }
+
+  .editorial-content h2 { font-size: clamp(1.65rem, 3vw, 2.25rem); }
+  .editorial-content h3 { font-size: clamp(1.35rem, 2.3vw, 1.75rem); }
+  .editorial-content h4 { font-size: 1.2rem; }
+
+  .editorial-content--brief h2,
+  .editorial-content--brief h3,
+  .editorial-content--brief h4 {
+    margin-top: 2rem;
+    border-top: 1px solid hsl(var(--border));
+    padding-top: 1.25rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    line-height: 1.45;
+    text-transform: uppercase;
+  }
+
+  .editorial-content p {
+    margin-bottom: 1.15rem;
+    line-height: 1.75;
+  }
+
+  .editorial-content strong { color: hsl(var(--primary)); font-weight: 700; }
+  .editorial-content em { font-style: italic; }
+  .editorial-content a { color: hsl(var(--primary)); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+
+  .editorial-content ul,
+  .editorial-content ol {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1.25rem 0 1.5rem;
+    padding-inline-start: 1.35rem;
+  }
+
+  .editorial-content ul { list-style: disc; }
+  .editorial-content ol { list-style: decimal; }
+  .editorial-content li { padding-inline-start: 0.35rem; line-height: 1.65; }
+  .editorial-content li::marker { color: hsl(var(--primary)); font-weight: 700; }
+
+  .editorial-content blockquote {
+    margin: 2rem 0;
+    border-inline-start: 3px solid hsl(var(--primary));
+    background: hsl(var(--secondary) / 0.72);
+    padding: 1.25rem 1.5rem;
+    color: hsl(var(--primary));
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+
+  .editorial-content hr { margin: 2.5rem 0; border: 0; border-top: 1px solid hsl(var(--border)); }
+  .editorial-content .editorial-term { border-radius: 0.3rem; background: hsl(var(--secondary)); padding: 0.12rem 0.35rem; font-size: 0.92em; }
+
+  .editorial-content pre {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.65rem;
+    background: hsl(var(--navy));
+    padding: 1.25rem;
+    color: white;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .editorial-callout {
+    margin: 1.5rem 0;
+    border-inline-start: 3px solid hsl(var(--primary));
+    border-radius: 0 0.75rem 0.75rem 0;
+    background: hsl(var(--secondary) / 0.7);
+    padding: 1rem 1.15rem;
+  }
+
+  .editorial-callout p { margin: 0.35rem 0; }
+
+  .editorial-data {
+    margin: 1.75rem 0 2rem;
+    overflow-x: auto;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    background: hsl(var(--card));
+    box-shadow: 0 16px 45px -40px rgba(15, 31, 61, 0.55);
+  }
+
+  .editorial-data table { width: 100%; min-width: 38rem; border-collapse: collapse; text-align: start; }
+  .editorial-data th {
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--navy));
+    padding: 0.85rem 1rem;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-align: start;
+    text-transform: uppercase;
+  }
+  .editorial-data td { border-bottom: 1px solid hsl(var(--border)); padding: 0.9rem 1rem; vertical-align: top; line-height: 1.5; }
+  .editorial-data tbody tr:last-child td { border-bottom: 0; }
+  .editorial-data tbody tr:nth-child(even) { background: hsl(var(--secondary) / 0.45); }
+
+  @media (max-width: 639px) {
+    .editorial-content { font-size: 0.96rem; }
+    .editorial-content p { line-height: 1.68; }
+    .editorial-content ul,
+    .editorial-content ol { padding-inline-start: 1.15rem; }
+
+    .editorial-data {
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .editorial-data table,
+    .editorial-data tbody,
+    .editorial-data tr,
+    .editorial-data td,
+    .responsive-data-table table,
+    .responsive-data-table tbody,
+    .responsive-data-table tr,
+    .responsive-data-table td {
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .editorial-data thead,
+    .responsive-data-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .editorial-data tr,
+    .responsive-data-table tbody tr {
+      margin-bottom: 0.9rem;
+      overflow: hidden;
+      border: 1px solid hsl(var(--border));
+      border-radius: 0.75rem;
+      background: hsl(var(--card));
+      box-shadow: 0 12px 32px -28px rgba(15, 31, 61, 0.55);
+    }
+
+    .editorial-data td,
+    .responsive-data-table td {
+      display: grid;
+      grid-template-columns: minmax(6.5rem, 0.8fr) minmax(0, 1.2fr);
+      gap: 1rem;
+      align-items: start;
+      border-bottom: 1px solid hsl(var(--border));
+      padding: 0.8rem 0.9rem;
+      text-align: start !important;
+    }
+
+    .editorial-data td:last-child,
+    .responsive-data-table td:last-child { border-bottom: 0; }
+
+    .editorial-data td::before,
+    .responsive-data-table td::before {
+      content: attr(data-label);
+      color: hsl(var(--muted-foreground));
+      font-size: 0.65rem;
+      font-weight: 750;
+      letter-spacing: 0.07em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .responsive-data-table { overflow: visible; }
+  }
+
+  .editorial-content--article p,
+  .editorial-content--article li { font-size: clamp(1.08rem, 1.8vw, 1.25rem); line-height: 1.82; }
+  .editorial-content--article h2 { margin-top: 4rem; font-size: clamp(2rem, 5vw, 3.35rem); }
+  .editorial-content--article h3 { margin-top: 3rem; font-size: clamp(1.65rem, 3.5vw, 2.2rem); }
+  .editorial-content--article blockquote { margin: 2.5rem 0; font-size: clamp(1.25rem, 2.5vw, 1.55rem); }
+
+  .editorial-content-compact p { margin-bottom: 0.65rem; line-height: 1.6; }
+  .editorial-content-compact h2,
+  .editorial-content-compact h3,
+  .editorial-content-compact h4 { margin-top: 1rem; font-size: 1rem; }
+  .editorial-content-compact ul,
+  .editorial-content-compact ol { margin: 0.65rem 0; gap: 0.35rem; }
+  .editorial-content-compact .editorial-data { margin: 0.85rem 0; font-size: 0.75rem; }
+
+  /* Force High Contrast Prose for Reading */
+  .prose p {
+    @apply text-foreground font-medium text-base leading-relaxed;
+  }
+
+  .prose li {
+    @apply text-foreground font-medium;
+  }
+
+  /* ── Beta UI utilities ───────────────────────────────────────────────────── */
+
+  /* Animated shimmer border for locked article cards — draws the eye to the paywall CTA */
+  @keyframes shimmer-border {
+    0%   { box-shadow: 0 0 0px rgba(15,31,61,0); }
+    40%  { box-shadow: 0 0 18px rgba(15,31,61,0.22); }
+    60%  { box-shadow: 0 0 18px rgba(15,31,61,0.22); }
+    100% { box-shadow: 0 0 0px rgba(15,31,61,0); }
+  }
+
+  .locked-card-shimmer { animation: none; }
+  .locked-card-shimmer:hover {
+    animation: none;
+    box-shadow: 0 0 28px rgba(15,31,61,0.2);
+  }
+
+  /* ── World Cup event ribbon ──────────────────────────────────────────────
+     Celebratory but on-brand: a slow gold sheen sweeps the navy bar and the
+     flag chips drift in a seamless marquee. Both pause under reduced-motion. */
+  @keyframes wc-sheen {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(220%); }
+  }
+  .wc-sheen { animation: wc-sheen 7s ease-in-out infinite; }
+
+  @keyframes wc-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .wc-marquee { animation: wc-marquee 32s linear infinite; will-change: transform; }
+  .wc-marquee-group:hover .wc-marquee { animation-play-state: paused; }
+
+  @keyframes wc-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(0.8); }
+  }
+  .wc-pulse { animation: wc-pulse 1.6s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wc-sheen, .wc-marquee, .wc-pulse { animation: none; }
+  }
+
+  /* Reading progress bar */
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0F1F3D, #FFFFFF);
+    z-index: 9999;
+    transition: width 0.1s linear;
+  }
+
+  /* ── Premium UI Overhaul Utilities ───────────────────────────────────────── */
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-primary/10 shadow-2xl;
+  }
+  
+  .glass-panel-light {
+    @apply bg-white/70 backdrop-blur-xl border border-primary/10 shadow-2xl;
+  }
+
+  .gradient-overlay-dark {
+    @apply absolute inset-0 bg-gradient-to-t from-white/95 via-white/60 to-white/20 pointer-events-none;
+  }
+
+  .gradient-overlay-accent {
+    @apply absolute inset-0 bg-gradient-to-t from-accent/90 via-accent/30 to-transparent pointer-events-none mix-blend-multiply;
+  }
+}
+
+/* ── Accessibility: visible keyboard focus for all interactive elements ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #0F1F3D;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Respect prefers-reduced-motion: neutralise CSS animations/transitions ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Legacy local art was not shipped with verifiable photographic provenance.
+   It must never be presented as documentary imagery. Source-attributed remote
+   photography is rendered through the editorial image components instead. */
+img[src^="/images/"],
+[style*="/images/"] {
+  display: none !important;
+  background-image: none !important;
+}
+
+/* Phone UI is deliberately a separate interaction density, not a compressed
+   desktop canvas. Content becomes single-column, tap targets stay reachable,
+   and oversized desktop spacing cannot consume most of a handset viewport. */
+@media (max-width: 639px) {
+  .site-header { background: #FFFFFF !important; backdrop-filter: none !important; }
+  main { min-width: 0; }
+  main h1 { font-size: clamp(2.25rem, 11vw, 3rem) !important; line-height: 1.02 !important; }
+  main h2 { font-size: clamp(1.65rem, 8vw, 2.25rem) !important; line-height: 1.12 !important; }
+  main h3 { font-size: clamp(1.25rem, 6vw, 1.65rem) !important; }
+  main p, main li { overflow-wrap: anywhere; }
+  main [class~="p-8"], main [class~="p-10"] { padding: 1.25rem !important; }
+  main [class~="px-8"], main [class~="px-10"] { padding-inline: 1.25rem !important; }
+  main [class~="py-8"], main [class~="py-10"] { padding-block: 1.5rem !important; }
+  main [class~="rounded-3xl"] { border-radius: 0.8rem !important; }
+  main button, main a { -webkit-tap-highlight-color: transparent; }
+  main input, main select, main textarea { min-height: 2.75rem; font-size: 1rem; }
+  main img { max-width: 100%; }
+  .dashboard-shell > .page-stack { margin-top: 1.5rem; }
+  .dashboard-shell .responsive-data-table { margin-inline: -0.25rem; }
+  .dashboard-shell .recharts-wrapper { font-size: 0.72rem; }
+  .editorial-content { font-size: 1rem; }
+  .editorial-content p { line-height: 1.72; }
+}
+
+.rounded-3xl { border-radius: 0.875rem !important; }
+.rounded-2xl { border-radius: 0.75rem !important; }
+.shadow-2xl { box-shadow: 0 12px 32px -24px rgba(15, 31, 61, 0.28) !important; }
+.glass-panel,
+.glass-panel-light {
+  background: hsl(var(--card) / 0.96) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 8px 24px -20px rgba(15, 31, 61, 0.22) !important;
+}

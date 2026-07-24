@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+.wrangler/
+
+# Environment
+.env
+.env.local
+.dev.vars
+.cloudflare/
+frontend/.env.production.local
+frontend/.env.*.local
+.claude/settings.local.json
+.zeroclaw/.zeroclaw/
+.zeroclaw/run.bat
+set_secret*.cjs
+
+# Local runtime data and generated caches
+**/__pycache__/
+**/*.pyc
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test
+coverage/
+
+# Local agent tooling (was a self-referential submodule — kept local, not tracked)
+zeroclaw/

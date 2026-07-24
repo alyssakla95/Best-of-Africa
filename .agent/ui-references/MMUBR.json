@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "membership_monetization_system",
+    "source": "BOA_native_ROW",
+    "roleInSystem": "primary_config",
+    "lastUpdated": "2026-03-17"
+  },
+  "principles": [
+    "Membership should feel like joining a community around African creativity.",
+    "Explain what members unlock for storytellers, not just what they unlock for themselves.",
+    "Prioritize accessibility in the rest-of-world (ROW) context with flexible pricing."
+  ],
+  "tiers": [
+    {
+      "id": "free",
+      "name": "Free",
+      "accessRules": {
+        "maxMeteredStoriesPerMonth": 4,
+        "showsLightMeterBanner": true
+      },
+      "benefits": [
+        "A limited number of stories each month",
+        "Access to selected newsletters and updates"
+      ]
+    },
+    {
+      "id": "supporter",
+      "name": "Supporter",
+      "accessRules": {
+        "unlimitedStories": true,
+        "priorityAccessSections": ["members_spotlight", "community_updates"]
+      },
+      "benefits": [
+        "Unlimited access to stories and collections",
+        "Members-only spotlights on African creators",
+        "Invites to online conversations and AMAs"
+      ],
+      "pricingModel": {
+        "currencies": ["USD", "EUR", "GBP"],
+        "plans": [
+          { "interval": "monthly", "price": 5 },
+          { "interval": "annual", "price": 50 }
+        ]
+      }
+    }
+  ],
+  "ui_patterns": [
+    {
+      "id": "soft_meter_banner",
+      "name": "SoftMeterBanner",
+      "appliesToTiers": ["free"],
+      "trigger": "storiesRead >= 2 && storiesRead < maxMeteredStoriesPerMonth",
+      "componentId": "membership_meter_banner",
+      "toneId": "funding_appeal",
+      "copyPatterns": [
+        "You’re exploring African stories. {remaining} free stories left this month.",
+        "Members help keep this work independent across the continent."
+      ]
+    },
+    {
+      "id": "hard_paywall_inline",
+      "name": "HardPaywallInline",
+      "appliesToTiers": ["free"],
+      "trigger": "storiesRead >= maxMeteredStoriesPerMonth",
+      "componentId": "membership_paywall_inline",
+      "toneId": "funding_appeal",
+      "copyPatterns": [
+        "You’ve reached your free story limit.",
+        "Become a member to keep exploring African stories without limits."
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "membership_meter_banner",
+      "name": "MembershipMeterBanner",
+      "props": {
+        "remainingStories": "number",
+        "tierId": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      }
+    },
+    {
+      "id": "membership_paywall_inline",
+      "name": "MembershipPaywallInline",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "description": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "article_access_flow_row",
+      "name": "ArticleAccessFlowROW",
+      "description": "Decides if a ROW user can read an article, sees meter, or sees paywall.",
+      "decisionModel": {
+        "inputs": [
+          "user.tierId",
+          "user.storiesReadThisPeriod",
+          "tier.accessRules.maxMeteredStoriesPerMonth"
+        ],
+        "states": [
+          "full_access",
+          "soft_meter",
+          "hard_paywall"
+        ]
+      }
+    }
+  ],
+  "integration_hints": {
+    "configRole": "This file should be treated as the canonical membership config for ROW; Atlantic-inspired file is reference only.",
+    "reactUsage": [
+      {
+        "component": "ArticlePage",
+        "logic": "Read tiers, ui_patterns, and flows.decisionModel to decide when and how to show meter or paywall."
+      }
+    ]
+  }
+}

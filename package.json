@@ -1,0 +1,39 @@
+{
+    "name": "boa-story",
+    "version": "1.0.0",
+    "description": "BOA-Story - A digital home for real, thoughtful stories about African lives, cities, and ideas.",
+    "type": "module",
+    "scripts": {
+        "dev": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "wrangler dev",
+        "dev:frontend": "cd frontend && npm run dev",
+        "build": "npm run build:frontend",
+        "build:frontend": "cd frontend && npm run build",
+        "deploy": "wrangler deploy",
+        "cloudflare:plan": "node scripts/cloudflare-portable.mjs plan",
+        "cloudflare:setup": "node scripts/cloudflare-portable.mjs setup",
+        "cloudflare:deploy": "node scripts/cloudflare-portable.mjs deploy",
+        "db:migrate": "wrangler d1 migrations apply best-of-africa-db --local",
+        "db:migrate:prod": "wrangler d1 migrations apply best-of-africa-db --remote",
+        "tail": "wrangler tail",
+        "install:all": "npm install && cd frontend && npm install",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:ui": "vitest --ui",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@cf-wasm/photon": "^0.3.6",
+        "hono": "^4.6.0",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@cloudflare/vitest-pool-workers": "^0.12.20",
+        "@cloudflare/workers-types": "^4.20241127.0",
+        "concurrently": "^9.1.0",
+        "typescript": "^5.7.0",
+        "vitest": "^4.0.18",
+        "wrangler": "^4.59.1"
+    }
+}

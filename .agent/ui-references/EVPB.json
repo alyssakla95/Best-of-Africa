@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "editorial_voice_system",
+    "lastUpdated": "2026-03-17"
+  },
+  "global_principles": [
+    "Center African perspectives and lived experiences",
+    "Balance warmth and professionalism; avoid NGO pity language",
+    "Be specific about places, people, and impact, not vague generalities",
+    "Use clear, accessible English; avoid heavy jargon"
+  ],
+  "tones": [
+    {
+      "id": "editorial_feature",
+      "name": "EditorialFeature",
+      "description": "Narrative, reflective, rooted in reporting and lived experience.",
+      "useCases": [
+        "Longform stories",
+        "Creator feature pages",
+        "Landing sections highlighting creators or projects"
+      ],
+      "do": [
+        "Use vivid but grounded description of scenes and people",
+        "Highlight agency of African subjects, not just challenges"
+      ],
+      "dont": [
+        "Exoticize places or people",
+        "Use generic phrases like 'voiceless communities'"
+      ],
+      "style": {
+        "person": "third",
+        "tense": "present_or_past",
+        "sentenceLength": "mixed",
+        "formality": "medium",
+        "contractions": true
+      }
+    },
+    {
+      "id": "platform_voice",
+      "name": "PlatformVoice",
+      "description": "Clear, confident product voice used in UI copy and system messages.",
+      "useCases": [
+        "Buttons, tooltips, banners",
+        "Empty states and onboarding steps",
+        "Funding CTAs and confirmation screens"
+      ],
+      "do": [
+        "Be short and direct",
+        "Explain why something matters in one short phrase",
+        "Reflect pride in African creativity and innovation"
+      ],
+      "dont": [
+        "Over-apologize for normal system behavior",
+        "Use slang that might not travel across regions"
+      ],
+      "style": {
+        "person": "second",
+        "tense": "present",
+        "sentenceLength": "short",
+        "formality": "medium",
+        "contractions": true
+      }
+    },
+    {
+      "id": "funding_appeal",
+      "name": "FundingAppeal",
+      "description": "Impact-focused but respectful; connects support to concrete outcomes.",
+      "useCases": [
+        "Funding banners and modals",
+        "Tier descriptions",
+        "Thank-you and follow-up messages"
+      ],
+      "do": [
+        "Explain how support unlocks more African stories, projects, or tools",
+        "Acknowledge supporters directly: 'Your support…'"
+      ],
+      "dont": [
+        "Use shame or guilt to drive action",
+        "Over-promise outcomes you cannot guarantee"
+      ],
+      "style": {
+        "person": "second",
+        "tense": "present_and_future",
+        "sentenceLength": "short_to_medium",
+        "formality": "medium",
+        "contractions": true
+      }
+    }
+  ],
+  "content_patterns": [
+    {
+      "id": "cta_button",
+      "componentTypes": ["Button", "LinkButton"],
+      "toneId": "platform_voice",
+      "rules": {
+        "maxChars": 28,
+        "mustStartWithVerb": true,
+        "allowedVerbs": [
+          "Support",
+          "Explore",
+          "Discover",
+          "Join",
+          "Read",
+          "Continue"
+        ]
+      },
+      "examples": {
+        "good": [
+          "Support this creator",
+          "Discover more African stories"
+        ],
+        "bad": [
+          "Click here",
+          "Submit form"
+        ]
+      }
+    },
+    {
+      "id": "funding_banner_copy",
+      "componentTypes": ["FundingEntryBanner", "TipWidgetInline"],
+      "toneId": "funding_appeal",
+      "structure": [
+        "One-line impact statement",
+        "Optional second line connecting support to outcomes"
+      ],
+      "rules": {
+        "headlineMaxChars": 80,
+        "subcopyMaxChars": 140
+      },
+      "examples": {
+        "good": [
+          "Help more African filmmakers share their work.",
+          "Your support keeps this reporting independent."
+        ],
+        "bad": [
+          "Donate or this work cannot continue.",
+          "We desperately need your money."
+        ]
+      }
+    },
+    {
+      "id": "empty_state",
+      "componentTypes": ["ListEmptyState", "SupporterWall"],
+      "toneId": "platform_voice",
+      "structure": [
+        "Friendly acknowledgement of the empty state",
+        "Clear next action"
+      ],
+      "examples": {
+        "good": [
+          "No supporters yet. Be the first to back this project.",
+          "No stories here yet. Explore other creators while we curate this space."
+        ]
+      }
+    }
+  ],
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": ["en", "fr"],
+    "localeNotes": {
+      "fr": [
+        "Prefer simple, clear phrasing over literal translation.",
+        "Maintain respectful but warm tone; avoid overly formal bureaucratic language."
+      ]
+    }
+  },
+  "integration_hints": {
+    "uiComponents": [
+      {
+        "componentId": "funding-tier-card",
+        "toneId": "funding_appeal",
+        "fields": ["title", "description", "ctaText"]
+      },
+      {
+        "componentId": "tip-widget-inline",
+        "toneId": "funding_appeal",
+        "fields": ["ctaText", "thankYouText"]
+      },
+      {
+        "componentId": "supporter-wall",
+        "toneId": "platform_voice",
+        "fields": ["emptyStateText"]
+      }
+    ],
+    "lintingRules": [
+      "Disallow phrases from tones[*].dont lists in UI copy",
+      "Enforce maxChars from content_patterns where applicable"
+    ]
+  }
+}

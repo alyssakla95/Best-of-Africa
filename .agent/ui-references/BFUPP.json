@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "source": "Patreon_inspired_funding_UI",
+    "lastUpdated": "2026-03-17"
+  },
+  "design_principles": [
+    "Make funding entry points highly visible but non-intrusive",
+    "Prioritize transparency about how funds are used",
+    "Highlight African creators and stories in funding context"
+  ],
+  "tokens": {
+    "colors": {
+      "primary": "#...",
+      "accent": "#...",
+      "background": "#...",
+      "danger": "#..."
+    },
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32
+    },
+    "borderRadius": {
+      "sm": 4,
+      "md": 8,
+      "lg": 16
+    }
+  },
+  "components": [
+    {
+      "id": "funding-tier-card",
+      "name": "FundingTierCard",
+      "category": "funding",
+      "platformAreas": ["creator_page", "campaign_page"],
+      "props": {
+        "title": "string",
+        "price": "number",
+        "currency": "string",
+        "frequency": "enum:monthly,one_time,annual",
+        "description": "string",
+        "perks": "string[]",
+        "ctaText": "string",
+        "isRecommended": "boolean",
+        "badgeText": "string | null"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "price", "perks", "cta"],
+        "maxWidth": 360
+      },
+      "states": ["default", "hover", "selected", "disabled"],
+      "variants": [
+        {
+          "id": "highlighted-tier",
+          "description": "Used for the most popular or recommended tier",
+          "propsOverrides": {
+            "isRecommended": true,
+            "badgeText": "Most popular"
+          }
+        }
+      ],
+      "copy_guidelines": {
+        "title": "Short, specific; e.g. 'Community Supporter'",
+        "description": "Max 120 chars, focus on impact not features",
+        "ctaText": "Action-first; e.g. 'Join as supporter'"
+      }
+    },
+    {
+      "id": "funding-entry-banner",
+      "name": "FundingEntryBanner",
+      "category": "funding",
+      "platformAreas": ["home", "article_page"],
+      "props": {
+        "headline": "string",
+        "subcopy": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null",
+        "imageUrl": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["image", "copy", "actions"]
+      },
+      "states": ["default", "dismissed"],
+      "visibility_rules": [
+        "Show to non-funders after 2+ sessions",
+        "Hide after user dismisses 3 times"
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "creator_funding_signup",
+      "name": "CreatorFundingSignup",
+      "trigger": "User clicks 'Support this creator'",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "funding-tier-card",
+          "goal": "User selects tier",
+          "successEvent": "tier_selected"
+        },
+        {
+          "step": 2,
+          "componentId": "checkout_form",
+          "goal": "Collect payment details",
+          "successEvent": "payment_submitted"
+        },
+        {
+          "step": 3,
+          "componentId": "funding_success_screen",
+          "goal": "Confirm and invite sharing",
+          "successEvent": "share_prompt_shown"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "tier_card_copy_test_v1",
+      "componentId": "funding-tier-card",
+      "hypothesis": "Impact-focused copy increases conversion",
+      "variants": [
+        {
+          "key": "control",
+          "titlePattern": "Supporter",
+          "descriptionPattern": "Access perks and updates."
+        },
+        {
+          "key": "impact",
+          "titlePattern": "Empower African storytellers",
+          "descriptionPattern": "Help bring more African stories to the world."
+        }
+      ],
+      "metrics": ["click_through_rate", "conversion_rate"]
+    }
+  ]
+}

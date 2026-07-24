@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "emotional_ui_source",
+    "source": "RTBC_inspired",
+    "roleInSystem": "reference_only",
+    "lastUpdated": "2026-03-17"
+  },
+  "emotional_archetypes": [
+    {
+      "id": "reassuring_confidence",
+      "name": "ReassuringConfidence",
+      "description": "Calm, steady voice that says 'we've got you' in complex or high-stakes flows.",
+      "useCases": [
+        "Payments and checkout",
+        "Account security and privacy UI",
+        "Data or consent prompts"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "none",
+        "colorTokens": ["neutral", "success"],
+        "layoutFeel": "spacious_minimal"
+      }
+    },
+    {
+      "id": "calm_clarity",
+      "name": "CalmClarity",
+      "description": "Stripped-down, clear language for explainer modals and info panels.",
+      "useCases": [
+        "Explaining membership or funding terms",
+        "Policy or guidelines UI",
+        "Onboarding walkthroughs"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "low",
+        "colorTokens": ["neutral"],
+        "layoutFeel": "left_aligned_text_first"
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "payment_reassurance_block",
+      "name": "PaymentReassuranceBlock",
+      "archetypeId": "reassuring_confidence",
+      "components": [
+        {
+          "componentId": "ReassuranceInline",
+          "props": {
+            "icon": "string",
+            "headline": "string",
+            "bullets": "string[]"
+          },
+          "copyPatterns": {
+            "headline": [
+              "Your payment is secure.",
+              "We protect your details."
+            ],
+            "bullets": [
+              "Encrypted payments via trusted providers.",
+              "We never share your card details."
+            ]
+          },
+          "visualPatterns": {
+            "icon": "shield_check",
+            "backgroundTone": "subtle",
+            "borderStyle": "soft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "consent_explainer_panel",
+      "name": "ConsentExplainerPanel",
+      "archetypeId": "calm_clarity",
+      "components": [
+        {
+          "componentId": "InfoPanel",
+          "props": {
+            "title": "string",
+            "body": "string",
+            "learnMoreHref": "string | null"
+          },
+          "copyPatterns": {
+            "title": [
+              "How we use your data.",
+              "Why we ask for this info."
+            ],
+            "body": [
+              "We use this to improve your experience and support African creators.",
+              "You can change these settings at any time in your account."
+            ]
+          },
+          "visualPatterns": {
+            "showDivider": true,
+            "icon": "info",
+            "alignment": "left"
+          }
+        }
+      ]
+    }
+  ],
+  "mapping_to_boa_emotions": {
+    "targetFile": "EMOTIONAL_UI_PATTERNS_BOA_okayafrica.json",
+    "links": [
+      {
+        "sourceArchetypeId": "reassuring_confidence",
+        "mapsToEmotionalStateId": "care",
+        "notes": "Use RTBC patterns to shape the calm, caring variants of BOA error and payment states."
+      },
+      {
+        "sourceArchetypeId": "calm_clarity",
+        "mapsToEmotionalStateId": "encouragement",
+        "notes": "Use for info-heavy encouragement (e.g. explaining why funding matters) without hype."
+      }
+    ]
+  },
+  "ui_usage_hints": {
+    "components": [
+      {
+        "componentId": "CheckoutForm",
+        "recommendedPatterns": ["payment_reassurance_block"],
+        "thenApplyBoaRulesFrom": "EMOTIONAL_UI_PATTERNS_BOA_okayafrica.json"
+      },
+      {
+        "componentId": "PrivacySettingsPanel",
+        "recommendedPatterns": ["consent_explainer_panel"]
+      }
+    ],
+    "lintingNotes": [
+      "Avoid overly emotional or hyped language in RTBC-derived patterns.",
+      "Favor short sentences and concrete assurances over vibes."
+    ]
+  }
+}

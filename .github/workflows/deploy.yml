@@ -1,0 +1,129 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════
+  # QUALITY GATE — nothing deploys unless types, tests and the build pass
+  # ════════════════════════════════════════════════════════════════════
+  check:
+    name: Typecheck & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Backend typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit & integration tests
+        run: npx vitest run
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+  # ════════════════════════════════════════════════════════════════════
+  # BACKEND WORKER DEPLOYMENT
+  # ════════════════════════════════════════════════════════════════════
+  deploy-backend:
+    name: Deploy Backend Worker
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+  # ════════════════════════════════════════════════════════════════════
+  # FRONTEND PAGES DEPLOYMENT
+  # ════════════════════════════════════════════════════════════════════
+  deploy-frontend:
+    name: Deploy Frontend (Pages)
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages (Primary)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=boa-platform-frontend --commit-dirty=true
+
+      - name: Deploy to Cloudflare Pages (Secondary)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=best-of-africa-frontend --commit-dirty=true
+
+      # Direct-upload to the two public URLs. This bypasses the flaky Cloudflare
+      # Git-integration build on best-of-africa-platform (which was failing on the
+      # remote builder) by shipping the dist built in CI above. --branch main
+      # targets the production environment for both projects.
+      - name: Deploy to Cloudflare Pages (best-of-africa-platform)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=best-of-africa-platform --branch=main --commit-dirty=true
+
+      - name: Deploy to Cloudflare Pages (best-of-africa)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=best-of-africa --branch=main --commit-dirty=true

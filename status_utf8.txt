@@ -1,0 +1,110 @@
+﻿ M .agent/skills/proactive-editorial/SKILL.md
+ M AGENTS.md
+ M AI_PIPELINE.md
+ M ARCHITECTURE.md
+ M README.md
+ M frontend/@/components/ui/button.tsx
+ M frontend/@/components/ui/form.tsx
+ M frontend/index.html
+ M frontend/package.json
+ M frontend/src/App.tsx
+ M frontend/src/components/EventRegistrationForm.tsx
+ M frontend/src/components/IntelligenceSidebar.tsx
+ M frontend/src/components/LanguageSelector.tsx
+ M frontend/src/components/NavBar.tsx
+ M frontend/src/components/Sidebar.tsx
+ M frontend/src/components/ui/badge.tsx
+ M frontend/src/components/ui/button.tsx
+ M frontend/src/components/ui/form.tsx
+ M frontend/src/components/ui/input.tsx
+ M frontend/src/components/ui/navigation-menu.tsx
+ M frontend/src/components/ui/textarea.tsx
+ M frontend/src/context/AuthContext.tsx
+ M frontend/src/context/DensityContext.tsx
+ M frontend/src/context/LanguageContext.tsx
+ M frontend/src/context/LensContext.tsx
+ M frontend/src/context/MissionContext.tsx
+ M frontend/src/hooks/useReducedMotion.ts
+ M frontend/src/index.css
+ M frontend/src/pages/AdminPage.tsx
+ M frontend/src/pages/ArticleDetailPage.tsx
+ M frontend/src/pages/ContactPage.tsx
+ M frontend/src/pages/CountryDetailPage.tsx
+ M frontend/src/pages/EventDetailPage.tsx
+ M frontend/src/pages/EventsPage.tsx
+ M frontend/src/pages/HomePage.tsx
+ M frontend/src/pages/LibraryPage.tsx
+ M frontend/src/pages/LoginPage.tsx
+ M frontend/src/pages/MarketIntelPage.tsx
+ M frontend/src/pages/PersonalizedFeedPage.tsx
+ M frontend/src/pages/ReportsPage.tsx
+ M frontend/src/pages/SectorDetailPage.tsx
+ M frontend/src/pages/SponsoredPage.tsx
+ M frontend/src/services/api.ts
+ M frontend/src/types/index.ts
+ M frontend/vite.config.ts
+ M migrations/0002_i18n_schema.sql
+ M migrations/0003_market_data.sql
+ M migrations/0005_system_config.sql
+ M migrations/0006_ecosystem.sql
+ M package.json
+ M src/index.ts
+ M src/lib/ai.ts
+ M src/lib/moderation.ts
+ M src/lib/vectorize.ts
+ M src/routes/admin.ts
+ M src/routes/articles.ts
+ M src/routes/dashboards.ts
+ M src/routes/intelligence.ts
+ M src/routes/services.ts
+ M src/routes/system.ts
+ M src/types/index.ts
+ M src/workers/generator.ts
+ M wrangler.toml
+?? .agent/BOA_AGENT_MASTER_UI_BRIEF.md
+?? .agent/compiled_references.txt
+?? .agent/compiled_references_json.txt
+?? .agent/compiled_references_md.txt
+?? .agent/skills/article-generator/
+?? .agent/ui-references/
+?? .zeroclaw/
+?? best-of-africa-zoom-summary-v2.md
+?? best-of-africa-zoom-summary.md
+?? frontend/lint_results.txt
+?? frontend/src/components/ArticleVideo.tsx
+?? frontend/src/components/CountryEvents.tsx
+?? frontend/src/components/CountryHeroArticle.tsx
+?? frontend/src/components/CountryPortals.tsx
+?? frontend/src/components/PartnerPromo.tsx
+?? frontend/src/components/admin/
+?? frontend/src/components/beta/
+?? frontend/src/config/
+?? frontend/src/pages/beta/
+?? implementation_plan_real_agent_integration.md
+?? legacy/
+?? migrations/0017_content_moderation.sql
+?? migrations/0018_zoom_requirements.sql
+?? migrations/0019_continental_portals.sql
+?? migrations/0020_continental_events.sql
+?? migrations/0021_agent_media.sql
+?? migrations/0022_agent_task_queue.sql
+?? migrations/0023_article_audit.sql
+?? migrations/0024_article_feedback.sql
+?? migrations/9999_test_task.sql
+?? scripts/system-sweep.ts
+?? src/lib/circuit-breaker.ts
+?? src/lib/index.ts
+?? src/lib/logger.ts
+?? src/lib/validation.ts
+?? src/routes/agent-webhooks.ts
+?? src/routes/audit.ts
+?? src/routes/debug.ts
+?? src/routes/index.ts
+?? src/routes/openapi.ts
+?? src/routes/self-improve.ts
+?? status.txt
+?? tests/
+?? ts_errs.txt
+?? ts_errs2.txt
+?? vitest.config.ts
+?? zeroclaw/

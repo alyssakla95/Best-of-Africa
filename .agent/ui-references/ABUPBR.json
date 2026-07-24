@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "country_brand_system",
+    "country": "Rwanda",
+    "countryCode": "RW",
+    "lastUpdated": "2026-03-17"
+  },
+  "brand_story": {
+    "keywords": [
+      "innovation",
+      "resilience",
+      "clean cities",
+      "tech-forward",
+      "community-driven"
+    ],
+    "oneLine": "Rwanda as a forward-looking, community-driven hub of African innovation.",
+    "toneLinks": [
+      {
+        "editorialToneId": "editorial_feature",
+        "usage": "Longform stories about Rwandan creators and cities."
+      },
+      {
+        "editorialToneId": "platform_voice",
+        "usage": "UI labels and navigation related to Rwandan collections."
+      }
+    ]
+  },
+  "tokens": {
+    "colors": {
+      "primary": {
+        "value": "#...",
+
+        "usage": "Primary CTAs and highlights for Rwanda-branded surfaces."
+      },
+      "secondary": {
+        "value": "#...",
+        "usage": "Secondary actions, borders, subtle accents."
+      },
+      "background": {
+        "value": "#...",
+        "usage": "Background for Rwanda-specific sections."
+      },
+      "accent": {
+        "value": "#...",
+        "usage": "Badges, pills, small emphasis elements."
+      }
+    },
+    "typography": {
+      "display": {
+        "fontFamily": "System or brand font name",
+        "weight": 700,
+        "letterSpacing": 0.2
+      },
+      "body": {
+        "fontFamily": "System or brand font name",
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "shapes": {
+      "cardRadius": 12,
+      "chipRadius": 999
+    },
+    "imagery": {
+      "preferredMotifs": [
+        "green landscapes",
+        "city skylines",
+        "people collaborating",
+        "technology and community spaces"
+      ],
+      "avoid": [
+        "generic safari imagery not specific to Rwanda",
+        "stereotypical poverty imagery"
+      ]
+    }
+  },
+  "components": [
+    {
+      "id": "country_pill_rwanda",
+      "name": "CountryPillRwanda",
+      "baseComponent": "CountryPill",
+      "countryCode": "RW",
+      "props": {
+        "label": "string",
+        "icon": "string | null",
+        "href": "string | null"
+      },
+      "styleOverrides": {
+        "backgroundColorToken": "colors.accent",
+        "textColorToken": "colors.onAccent"
+      },
+      "copy_guidelines": {
+        "label": "Use 'Rwanda' or context-specific label like 'Made in Rwanda'."
+      }
+    },
+    {
+      "id": "country_collection_header_rwanda",
+      "name": "CountryCollectionHeaderRwanda",
+      "baseComponent": "CountryCollectionHeader",
+      "countryCode": "RW",
+      "props": {
+        "title": "string",
+        "subtitle": "string",
+        "imageUrl": "string | null",
+        "ctaText": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["image", "copy", "cta"],
+        "maxWidth": 960
+      },
+      "styleOverrides": {
+        "titleFontToken": "typography.display",
+        "accentColorToken": "colors.primary"
+      },
+      "copy_guidelines": {
+        "title": "Highlight Rwanda’s innovation, culture or creators in a short line.",
+        "subtitle": "One sentence connecting Rwanda to the broader African story."
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "rwanda_collection_page",
+      "name": "RwandaCollectionPage",
+      "description": "Themed page for all Rwanda-related stories, creators, and projects.",
+      "layoutSections": [
+        "country_collection_header_rwanda",
+        "featured_story_row",
+        "creator_grid",
+        "funding_banner"
+      ],
+      "toneUsage": {
+        "header": "editorial_feature",
+        "cards": "platform_voice"
+      }
+    }
+  ],
+  "integration_hints": {
+    "routing": {
+      "slug": "/country/rwanda",
+      "countryCodeParam": "RW"
+    },
+    "mappingToGenericTokens": {
+      "primary": "brand.country.RW.primary",
+      "secondary": "brand.country.RW.secondary"
+    },
+    "reactUsage": [
+      {
+        "component": "CountryCollectionHeader",
+        "brandFileKey": "AFRICA_BRAND_UI_PATTERNS_BOA_rwanda",
+        "propsFromBrand": ["title", "subtitle", "imageUrl"]
+      }
+    ]
+  }
+}

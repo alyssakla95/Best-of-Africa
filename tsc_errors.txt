@@ -1,0 +1,70 @@
+﻿src/lib/ai.ts(34,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(69,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(93,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(109,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(142,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(168,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/ai.ts(220,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'keyof AiModels'.
+src/lib/auth.ts(52,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never, value: unknown): void', gave the following error.
+    Argument of type '"userId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce", value: string | undefined): void', gave the following error.
+    Argument of type '"userId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/lib/auth.ts(88,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never, value: unknown): void', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce", value: string | undefined): void', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/lib/auth.ts(89,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never, value: unknown): void', gave the following error.
+    Argument of type '"clientTier"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce", value: string | undefined): void', gave the following error.
+    Argument of type '"clientTier"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/lib/auth.ts(90,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never, value: unknown): void', gave the following error.
+    Argument of type '"rateLimit"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce", value: string | undefined): void', gave the following error.
+    Argument of type '"rateLimit"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/lib/auth.ts(99,28): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never): unknown', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce"): string | undefined', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/lib/auth.ts(100,25): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never): unknown', gave the following error.
+    Argument of type '"rateLimit"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce"): string | undefined', gave the following error.
+    Argument of type '"rateLimit"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/routes/intelligence.ts(248,28): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never): unknown', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce"): string | undefined', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/routes/intelligence.ts(260,28): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never): unknown', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce"): string | undefined', gave the following error.
+    Argument of type '"clientId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+src/routes/search.ts(35,47): error TS2339: Property 'data' does not exist on type 'Ai_Cf_Baai_Bge_Base_En_V1_5_Output'.
+  Property 'data' does not exist on type 'Ai_Cf_Baai_Bge_Base_En_V1_5_AsyncResponse'.
+src/routes/search.ts(187,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number[] | VectorFloatArray'.
+src/workers/generator.ts(7,10): error TS2395: Individual declarations in merged declaration 'generateArticle' must be all exported or all local.
+src/workers/generator.ts(7,10): error TS2440: Import declaration conflicts with local declaration of 'generateArticle'.
+src/workers/generator.ts(17,21): error TS2352: Conversion of type 'Record<string, unknown>' to type 'ContentGenerationMessage' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Record<string, unknown>' is missing the following properties from type 'ContentGenerationMessage': type, ingested_item_id, source_id, priority
+src/workers/generator.ts(74,13): error TS2554: Expected 2 arguments, but got 5.
+src/workers/generator.ts(81,45): error TS2339: Property 'title' does not exist on type 'void'.
+src/workers/generator.ts(84,37): error TS2339: Property 'content' does not exist on type 'void'.
+src/workers/generator.ts(100,23): error TS2339: Property 'title' does not exist on type 'void'.
+src/workers/generator.ts(101,23): error TS2339: Property 'subtitle' does not exist on type 'void'.
+src/workers/generator.ts(102,23): error TS2339: Property 'content' does not exist on type 'void'.
+src/workers/generator.ts(103,23): error TS2339: Property 'summary' does not exist on type 'void'.
+src/workers/generator.ts(106,38): error TS2339: Property 'tags' does not exist on type 'void'.
+src/workers/generator.ts(107,23): error TS2339: Property 'title' does not exist on type 'void'.
+src/workers/generator.ts(108,23): error TS2339: Property 'summary' does not exist on type 'void'.
+src/workers/generator.ts(118,54): error TS2339: Property 'title' does not exist on type 'void'.
+src/workers/generator.ts(118,71): error TS2339: Property 'content' does not exist on type 'void'.
+src/workers/generator.ts(134,80): error TS2339: Property 'title' does not exist on type 'void'.
+src/workers/generator.ts(150,14): error TS2395: Individual declarations in merged declaration 'generateArticle' must be all exported or all local.
+src/workers/optimizer.ts(243,21): error TS2352: Conversion of type 'Record<string, unknown>' to type 'OptimizationMessage' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'type' is missing in type 'Record<string, unknown>' but required in type 'OptimizationMessage'.

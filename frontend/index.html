@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="alternate" type="application/rss+xml" title="BOA-Story — Latest Stories" href="/rss.xml" />
+  <link rel="alternate" type="application/rss+xml" title="Best of Africa: Daily Pulse (Podcast)" href="/podcast.xml" />
+  <!-- The landing hero image request is issued by the inline script after
+       <div id="root"> (see body): a <head>-time pick is unreliable because the
+       viewport isn't settled during early parse (emulated Chrome reports the
+       default window width there and picks the wrong variant). -->
+  <link rel="apple-touch-icon" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BOA-Story" />
+
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="BOA-Story - A digital home for real, thoughtful stories about African lives, cities, and ideas." />
+  
+  <!-- Base Open Graph -->
+  <meta property="og:site_name" content="BOA-Story" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="BOA-Story" />
+  <meta property="og:description" content="A digital home for real, thoughtful stories about African lives, cities, and ideas — beyond charity ads and disaster headlines." />
+  <meta property="og:image" content="%VITE_SITE_URL%/og-default.jpg" />
+  <meta property="og:url" content="%VITE_SITE_URL%" />
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BOA-Story" />
+  <meta name="twitter:description" content="A digital home for real, thoughtful stories about African lives, cities, and ideas — beyond charity ads and disaster headlines." />
+  <meta name="twitter:image" content="%VITE_SITE_URL%/og-default.jpg" />
+  <meta name="twitter:url" content="%VITE_SITE_URL%" />
+  
+  <title>BOA-Story</title>
+</head>
+
+<body>
+  <div id="root">
+    <!-- Static above-the-fold hero: paints instantly from HTML (no JS), improving
+         FCP/LCP. React's createRoot replaces #root's contents on mount. The inline
+         script below removes it on non-landing deep links to avoid a wrong-page flash. -->
+    <div id="boa-hero" style="position:relative;overflow:hidden;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#0F1F3D;color:#fff;padding:6rem 1.5rem;box-sizing:border-box;font-family:'Playfair Display',Georgia,serif;">
+      <!-- Prerendered landing fold: same photo, scrim, type scale and CTA as the
+           React hero, painted straight from HTML so LCP fires when the image
+           decodes instead of waiting for React to parse+mount. data-srcset (set
+           by the inline script below, landing only) keeps the preload scanner
+           from fetching it on deep links; the responsive <head> preload has
+           already started the right-sized download on "/". React re-renders the
+           identical srcset on mount, so the swap reuses the cached response. -->
+      <!-- height:97% (not 100%): Chrome excludes exactly-full-viewport images
+           from LCP as presumed backgrounds, which silently discarded this paint
+           and pushed measured LCP to React's later render. The React hero's
+           visible box isn't full-viewport either, so this is parity, and the
+           full-height scrim + navy body make the 3% sliver invisible. -->
+      <img id="boa-hero-img" alt="Modern African Metropolis" fetchpriority="high"
+           style="position:absolute;top:0;left:0;width:100%;height:97%;object-fit:cover;opacity:.9;z-index:0;">
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(to top,rgba(15,31,61,.85),rgba(15,31,61,.4) 50%,rgba(15,31,61,.55));z-index:1;"></div>
+      <div style="position:relative;z-index:2;">
+        <div style="font-family:Inter,system-ui,sans-serif;color:#FFFFFF;font-weight:600;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;margin-bottom:1.5rem;">— Early Access</div>
+        <h1 style="font-size:clamp(2.5rem,10vw,8rem);line-height:.98;letter-spacing:-.04em;font-weight:900;margin:0 0 2rem;max-width:64rem;text-shadow:0 25px 25px rgba(0,0,0,.15);">Africa without the filter.</h1>
+        <p style="font-family:Inter,system-ui,sans-serif;font-weight:300;font-size:clamp(1.125rem,2vw,1.5rem);line-height:1.6;max-width:42rem;color:rgba(255,255,255,.8);margin:0 auto 3rem;">A digital home for real, thoughtful stories about African lives, cities, and ideas — beyond charity ads and disaster headlines.</p>
+        <a href="https://ko-fi.com/maillescortes" style="display:inline-block;font-family:Inter,system-ui,sans-serif;font-weight:600;font-size:1.125rem;color:#0F1F3D;background:#FFFFFF;padding:1rem 2rem;border-radius:9999px;text-decoration:none;box-shadow:0 0 40px rgba(15,31,61,.4);">Become a Founding Member</a>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      if(location.pathname!=='/'){var _h=document.getElementById('boa-hero');if(_h)_h.remove();return;}
+      // Pick the hero variant by settled viewport width (CSS px, DPR-independent)
+      // — must match the <picture> media breakpoints in BetaLanding (≤768/≤1280)
+      // so the React swap is a cache hit. The fetchpriority=high img is the
+      // request itself; no separate preload needed.
+      var _w=window.innerWidth||document.documentElement.clientWidth||1440;
+      var _i=document.getElementById('boa-hero-img');
+      if(_i)_i.src=_w<=768?'/images/v2_hero_kigali_768.webp':_w<=1280?'/images/v2_hero_kigali_1280.webp':'/images/v2_hero_kigali.webp';
+    })();
+  </script>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered: ', reg))
+          .catch(err => console.log('SW registration failed: ', err));
+      });
+    }
+  </script>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

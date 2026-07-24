@@ -1,0 +1,12 @@
+{
+  "countryCode": "GQ",
+  "boaApiBaseUrl": "http://localhost:8000",
+  "walletDataDir": "./data/wallets/equatorial_guinea",
+  "budgetCapUsdc": 50,
+  "auditFrequencyHours": 24,
+  "metricThresholds": {
+    "pageViews": 500,
+    "bounceRate": 70,
+    "timeOnPage": 60
+  }
+}

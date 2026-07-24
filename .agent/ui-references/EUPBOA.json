@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "emotional_ui_system",
+    "source": "OkayAfrica_inspired",
+    "roleInSystem": "reference_and_patterns",
+    "lastUpdated": "2026-03-17"
+  },
+  "emotional_states": [
+    {
+      "id": "celebration",
+      "name": "Celebration",
+      "description": "Moments of achievement, launch, or support; joyful and affirming.",
+      "useCases": [
+        "Funding success screens",
+        "Account creation success",
+        "Milestone achievements for creators"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "high",
+        "animationLevel": "medium",
+        "colorTokens": ["accent", "success"]
+      }
+    },
+    {
+      "id": "encouragement",
+      "name": "Encouragement",
+      "description": "Gentle nudge to keep going or to support creators.",
+      "useCases": [
+        "Light funding prompts",
+        "Empty states encouraging exploration"
+      ],
+      "style": {
+        "toneId": "funding_appeal",
+        "intensity": "medium",
+        "animationLevel": "low",
+        "colorTokens": ["accent"]
+      }
+    },
+    {
+      "id": "care",
+      "name": "Care",
+      "description": "Acknowledges friction, errors, or boundaries with empathy.",
+      "useCases": [
+        "Error states",
+        "Payment issues",
+        "Account recovery flows"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "none",
+        "colorTokens": ["warning", "neutral"]
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "funding_success_celebration",
+      "name": "FundingSuccessCelebration",
+      "emotionalStateId": "celebration",
+      "components": [
+        {
+          "componentId": "FundingSuccessScreen",
+          "props": {
+            "headline": "string",
+            "subcopy": "string",
+            "ctaText": "string | null",
+            "showConfetti": "boolean"
+          },
+          "copyPatterns": {
+            "headline": [
+              "Asante! Your support powers African stories.",
+              "You just backed African creativity."
+            ],
+            "subcopy": [
+              "Creators across the continent feel this support.",
+              "This helps bring more African stories to the world."
+            ]
+          },
+          "visualPatterns": {
+            "useEmoji": true,
+            "emojiExamples": ["✨", "🎉"],
+            "animationType": "confetti"
+          }
+        }
+      ]
+    },
+    {
+      "id": "light_funding_prompt_encouragement",
+      "name": "LightFundingPromptEncouragement",
+      "emotionalStateId": "encouragement",
+      "components": [
+        {
+          "componentId": "FundingEntryBanner",
+          "props": {
+            "headline": "string",
+            "subcopy": "string",
+            "primaryCtaText": "string",
+            "secondaryCtaText": "string | null"
+          },
+          "copyPatterns": {
+            "headline": [
+              "If this story moved you, support the work behind it.",
+              "Love African storytelling? Help keep it going."
+            ],
+            "subcopy": [
+              "Even small contributions help sustain creators.",
+              "Your support keeps this platform independent."
+            ]
+          },
+          "visualPatterns": {
+            "backgroundTone": "subtle",
+            "icon": "heart_outline"
+          }
+        }
+      ]
+    },
+    {
+      "id": "error_state_care",
+      "name": "ErrorStateCare",
+      "emotionalStateId": "care",
+      "components": [
+        {
+          "componentId": "ErrorState",
+          "props": {
+            "title": "string",
+            "message": "string",
+            "primaryCtaText": "string | null",
+            "secondaryCtaText": "string | null"
+          },
+          "copyPatterns": {
+            "title": [
+              "Something went wrong.",
+              "We hit a bump."
+            ],
+            "message": [
+              "Let’s try that again in a moment.",
+              "Your work is safe. Refresh and we’ll pick up where you left off."
+            ]
+          },
+          "visualPatterns": {
+            "illustrationStyle": "soft",
+            "showRetry": true
+          }
+        }
+      ]
+    }
+  ],
+  "mapping_to_components": [
+    {
+      "componentId": "FundingSuccessScreen",
+      "defaultEmotionalStateId": "celebration"
+    },
+    {
+      "componentId": "FundingEntryBanner",
+      "defaultEmotionalStateId": "encouragement"
+    },
+    {
+      "componentId": "ErrorState",
+      "defaultEmotionalStateId": "care"
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "helper": "getEmotionalPattern(componentId, context)",
+        "logic": "Map component + context (e.g. severity, firstTime) to an emotionalStateId and pattern.id, then choose copy/visualVariants."
+      }
+    ],
+    "stateModel": {
+      "context": {
+        "eventType": "success | error | prompt",
+        "importance": "low | medium | high",
+        "isFirstTime": "boolean"
+      }
+    }
+  }
+}

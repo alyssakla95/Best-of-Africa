@@ -1,0 +1,30 @@
+src/lib/optimizer/analytics.ts(7,47): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/lib/optimizer/analytics.ts(8,60): error TS2307: Cannot find module '../lib/ai' or its corresponding type declarations.
+src/lib/optimizer/analytics.ts(9,49): error TS2307: Cannot find module '../lib/vectorize' or its corresponding type declarations.
+src/lib/optimizer/analytics.ts(10,41): error TS2307: Cannot find module '../lib/analytics' or its corresponding type declarations.
+src/lib/optimizer/content-gaps.ts(7,47): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/lib/optimizer/content-gaps.ts(8,60): error TS2307: Cannot find module '../lib/ai' or its corresponding type declarations.
+src/lib/optimizer/content-gaps.ts(9,49): error TS2307: Cannot find module '../lib/vectorize' or its corresponding type declarations.
+src/lib/optimizer/content-gaps.ts(10,41): error TS2307: Cannot find module '../lib/analytics' or its corresponding type declarations.
+src/lib/optimizer/content-gaps.ts(13,10): error TS2459: Module '"./analytics"' declares 'logRefinement' locally, but it is not exported.
+src/lib/optimizer/content-gaps.ts(14,10): error TS2459: Module '"./helpers"' declares 'generateSlug' locally, but it is not exported.
+src/lib/optimizer/headlines.ts(7,47): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/lib/optimizer/headlines.ts(8,60): error TS2307: Cannot find module '../lib/ai' or its corresponding type declarations.
+src/lib/optimizer/headlines.ts(9,49): error TS2307: Cannot find module '../lib/vectorize' or its corresponding type declarations.
+src/lib/optimizer/headlines.ts(10,41): error TS2307: Cannot find module '../lib/analytics' or its corresponding type declarations.
+src/lib/optimizer/headlines.ts(13,10): error TS2459: Module '"./analytics"' declares 'logRefinement' locally, but it is not exported.
+src/lib/optimizer/helpers.ts(7,47): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/lib/optimizer/helpers.ts(8,60): error TS2307: Cannot find module '../lib/ai' or its corresponding type declarations.
+src/lib/optimizer/helpers.ts(9,49): error TS2307: Cannot find module '../lib/vectorize' or its corresponding type declarations.
+src/lib/optimizer/helpers.ts(10,41): error TS2307: Cannot find module '../lib/analytics' or its corresponding type declarations.
+src/lib/optimizer/market-data.ts(7,47): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/lib/optimizer/market-data.ts(8,60): error TS2307: Cannot find module '../lib/ai' or its corresponding type declarations.
+src/lib/optimizer/market-data.ts(9,49): error TS2307: Cannot find module '../lib/vectorize' or its corresponding type declarations.
+src/lib/optimizer/market-data.ts(10,41): error TS2307: Cannot find module '../lib/analytics' or its corresponding type declarations.
+src/lib/optimizer/market-data.ts(51,50): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/workers/optimizer.ts(13,10): error TS2459: Module '"../lib/optimizer/analytics"' declares 'updateEngagementScores' locally, but it is not exported.
+src/workers/optimizer.ts(13,34): error TS2459: Module '"../lib/optimizer/analytics"' declares 'refreshDashboards' locally, but it is not exported.
+src/workers/optimizer.ts(13,53): error TS2459: Module '"../lib/optimizer/analytics"' declares 'updateCountryScores' locally, but it is not exported.
+src/workers/optimizer.ts(13,74): error TS2459: Module '"../lib/optimizer/analytics"' declares 'logRefinement' locally, but it is not exported.
+src/workers/optimizer.ts(14,10): error TS2459: Module '"../lib/optimizer/headlines"' declares 'createHeadlineTests' locally, but it is not exported.
+src/workers/optimizer.ts(14,31): error TS2459: Module '"../lib/optimizer/headlines"' declares 'evaluateHeadlineTests' locally, but it is not exported.

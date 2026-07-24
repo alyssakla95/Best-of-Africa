@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "source": "Ko-fi_inspired_funding_UI",
+    "lastUpdated": "2026-03-17"
+  },
+  "design_principles": [
+    "Make one-time giving feel quick and low-friction",
+    "Use friendly, informal language around small contributions",
+    "Show concrete impact of even small amounts for African creators"
+  ],
+  "tokens": {
+    "colors": {
+      "primary": "#...",
+      "accent": "#...",
+      "tipHighlight": "#...",
+      "background": "#...",
+      "danger": "#..."
+    },
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32
+    },
+    "borderRadius": {
+      "sm": 4,
+      "md": 8,
+      "lg": 16
+    }
+  },
+  "components": [
+    {
+      "id": "tip-widget-inline",
+      "name": "TipWidgetInline",
+      "category": "funding_one_time",
+      "platformAreas": ["article_footer", "creator_bio", "project_page"],
+      "props": {
+        "defaultAmount": "number",
+        "currency": "string",
+        "amountOptions": "number[]",
+        "ctaText": "string",
+        "thankYouText": "string",
+        "showCustomAmount": "boolean",
+        "creatorAvatarUrl": "string | null",
+        "creatorName": "string"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["avatar", "copy", "amount_selector", "cta"],
+        "maxWidth": 480
+      },
+      "states": ["default", "hover", "loading", "success", "error"],
+      "variants": [
+        {
+          "id": "compact",
+          "description": "Used in tight spaces like article footers",
+          "layoutOverrides": {
+            "orientation": "horizontal",
+            "maxWidth": 360
+          }
+        },
+        {
+          "id": "stacked",
+          "description": "Mobile-first stacked layout",
+          "layoutOverrides": {
+            "orientation": "vertical",
+            "maxWidth": 320
+          }
+        }
+      ],
+      "copy_guidelines": {
+        "ctaText": "Friendly and informal; e.g. 'Buy me a chai', 'Leave a small tip'",
+        "thankYouText": "Short, personal; e.g. 'Asante! Your support keeps these stories going.'"
+      }
+    },
+    {
+      "id": "tip-modal",
+      "name": "TipModal",
+      "category": "funding_one_time",
+      "platformAreas": ["global"],
+      "props": {
+        "headline": "string",
+        "subcopy": "string",
+        "amountOptions": "number[]",
+        "presetAmountsLabel": "string",
+        "customAmountLabel": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null",
+        "allowMessages": "boolean"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "amounts", "message_input", "actions"],
+        "maxWidth": 480
+      },
+      "states": ["default", "validating", "processing", "success", "error"],
+      "visibility_rules": [
+        "Open when user clicks inline tip widget",
+        "Close on success or explicit dismiss"
+      ]
+    },
+    {
+      "id": "supporter-wall",
+      "name": "SupporterWall",
+      "category": "social_proof",
+      "platformAreas": ["creator_page", "project_page"],
+      "props": {
+        "supporters": "Array<{ name: string; amount: number; message?: string }>",
+        "showAmounts": "boolean",
+        "maxVisible": "number",
+        "emptyStateText": "string"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "supporter_list", "cta"],
+        "maxWidth": 640
+      },
+      "states": ["empty", "populated"],
+      "copy_guidelines": {
+        "emptyStateText": "Invite first supporter; e.g. 'Be the first to support this project.'"
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "quick_tip_flow",
+      "name": "QuickTipFlow",
+      "trigger": "User clicks inline tip widget",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "tip-modal",
+          "goal": "User selects amount and optionally writes a message",
+          "successEvent": "tip_details_confirmed"
+        },
+        {
+          "step": 2,
+          "componentId": "checkout_form",
+          "goal": "Collect payment details",
+          "successEvent": "payment_submitted"
+        },
+        {
+          "step": 3,
+          "componentId": "funding_success_screen",
+          "goal": "Confirm tip and show appreciation",
+          "successEvent": "success_displayed"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "tip_amount_presets_v1",
+      "componentId": "tip-widget-inline",
+      "hypothesis": "Localized, culturally relevant presets increase completion rate",
+      "variants": [
+        {
+          "key": "default",
+          "amountOptions": [3, 5, 10]
+        },
+        {
+          "key": "impact",
+          "amountOptions": [2, 7, 15]
+        }
+      ],
+      "metrics": ["click_through_rate", "conversion_rate", "avg_tip_amount"]
+    }
+  ]
+}

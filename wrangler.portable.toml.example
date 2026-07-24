@@ -1,0 +1,64 @@
+# Account-neutral BOA-Story Worker template.
+# scripts/cloudflare-portable.mjs copies this to the ignored
+# .cloudflare/wrangler.generated.toml and asks Wrangler to add account-specific
+# resource IDs. Do not put account IDs, API tokens or secrets in this file.
+
+name = "__WORKER_NAME__"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[queues.producers]]
+binding = "CONTENT_QUEUE"
+queue = "__CONTENT_QUEUE__"
+
+[[queues.producers]]
+binding = "TRANSLATION_QUEUE"
+queue = "__TRANSLATION_QUEUE__"
+
+[[queues.producers]]
+binding = "OPTIMIZATION_QUEUE"
+queue = "__OPTIMIZATION_QUEUE__"
+
+[[queues.consumers]]
+queue = "__CONTENT_QUEUE__"
+max_batch_size = 1
+max_batch_timeout = 60
+max_retries = 5
+
+[[queues.consumers]]
+queue = "__TRANSLATION_QUEUE__"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 5
+
+[[queues.consumers]]
+queue = "__OPTIMIZATION_QUEUE__"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+
+[ai]
+binding = "AI"
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "__ANALYTICS_DATASET__"
+
+[[durable_objects.bindings]]
+name = "LIVE_COUNTER"
+class_name = "LiveCounter"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["LiveCounter"]
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+PUBLIC_API_URL = "__PUBLIC_API_URL__"
+PUBLIC_SITE_URL = "__PUBLIC_SITE_URL__"
+ADDITIONAL_ORIGINS = "__PUBLIC_SITE_URL__"

@@ -1,0 +1,12 @@
+{
+  "countryCode": "CV",
+  "boaApiBaseUrl": "http://localhost:8000",
+  "walletDataDir": "./data/wallets/cabo_verde",
+  "budgetCapUsdc": 50,
+  "auditFrequencyHours": 24,
+  "metricThresholds": {
+    "pageViews": 500,
+    "bounceRate": 70,
+    "timeOnPage": 60
+  }
+}

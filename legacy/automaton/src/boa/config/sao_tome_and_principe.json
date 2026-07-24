@@ -1,0 +1,12 @@
+{
+  "countryCode": "ST",
+  "boaApiBaseUrl": "http://localhost:8000",
+  "walletDataDir": "./data/wallets/sao_tome_and_principe",
+  "budgetCapUsdc": 50,
+  "auditFrequencyHours": 24,
+  "metricThresholds": {
+    "pageViews": 500,
+    "bounceRate": 70,
+    "timeOnPage": 60
+  }
+}

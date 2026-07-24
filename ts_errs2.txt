@@ -1,0 +1,2 @@
+src/lib/social.ts(172,36): error TS2345: Argument of type 'Record<string, any>' is not assignable to parameter of type '{ id: string; title: string; summary: string | null; country_code: string | null; sector_name: string | null; slug: string; ai_social_post?: string | undefined; }'.
+  Type 'Record<string, any>' is missing the following properties from type '{ id: string; title: string; summary: string | null; country_code: string | null; sector_name: string | null; slug: string; ai_social_post?: string | undefined; }': id, title, summary, country_code, and 2 more.

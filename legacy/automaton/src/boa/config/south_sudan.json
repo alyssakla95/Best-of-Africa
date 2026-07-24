@@ -1,0 +1,12 @@
+{
+  "countryCode": "SS",
+  "boaApiBaseUrl": "http://localhost:8000",
+  "walletDataDir": "./data/wallets/south_sudan",
+  "budgetCapUsdc": 50,
+  "auditFrequencyHours": 24,
+  "metricThresholds": {
+    "pageViews": 500,
+    "bounceRate": 70,
+    "timeOnPage": 60
+  }
+}

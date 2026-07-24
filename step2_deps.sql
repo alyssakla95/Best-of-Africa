@@ -1,0 +1,13 @@
+DELETE FROM ingested_items;
+DELETE FROM headline_tests;
+DELETE FROM content_refinements;
+DELETE FROM bookmarks;
+DELETE FROM narrative_articles;
+DELETE FROM article_translations;
+DELETE FROM user_notifications;
+DELETE FROM social_posts;
+DELETE FROM alert_notifications;
+DELETE FROM search_notifications;
+DELETE FROM moderation_results;
+DELETE FROM article_feedback;
+DELETE FROM article_audits;

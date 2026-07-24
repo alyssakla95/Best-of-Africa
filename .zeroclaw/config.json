@@ -1,0 +1,80 @@
+{
+  "providers": {
+    "workers_ai": {
+      "type": "workers_ai",
+      "note": "Always available — Cloudflare Workers AI (GPT-OSS 120B production reasoning model)"
+    },
+    "openai": {
+      "env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1",
+      "note": "Set via wrangler secret put OPENAI_API_KEY, or POST /api/v1/agent/providers"
+    },
+    "anthropic": {
+      "env": "ANTHROPIC_API_KEY",
+      "base_url": "https://api.anthropic.com",
+      "note": "Set via wrangler secret put ANTHROPIC_API_KEY, or POST /api/v1/agent/providers"
+    },
+    "gemini": {
+      "env": "GOOGLE_AI_API_KEY",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "note": "Set via wrangler secret put GOOGLE_AI_API_KEY, or POST /api/v1/agent/providers"
+    },
+    "openrouter": {
+      "env": "OPENROUTER_API_KEY",
+      "base_url": "https://openrouter.ai/api/v1",
+      "note": "OpenRouter routes to any model (Anthropic, OpenAI, Gemini, Mistral, etc.)"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "provider": "workers_ai",
+      "model": "@cf/openai/gpt-oss-120b"
+    },
+    "dynamic_config_endpoint": "/api/v1/agent/providers/config",
+    "note": "ZeroClaw fetches dynamic provider config from the BoA backend on each cron run. Informational generation is pinned to Workers AI GPT-OSS 120B; provider records remain available only for explicit specialist integrations."
+  },
+  "skills": {
+    "dir": ".zeroclaw/skills"
+  },
+  "api": {
+    "base_url": "https://best-of-africa-backend.cortesmailles01.workers.dev/api/v1",
+    "auth_header": "Authorization",
+    "auth_scheme": "Bearer",
+    "auth_env": "ADMIN_API_KEY",
+    "note": "ZeroClaw authenticates to the BoA backend using the ADMIN_API_KEY environment variable"
+  },
+  "cron": {
+    "jobs": [
+      {
+        "name": "article-generator",
+        "skill": "article-generator",
+        "every": 60,
+        "message": "Poll the BoA backend for agent_tasks with type='generate_article' and status='pending'. For each pending task, generate a Guardian-style article using the article-generator skill, then POST the result back to the BoA API to publish it.",
+        "api_endpoints": {
+          "poll": "GET /api/v1/agent/tasks/pending",
+          "complete": "POST /api/v1/agent/tasks/complete"
+        }
+      },
+      {
+        "name": "proactive-editorial",
+        "skill": "proactive-editorial",
+        "every": 300,
+        "message": "Scan the BoA content database for articles with status='pending_audit' or articles that have not been audited in more than 7 days. Audit each one and submit results.",
+        "api_endpoints": {
+          "fetch": "GET /api/v1/admin/articles/needs-audit?limit=10",
+          "submit": "POST /api/v1/admin/articles/:id/audit"
+        }
+      },
+      {
+        "name": "self-improving-editorial",
+        "skill": "self-improving-editorial",
+        "cron": "0 3 * * *",
+        "message": "Run the nightly instruction evolution cycle: reflect on recent audits and human feedback, synthesize new editorial rules, and append them to the learned.md knowledge base.",
+        "api_endpoints": {
+          "fetch_recent": "GET /api/v1/admin/editorial/recent?hours=24",
+          "submit_update": "POST /api/v1/admin/editorial/instruction-update"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "brand_filter_system",
+    "lastUpdated": "2026-03-17"
+  },
+  "dimensions": [
+    {
+      "id": "country",
+      "label": "Country",
+      "type": "single_or_multi_select",
+      "optionsSource": "brand_countries", 
+      "optionShape": {
+        "value": "string", 
+        "label": "string",
+        "countryCode": "string",
+        "brandTokenKey": "string" 
+      },
+      "ui": {
+        "component": "CountryFilterPills",
+        "layout": "horizontal_scroll",
+        "showSearch": true
+      }
+    },
+    {
+      "id": "discipline",
+      "label": "Discipline",
+      "type": "multi_select",
+      "options": [
+        { "value": "film", "label": "Film" },
+        { "value": "music", "label": "Music" },
+        { "value": "literature", "label": "Literature" },
+        { "value": "visual_art", "label": "Visual art" },
+        { "value": "tech", "label": "Tech" }
+      ],
+      "ui": {
+        "component": "TagFilterGroup",
+        "layout": "wrap"
+      }
+    },
+    {
+      "id": "format",
+      "label": "Format",
+      "type": "single_select",
+      "options": [
+        { "value": "story", "label": "Stories" },
+        { "value": "video", "label": "Video" },
+        { "value": "podcast", "label": "Podcasts" },
+        { "value": "collection", "label": "Collections" }
+      ],
+      "ui": {
+        "component": "SegmentedControl",
+        "layout": "horizontal"
+      }
+    }
+  ],
+  "brand_integration": {
+    "countryFilter": {
+      "componentId": "CountryFilterPills",
+      "styleFromBrandFile": "AFRICA_BRAND_UI_PATTERNS_BOA_{countryCode}",
+      "styleTokensMap": {
+        "pillBackground": "tokens.colors.accent.value",
+        "pillText": "tokens.colors.onAccent",
+        "pillRadius": "tokens.shapes.chipRadius"
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "FilterBar",
+      "name": "FilterBar",
+      "props": {
+        "activeFilters": "Record<string, string | string[]>",
+        "onChange": "(nextFilters) => void",
+        "dimensions": "DimensionConfig[]"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["primary_filters", "secondary_filters", "clear_button"],
+        "mobileBehavior": "collapsible"
+      }
+    },
+    {
+      "id": "FilterPill",
+      "name": "FilterPill",
+      "props": {
+        "label": "string",
+        "value": "string",
+        "selected": "boolean",
+        "onToggle": "() => void",
+        "brandContext": "{ countryCode?: string }"
+      }
+    },
+    {
+      "id": "FilterSummaryBar",
+      "name": "FilterSummaryBar",
+      "props": {
+        "activeFilters": "Record<string, string | string[]>",
+        "onClearAll": "() => void"
+      },
+      "copy_guidelines": {
+        "summaryPattern": "{count} filters applied",
+        "emptyState": "All African stories"
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "country_first_browse",
+      "name": "CountryFirstBrowse",
+      "description": "Default browse mode: country-highlighted filter row with other facets secondary.",
+      "layout": [
+        "FilterBar(country as first dimension)",
+        "ResultsGrid",
+        "FilterSummaryBar"
+      ],
+      "rules": [
+        "Always show country filter row even if no filters selected.",
+        "Pre-select user's last-viewed country when available."
+      ]
+    },
+    {
+      "id": "discipline_deep_dive",
+      "name": "DisciplineDeepDive",
+      "description": "Browse mode focused on discipline, with country as a secondary facet.",
+      "layout": [
+        "PageHeader",
+        "FilterBar(discipline first, then country)",
+        "ResultsGrid"
+      ]
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "component": "BrowsePage",
+        "patternId": "country_first_browse",
+        "filtersConfigFile": "AFRICA_BRAND_UI_PATTERNS_BOA_filter",
+        "brandFilesGlob": "AFRICA_BRAND_UI_PATTERNS_BOA_*.json"
+      }
+    ],
+    "urlState": {
+      "queryParamPrefix": "f_",
+      "examples": [
+        "?f_country=RW&f_discipline=film,music",
+        "?f_country=NG&f_format=story"
+      ]
+    }
+  }
+}

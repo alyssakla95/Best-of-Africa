@@ -1,0 +1,1582 @@
+﻿{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "source": "Patreon_inspired_funding_UI",
+    "lastUpdated": "2026-03-17"
+  },
+  "design_principles": [
+    "Make funding entry points highly visible but non-intrusive",
+    "Prioritize transparency about how funds are used",
+    "Highlight African creators and stories in funding context"
+  ],
+  "tokens": {
+    "colors": {
+      "primary": "#...",
+      "accent": "#...",
+      "background": "#...",
+      "danger": "#..."
+    },
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32
+    },
+    "borderRadius": {
+      "sm": 4,
+      "md": 8,
+      "lg": 16
+    }
+  },
+  "components": [
+    {
+      "id": "funding-tier-card",
+      "name": "FundingTierCard",
+      "category": "funding",
+      "platformAreas": ["creator_page", "campaign_page"],
+      "props": {
+        "title": "string",
+        "price": "number",
+        "currency": "string",
+        "frequency": "enum:monthly,one_time,annual",
+        "description": "string",
+        "perks": "string[]",
+        "ctaText": "string",
+        "isRecommended": "boolean",
+        "badgeText": "string | null"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "price", "perks", "cta"],
+        "maxWidth": 360
+      },
+      "states": ["default", "hover", "selected", "disabled"],
+      "variants": [
+        {
+          "id": "highlighted-tier",
+          "description": "Used for the most popular or recommended tier",
+          "propsOverrides": {
+            "isRecommended": true,
+            "badgeText": "Most popular"
+          }
+        }
+      ],
+      "copy_guidelines": {
+        "title": "Short, specific; e.g. 'Community Supporter'",
+        "description": "Max 120 chars, focus on impact not features",
+        "ctaText": "Action-first; e.g. 'Join as supporter'"
+      }
+    },
+    {
+      "id": "funding-entry-banner",
+      "name": "FundingEntryBanner",
+      "category": "funding",
+      "platformAreas": ["home", "article_page"],
+      "props": {
+        "headline": "string",
+        "subcopy": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null",
+        "imageUrl": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["image", "copy", "actions"]
+      },
+      "states": ["default", "dismissed"],
+      "visibility_rules": [
+        "Show to non-funders after 2+ sessions",
+        "Hide after user dismisses 3 times"
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "creator_funding_signup",
+      "name": "CreatorFundingSignup",
+      "trigger": "User clicks 'Support this creator'",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "funding-tier-card",
+          "goal": "User selects tier",
+          "successEvent": "tier_selected"
+        },
+        {
+          "step": 2,
+          "componentId": "checkout_form",
+          "goal": "Collect payment details",
+          "successEvent": "payment_submitted"
+        },
+        {
+          "step": 3,
+          "componentId": "funding_success_screen",
+          "goal": "Confirm and invite sharing",
+          "successEvent": "share_prompt_shown"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "tier_card_copy_test_v1",
+      "componentId": "funding-tier-card",
+      "hypothesis": "Impact-focused copy increases conversion",
+      "variants": [
+        {
+          "key": "control",
+          "titlePattern": "Supporter",
+          "descriptionPattern": "Access perks and updates."
+        },
+        {
+          "key": "impact",
+          "titlePattern": "Empower African storytellers",
+          "descriptionPattern": "Help bring more African stories to the world."
+        }
+      ],
+      "metrics": ["click_through_rate", "conversion_rate"]
+    }
+  ]
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "source": "Ko-fi_inspired_funding_UI",
+    "lastUpdated": "2026-03-17"
+  },
+  "design_principles": [
+    "Make one-time giving feel quick and low-friction",
+    "Use friendly, informal language around small contributions",
+    "Show concrete impact of even small amounts for African creators"
+  ],
+  "tokens": {
+    "colors": {
+      "primary": "#...",
+      "accent": "#...",
+      "tipHighlight": "#...",
+      "background": "#...",
+      "danger": "#..."
+    },
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32
+    },
+    "borderRadius": {
+      "sm": 4,
+      "md": 8,
+      "lg": 16
+    }
+  },
+  "components": [
+    {
+      "id": "tip-widget-inline",
+      "name": "TipWidgetInline",
+      "category": "funding_one_time",
+      "platformAreas": ["article_footer", "creator_bio", "project_page"],
+      "props": {
+        "defaultAmount": "number",
+        "currency": "string",
+        "amountOptions": "number[]",
+        "ctaText": "string",
+        "thankYouText": "string",
+        "showCustomAmount": "boolean",
+        "creatorAvatarUrl": "string | null",
+        "creatorName": "string"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["avatar", "copy", "amount_selector", "cta"],
+        "maxWidth": 480
+      },
+      "states": ["default", "hover", "loading", "success", "error"],
+      "variants": [
+        {
+          "id": "compact",
+          "description": "Used in tight spaces like article footers",
+          "layoutOverrides": {
+            "orientation": "horizontal",
+            "maxWidth": 360
+          }
+        },
+        {
+          "id": "stacked",
+          "description": "Mobile-first stacked layout",
+          "layoutOverrides": {
+            "orientation": "vertical",
+            "maxWidth": 320
+          }
+        }
+      ],
+      "copy_guidelines": {
+        "ctaText": "Friendly and informal; e.g. 'Buy me a chai', 'Leave a small tip'",
+        "thankYouText": "Short, personal; e.g. 'Asante! Your support keeps these stories going.'"
+      }
+    },
+    {
+      "id": "tip-modal",
+      "name": "TipModal",
+      "category": "funding_one_time",
+      "platformAreas": ["global"],
+      "props": {
+        "headline": "string",
+        "subcopy": "string",
+        "amountOptions": "number[]",
+        "presetAmountsLabel": "string",
+        "customAmountLabel": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null",
+        "allowMessages": "boolean"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "amounts", "message_input", "actions"],
+        "maxWidth": 480
+      },
+      "states": ["default", "validating", "processing", "success", "error"],
+      "visibility_rules": [
+        "Open when user clicks inline tip widget",
+        "Close on success or explicit dismiss"
+      ]
+    },
+    {
+      "id": "supporter-wall",
+      "name": "SupporterWall",
+      "category": "social_proof",
+      "platformAreas": ["creator_page", "project_page"],
+      "props": {
+        "supporters": "Array<{ name: string; amount: number; message?: string }>",
+        "showAmounts": "boolean",
+        "maxVisible": "number",
+        "emptyStateText": "string"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "supporter_list", "cta"],
+        "maxWidth": 640
+      },
+      "states": ["empty", "populated"],
+      "copy_guidelines": {
+        "emptyStateText": "Invite first supporter; e.g. 'Be the first to support this project.'"
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "quick_tip_flow",
+      "name": "QuickTipFlow",
+      "trigger": "User clicks inline tip widget",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "tip-modal",
+          "goal": "User selects amount and optionally writes a message",
+          "successEvent": "tip_details_confirmed"
+        },
+        {
+          "step": 2,
+          "componentId": "checkout_form",
+          "goal": "Collect payment details",
+          "successEvent": "payment_submitted"
+        },
+        {
+          "step": 3,
+          "componentId": "funding_success_screen",
+          "goal": "Confirm tip and show appreciation",
+          "successEvent": "success_displayed"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "tip_amount_presets_v1",
+      "componentId": "tip-widget-inline",
+      "hypothesis": "Localized, culturally relevant presets increase completion rate",
+      "variants": [
+        {
+          "key": "default",
+          "amountOptions": [3, 5, 10]
+        },
+        {
+          "key": "impact",
+          "amountOptions": [2, 7, 15]
+        }
+      ],
+      "metrics": ["click_through_rate", "conversion_rate", "avg_tip_amount"]
+    }
+  ]
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "editorial_voice_system",
+    "lastUpdated": "2026-03-17"
+  },
+  "global_principles": [
+    "Center African perspectives and lived experiences",
+    "Balance warmth and professionalism; avoid NGO pity language",
+    "Be specific about places, people, and impact, not vague generalities",
+    "Use clear, accessible English; avoid heavy jargon"
+  ],
+  "tones": [
+    {
+      "id": "editorial_feature",
+      "name": "EditorialFeature",
+      "description": "Narrative, reflective, rooted in reporting and lived experience.",
+      "useCases": [
+        "Longform stories",
+        "Creator feature pages",
+        "Landing sections highlighting creators or projects"
+      ],
+      "do": [
+        "Use vivid but grounded description of scenes and people",
+        "Highlight agency of African subjects, not just challenges"
+      ],
+      "dont": [
+        "Exoticize places or people",
+        "Use generic phrases like 'voiceless communities'"
+      ],
+      "style": {
+        "person": "third",
+        "tense": "present_or_past",
+        "sentenceLength": "mixed",
+        "formality": "medium",
+        "contractions": true
+      }
+    },
+    {
+      "id": "platform_voice",
+      "name": "PlatformVoice",
+      "description": "Clear, confident product voice used in UI copy and system messages.",
+      "useCases": [
+        "Buttons, tooltips, banners",
+        "Empty states and onboarding steps",
+        "Funding CTAs and confirmation screens"
+      ],
+      "do": [
+        "Be short and direct",
+        "Explain why something matters in one short phrase",
+        "Reflect pride in African creativity and innovation"
+      ],
+      "dont": [
+        "Over-apologize for normal system behavior",
+        "Use slang that might not travel across regions"
+      ],
+      "style": {
+        "person": "second",
+        "tense": "present",
+        "sentenceLength": "short",
+        "formality": "medium",
+        "contractions": true
+      }
+    },
+    {
+      "id": "funding_appeal",
+      "name": "FundingAppeal",
+      "description": "Impact-focused but respectful; connects support to concrete outcomes.",
+      "useCases": [
+        "Funding banners and modals",
+        "Tier descriptions",
+        "Thank-you and follow-up messages"
+      ],
+      "do": [
+        "Explain how support unlocks more African stories, projects, or tools",
+        "Acknowledge supporters directly: 'Your supportâ€¦'"
+      ],
+      "dont": [
+        "Use shame or guilt to drive action",
+        "Over-promise outcomes you cannot guarantee"
+      ],
+      "style": {
+        "person": "second",
+        "tense": "present_and_future",
+        "sentenceLength": "short_to_medium",
+        "formality": "medium",
+        "contractions": true
+      }
+    }
+  ],
+  "content_patterns": [
+    {
+      "id": "cta_button",
+      "componentTypes": ["Button", "LinkButton"],
+      "toneId": "platform_voice",
+      "rules": {
+        "maxChars": 28,
+        "mustStartWithVerb": true,
+        "allowedVerbs": [
+          "Support",
+          "Explore",
+          "Discover",
+          "Join",
+          "Read",
+          "Continue"
+        ]
+      },
+      "examples": {
+        "good": [
+          "Support this creator",
+          "Discover more African stories"
+        ],
+        "bad": [
+          "Click here",
+          "Submit form"
+        ]
+      }
+    },
+    {
+      "id": "funding_banner_copy",
+      "componentTypes": ["FundingEntryBanner", "TipWidgetInline"],
+      "toneId": "funding_appeal",
+      "structure": [
+        "One-line impact statement",
+        "Optional second line connecting support to outcomes"
+      ],
+      "rules": {
+        "headlineMaxChars": 80,
+        "subcopyMaxChars": 140
+      },
+      "examples": {
+        "good": [
+          "Help more African filmmakers share their work.",
+          "Your support keeps this reporting independent."
+        ],
+        "bad": [
+          "Donate or this work cannot continue.",
+          "We desperately need your money."
+        ]
+      }
+    },
+    {
+      "id": "empty_state",
+      "componentTypes": ["ListEmptyState", "SupporterWall"],
+      "toneId": "platform_voice",
+      "structure": [
+        "Friendly acknowledgement of the empty state",
+        "Clear next action"
+      ],
+      "examples": {
+        "good": [
+          "No supporters yet. Be the first to back this project.",
+          "No stories here yet. Explore other creators while we curate this space."
+        ]
+      }
+    }
+  ],
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": ["en", "fr"],
+    "localeNotes": {
+      "fr": [
+        "Prefer simple, clear phrasing over literal translation.",
+        "Maintain respectful but warm tone; avoid overly formal bureaucratic language."
+      ]
+    }
+  },
+  "integration_hints": {
+    "uiComponents": [
+      {
+        "componentId": "funding-tier-card",
+        "toneId": "funding_appeal",
+        "fields": ["title", "description", "ctaText"]
+      },
+      {
+        "componentId": "tip-widget-inline",
+        "toneId": "funding_appeal",
+        "fields": ["ctaText", "thankYouText"]
+      },
+      {
+        "componentId": "supporter-wall",
+        "toneId": "platform_voice",
+        "fields": ["emptyStateText"]
+      }
+    ],
+    "lintingRules": [
+      "Disallow phrases from tones[*].dont lists in UI copy",
+      "Enforce maxChars from content_patterns where applicable"
+    ]
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "editorial_voice_source",
+    "source": "The Guardian",
+    "roleInSystem": "reference_only",
+    "lastUpdated": "2026-03-17"
+  },
+  "mapping_to_boa_voice": {
+    "targetFile": "EDITORIAL_VOICE_PATTERNS_BOA_row.json",
+    "notes": [
+      "Use this file to inspire structure and rhythm, not to clone phrasing.",
+      "When generating BOA copy, always apply BOA tones and rules as the final filter."
+    ]
+  },
+  "headline_patterns": {
+    "characteristics": [
+      "Clear, information-rich",
+      "Often includes who + what + where",
+      "Avoids clickbait, focuses on substance"
+    ],
+    "templates": [
+      "{who} {does_what} in {where}",
+      "{issue}: {concise_angle}",
+      "{number} ways {group} is {doing_what}"
+    ],
+    "boa_adaptations": [
+      "Highlight African subjects and agency in {who}.",
+      "For BOA, bring African context (place, community, field) into the template."
+    ]
+  },
+  "intro_paragraph_patterns": {
+    "characteristics": [
+      "Start with a concrete scene or moment",
+      "Quickly zoom out to broader context",
+      "Often one or two fairly long sentences"
+    ],
+    "structure": [
+      "Sentence 1: vivid, specific scene or quote",
+      "Sentence 2: explain why this matters more broadly"
+    ],
+    "boa_adaptations": [
+      "Anchor the scene in African locations or experiences.",
+      "Connect individual stories to wider African cultural, social or tech context."
+    ]
+  },
+  "sectioning_patterns": {
+    "characteristics": [
+      "Subheadings break up long reads",
+      "Each section explores a single angle (policy, human impact, history)"
+    ],
+    "templates": [
+      "The bigger picture",
+      "On the ground",
+      "What happens next",
+      "Why it matters"
+    ],
+    "boa_adaptations": [
+      "Use subheads to foreground African expertise and solutions.",
+      "Prefer solution-oriented subheads, e.g. 'How {community} is responding'."
+    ]
+  },
+  "tone_characteristics": {
+    "overall": [
+      "Analytical but accessible",
+      "Values evidence, quotes and sources",
+      "Avoids sensationalism"
+    ],
+    "boa_target_tone_links": [
+      {
+        "guardianTrait": "Analytical, evidence-based",
+        "mapsToBoaToneId": "editorial_feature",
+        "notes": "Keep the analytical clarity while centering African voices and sources."
+      }
+    ]
+  },
+  "ui_usage_hints": {
+    "longformComponents": [
+      {
+        "componentType": "ArticlePage",
+        "useFromThisFile": ["headline_patterns", "intro_paragraph_patterns", "sectioning_patterns"],
+        "thenApplyBoaRulesFrom": "EDITORIAL_VOICE_PATTERNS_BOA_row.json"
+      }
+    ],
+    "shortformComponents": [
+      {
+        "componentType": "StoryCard",
+        "useFromThisFile": ["headline_patterns"],
+        "headlineMaxChars": 90
+      }
+    ],
+    "lintingNotes": [
+      "Guard against copying Guardian phrases verbatim.",
+      "Treat this as structural guidance, then regenerate actual text via BOA tone rules."
+    ]
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "country_brand_system",
+    "country": "Rwanda",
+    "countryCode": "RW",
+    "lastUpdated": "2026-03-17"
+  },
+  "brand_story": {
+    "keywords": [
+      "innovation",
+      "resilience",
+      "clean cities",
+      "tech-forward",
+      "community-driven"
+    ],
+    "oneLine": "Rwanda as a forward-looking, community-driven hub of African innovation.",
+    "toneLinks": [
+      {
+        "editorialToneId": "editorial_feature",
+        "usage": "Longform stories about Rwandan creators and cities."
+      },
+      {
+        "editorialToneId": "platform_voice",
+        "usage": "UI labels and navigation related to Rwandan collections."
+      }
+    ]
+  },
+  "tokens": {
+    "colors": {
+      "primary": {
+        "value": "#...",
+
+        "usage": "Primary CTAs and highlights for Rwanda-branded surfaces."
+      },
+      "secondary": {
+        "value": "#...",
+        "usage": "Secondary actions, borders, subtle accents."
+      },
+      "background": {
+        "value": "#...",
+        "usage": "Background for Rwanda-specific sections."
+      },
+      "accent": {
+        "value": "#...",
+        "usage": "Badges, pills, small emphasis elements."
+      }
+    },
+    "typography": {
+      "display": {
+        "fontFamily": "System or brand font name",
+        "weight": 700,
+        "letterSpacing": 0.2
+      },
+      "body": {
+        "fontFamily": "System or brand font name",
+        "weight": 400,
+        "letterSpacing": 0
+      }
+    },
+    "shapes": {
+      "cardRadius": 12,
+      "chipRadius": 999
+    },
+    "imagery": {
+      "preferredMotifs": [
+        "green landscapes",
+        "city skylines",
+        "people collaborating",
+        "technology and community spaces"
+      ],
+      "avoid": [
+        "generic safari imagery not specific to Rwanda",
+        "stereotypical poverty imagery"
+      ]
+    }
+  },
+  "components": [
+    {
+      "id": "country_pill_rwanda",
+      "name": "CountryPillRwanda",
+      "baseComponent": "CountryPill",
+      "countryCode": "RW",
+      "props": {
+        "label": "string",
+        "icon": "string | null",
+        "href": "string | null"
+      },
+      "styleOverrides": {
+        "backgroundColorToken": "colors.accent",
+        "textColorToken": "colors.onAccent"
+      },
+      "copy_guidelines": {
+        "label": "Use 'Rwanda' or context-specific label like 'Made in Rwanda'."
+      }
+    },
+    {
+      "id": "country_collection_header_rwanda",
+      "name": "CountryCollectionHeaderRwanda",
+      "baseComponent": "CountryCollectionHeader",
+      "countryCode": "RW",
+      "props": {
+        "title": "string",
+        "subtitle": "string",
+        "imageUrl": "string | null",
+        "ctaText": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["image", "copy", "cta"],
+        "maxWidth": 960
+      },
+      "styleOverrides": {
+        "titleFontToken": "typography.display",
+        "accentColorToken": "colors.primary"
+      },
+      "copy_guidelines": {
+        "title": "Highlight Rwandaâ€™s innovation, culture or creators in a short line.",
+        "subtitle": "One sentence connecting Rwanda to the broader African story."
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "rwanda_collection_page",
+      "name": "RwandaCollectionPage",
+      "description": "Themed page for all Rwanda-related stories, creators, and projects.",
+      "layoutSections": [
+        "country_collection_header_rwanda",
+        "featured_story_row",
+        "creator_grid",
+        "funding_banner"
+      ],
+      "toneUsage": {
+        "header": "editorial_feature",
+        "cards": "platform_voice"
+      }
+    }
+  ],
+  "integration_hints": {
+    "routing": {
+      "slug": "/country/rwanda",
+      "countryCodeParam": "RW"
+    },
+    "mappingToGenericTokens": {
+      "primary": "brand.country.RW.primary",
+      "secondary": "brand.country.RW.secondary"
+    },
+    "reactUsage": [
+      {
+        "component": "CountryCollectionHeader",
+        "brandFileKey": "AFRICA_BRAND_UI_PATTERNS_BOA_rwanda",
+        "propsFromBrand": ["title", "subtitle", "imageUrl"]
+      }
+    ]
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "brand_filter_system",
+    "lastUpdated": "2026-03-17"
+  },
+  "dimensions": [
+    {
+      "id": "country",
+      "label": "Country",
+      "type": "single_or_multi_select",
+      "optionsSource": "brand_countries", 
+      "optionShape": {
+        "value": "string", 
+        "label": "string",
+        "countryCode": "string",
+        "brandTokenKey": "string" 
+      },
+      "ui": {
+        "component": "CountryFilterPills",
+        "layout": "horizontal_scroll",
+        "showSearch": true
+      }
+    },
+    {
+      "id": "discipline",
+      "label": "Discipline",
+      "type": "multi_select",
+      "options": [
+        { "value": "film", "label": "Film" },
+        { "value": "music", "label": "Music" },
+        { "value": "literature", "label": "Literature" },
+        { "value": "visual_art", "label": "Visual art" },
+        { "value": "tech", "label": "Tech" }
+      ],
+      "ui": {
+        "component": "TagFilterGroup",
+        "layout": "wrap"
+      }
+    },
+    {
+      "id": "format",
+      "label": "Format",
+      "type": "single_select",
+      "options": [
+        { "value": "story", "label": "Stories" },
+        { "value": "video", "label": "Video" },
+        { "value": "podcast", "label": "Podcasts" },
+        { "value": "collection", "label": "Collections" }
+      ],
+      "ui": {
+        "component": "SegmentedControl",
+        "layout": "horizontal"
+      }
+    }
+  ],
+  "brand_integration": {
+    "countryFilter": {
+      "componentId": "CountryFilterPills",
+      "styleFromBrandFile": "AFRICA_BRAND_UI_PATTERNS_BOA_{countryCode}",
+      "styleTokensMap": {
+        "pillBackground": "tokens.colors.accent.value",
+        "pillText": "tokens.colors.onAccent",
+        "pillRadius": "tokens.shapes.chipRadius"
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "FilterBar",
+      "name": "FilterBar",
+      "props": {
+        "activeFilters": "Record<string, string | string[]>",
+        "onChange": "(nextFilters) => void",
+        "dimensions": "DimensionConfig[]"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["primary_filters", "secondary_filters", "clear_button"],
+        "mobileBehavior": "collapsible"
+      }
+    },
+    {
+      "id": "FilterPill",
+      "name": "FilterPill",
+      "props": {
+        "label": "string",
+        "value": "string",
+        "selected": "boolean",
+        "onToggle": "() => void",
+        "brandContext": "{ countryCode?: string }"
+      }
+    },
+    {
+      "id": "FilterSummaryBar",
+      "name": "FilterSummaryBar",
+      "props": {
+        "activeFilters": "Record<string, string | string[]>",
+        "onClearAll": "() => void"
+      },
+      "copy_guidelines": {
+        "summaryPattern": "{count} filters applied",
+        "emptyState": "All African stories"
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "country_first_browse",
+      "name": "CountryFirstBrowse",
+      "description": "Default browse mode: country-highlighted filter row with other facets secondary.",
+      "layout": [
+        "FilterBar(country as first dimension)",
+        "ResultsGrid",
+        "FilterSummaryBar"
+      ],
+      "rules": [
+        "Always show country filter row even if no filters selected.",
+        "Pre-select user's last-viewed country when available."
+      ]
+    },
+    {
+      "id": "discipline_deep_dive",
+      "name": "DisciplineDeepDive",
+      "description": "Browse mode focused on discipline, with country as a secondary facet.",
+      "layout": [
+        "PageHeader",
+        "FilterBar(discipline first, then country)",
+        "ResultsGrid"
+      ]
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "component": "BrowsePage",
+        "patternId": "country_first_browse",
+        "filtersConfigFile": "AFRICA_BRAND_UI_PATTERNS_BOA_filter",
+        "brandFilesGlob": "AFRICA_BRAND_UI_PATTERNS_BOA_*.json"
+      }
+    ],
+    "urlState": {
+      "queryParamPrefix": "f_",
+      "examples": [
+        "?f_country=RW&f_discipline=film,music",
+        "?f_country=NG&f_format=story"
+      ]
+    }
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "membership_monetization_system",
+    "source": "Atlantic_inspired",
+    "roleInSystem": "reference_and_patterns",
+    "lastUpdated": "2026-03-17"
+  },
+  "principles": [
+    "Use membership to deepen relationships with African audiences, not just lock content.",
+    "Explain clearly what membership enables for African storytellers and projects.",
+    "Balance reader generosity with accessibility; keep some content freely discoverable."
+  ],
+  "tiers": [
+    {
+      "id": "free",
+      "name": "Free",
+      "accessRules": {
+        "maxMeteredArticlesPerMonth": 3,
+        "showMeterBannerAfter": 2
+      },
+      "benefits": [
+        "Access to a limited number of stories per month",
+        "Basic newsletter access"
+      ]
+    },
+    {
+      "id": "member",
+      "name": "Member",
+      "accessRules": {
+        "unlimitedStories": true,
+        "exclusiveSections": ["members_stories", "deep_dives"]
+      },
+      "benefits": [
+        "Unlimited access to Best of Africa stories",
+        "Members-only deep dive reporting and features",
+        "Invites to virtual events and Q&As with African creators"
+      ],
+      "pricingModel": {
+        "currency": "USD",
+        "plans": [
+          { "interval": "monthly", "price": 7 },
+          { "interval": "annual", "price": 70 }
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "membership_meter_banner",
+      "name": "MembershipMeterBanner",
+      "category": "meter",
+      "props": {
+        "remainingArticles": "number",
+        "tierId": "string",
+        "ctaPrimaryText": "string",
+        "ctaSecondaryText": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["copy", "cta"],
+        "maxWidth": 960
+      },
+      "states": ["warning", "final_free_article"],
+      "copy_guidelines": {
+        "toneId": "funding_appeal",
+        "patterns": [
+          "You have {remainingArticles} free stories left this month.",
+          "Become a member to keep exploring African stories."
+        ]
+      }
+    },
+    {
+      "id": "membership_paywall_inline",
+      "name": "MembershipPaywallInline",
+      "category": "paywall",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "bullets": "string[]",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["headline", "bullets", "cta"],
+        "maxWidth": 640
+      },
+      "states": ["default", "loading", "error"],
+      "examples": {
+        "headline": [
+          "This story is for members who power African journalism.",
+          "Members sustain in-depth reporting across the continent."
+        ]
+      }
+    },
+    {
+      "id": "membership_offer_modal",
+      "name": "MembershipOfferModal",
+      "category": "offer",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "subcopy": "string",
+        "planOptions": "Array<{ interval: string; price: number }>",
+        "primaryCtaText": "string",
+        "dismissText": "string"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "benefits", "plans", "actions"],
+        "maxWidth": 520
+      },
+      "states": ["default", "processing", "success", "error"]
+    },
+    {
+      "id": "member_badge",
+      "name": "MemberBadge",
+      "category": "status",
+      "props": {
+        "label": "string",
+        "variant": "enum:subtle,highlighted"
+      },
+      "styleDefaults": {
+        "subtle": {
+          "backgroundToken": "tokens.colors.badgeSubtle",
+          "textToken": "tokens.colors.badgeSubtleText"
+        },
+        "highlighted": {
+          "backgroundToken": "tokens.colors.badgeHighlight",
+          "textToken": "tokens.colors.badgeHighlightText"
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "meter_to_membership_flow",
+      "name": "MeterToMembershipFlow",
+      "description": "User hits meter limit and is guided into membership.",
+      "trigger": "User views article with remainingArticles === 0 and tier === 'free'",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "membership_paywall_inline",
+          "goal": "Explain membership and invite user to join",
+          "successEvent": "membership_cta_clicked"
+        },
+        {
+          "step": 2,
+          "componentId": "membership_offer_modal",
+          "goal": "Select plan and confirm membership",
+          "successEvent": "membership_plan_selected"
+        },
+        {
+          "step": 3,
+          "componentId": "checkout_form",
+          "goal": "Complete payment",
+          "successEvent": "membership_activated"
+        }
+      ]
+    },
+    {
+      "id": "lightweight_meter_prompt",
+      "name": "LightweightMeterPrompt",
+      "description": "Low-friction top-of-article banner before hard paywall.",
+      "trigger": "User has <= 2 free articles remaining",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "membership_meter_banner",
+          "goal": "Set expectation about meter and membership",
+          "successEvent": "membership_banner_shown"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "meter_strictness_test_v1",
+      "name": "MeterStrictnessTestV1",
+      "hypothesis": "Gentler meters keep more African readers engaged while sustaining membership conversions.",
+      "variants": [
+        {
+          "key": "strict",
+          "tierOverrides": {
+            "free": { "maxMeteredArticlesPerMonth": 3 }
+          }
+        },
+        {
+          "key": "gentle",
+          "tierOverrides": {
+            "free": { "maxMeteredArticlesPerMonth": 5 }
+          }
+        }
+      ],
+      "metrics": [
+        "membership_conversion_rate",
+        "returning_reader_rate",
+        "avg_articles_per_reader"
+      ]
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "component": "ArticlePage",
+        "logic": "Read `tiers` and `flows` to decide when to show `membership_meter_banner` or `membership_paywall_inline`."
+      }
+    ],
+    "stateModel": {
+      "user": {
+        "tierId": "string",
+        "articlesReadThisPeriod": "number"
+      },
+      "article": {
+        "isMembersOnly": "boolean"
+      }
+    }
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "membership_monetization_system",
+    "source": "BOA_native_ROW",
+    "roleInSystem": "primary_config",
+    "lastUpdated": "2026-03-17"
+  },
+  "principles": [
+    "Membership should feel like joining a community around African creativity.",
+    "Explain what members unlock for storytellers, not just what they unlock for themselves.",
+    "Prioritize accessibility in the rest-of-world (ROW) context with flexible pricing."
+  ],
+  "tiers": [
+    {
+      "id": "free",
+      "name": "Free",
+      "accessRules": {
+        "maxMeteredStoriesPerMonth": 4,
+        "showsLightMeterBanner": true
+      },
+      "benefits": [
+        "A limited number of stories each month",
+        "Access to selected newsletters and updates"
+      ]
+    },
+    {
+      "id": "supporter",
+      "name": "Supporter",
+      "accessRules": {
+        "unlimitedStories": true,
+        "priorityAccessSections": ["members_spotlight", "community_updates"]
+      },
+      "benefits": [
+        "Unlimited access to stories and collections",
+        "Members-only spotlights on African creators",
+        "Invites to online conversations and AMAs"
+      ],
+      "pricingModel": {
+        "currencies": ["USD", "EUR", "GBP"],
+        "plans": [
+          { "interval": "monthly", "price": 5 },
+          { "interval": "annual", "price": 50 }
+        ]
+      }
+    }
+  ],
+  "ui_patterns": [
+    {
+      "id": "soft_meter_banner",
+      "name": "SoftMeterBanner",
+      "appliesToTiers": ["free"],
+      "trigger": "storiesRead >= 2 && storiesRead < maxMeteredStoriesPerMonth",
+      "componentId": "membership_meter_banner",
+      "toneId": "funding_appeal",
+      "copyPatterns": [
+        "Youâ€™re exploring African stories. {remaining} free stories left this month.",
+        "Members help keep this work independent across the continent."
+      ]
+    },
+    {
+      "id": "hard_paywall_inline",
+      "name": "HardPaywallInline",
+      "appliesToTiers": ["free"],
+      "trigger": "storiesRead >= maxMeteredStoriesPerMonth",
+      "componentId": "membership_paywall_inline",
+      "toneId": "funding_appeal",
+      "copyPatterns": [
+        "Youâ€™ve reached your free story limit.",
+        "Become a member to keep exploring African stories without limits."
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "membership_meter_banner",
+      "name": "MembershipMeterBanner",
+      "props": {
+        "remainingStories": "number",
+        "tierId": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      }
+    },
+    {
+      "id": "membership_paywall_inline",
+      "name": "MembershipPaywallInline",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "description": "string",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "article_access_flow_row",
+      "name": "ArticleAccessFlowROW",
+      "description": "Decides if a ROW user can read an article, sees meter, or sees paywall.",
+      "decisionModel": {
+        "inputs": [
+          "user.tierId",
+          "user.storiesReadThisPeriod",
+          "tier.accessRules.maxMeteredStoriesPerMonth"
+        ],
+        "states": [
+          "full_access",
+          "soft_meter",
+          "hard_paywall"
+        ]
+      }
+    }
+  ],
+  "integration_hints": {
+    "configRole": "This file should be treated as the canonical membership config for ROW; Atlantic-inspired file is reference only.",
+    "reactUsage": [
+      {
+        "component": "ArticlePage",
+        "logic": "Read tiers, ui_patterns, and flows.decisionModel to decide when and how to show meter or paywall."
+      }
+    ]
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "emotional_ui_system",
+    "source": "OkayAfrica_inspired",
+    "roleInSystem": "reference_and_patterns",
+    "lastUpdated": "2026-03-17"
+  },
+  "emotional_states": [
+    {
+      "id": "celebration",
+      "name": "Celebration",
+      "description": "Moments of achievement, launch, or support; joyful and affirming.",
+      "useCases": [
+        "Funding success screens",
+        "Account creation success",
+        "Milestone achievements for creators"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "high",
+        "animationLevel": "medium",
+        "colorTokens": ["accent", "success"]
+      }
+    },
+    {
+      "id": "encouragement",
+      "name": "Encouragement",
+      "description": "Gentle nudge to keep going or to support creators.",
+      "useCases": [
+        "Light funding prompts",
+        "Empty states encouraging exploration"
+      ],
+      "style": {
+        "toneId": "funding_appeal",
+        "intensity": "medium",
+        "animationLevel": "low",
+        "colorTokens": ["accent"]
+      }
+    },
+    {
+      "id": "care",
+      "name": "Care",
+      "description": "Acknowledges friction, errors, or boundaries with empathy.",
+      "useCases": [
+        "Error states",
+        "Payment issues",
+        "Account recovery flows"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "none",
+        "colorTokens": ["warning", "neutral"]
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "funding_success_celebration",
+      "name": "FundingSuccessCelebration",
+      "emotionalStateId": "celebration",
+      "components": [
+        {
+          "componentId": "FundingSuccessScreen",
+          "props": {
+            "headline": "string",
+            "subcopy": "string",
+            "ctaText": "string | null",
+            "showConfetti": "boolean"
+          },
+          "copyPatterns": {
+            "headline": [
+              "Asante! Your support powers African stories.",
+              "You just backed African creativity."
+            ],
+            "subcopy": [
+              "Creators across the continent feel this support.",
+              "This helps bring more African stories to the world."
+            ]
+          },
+          "visualPatterns": {
+            "useEmoji": true,
+            "emojiExamples": ["âœ¨", "ðŸŽ‰"],
+            "animationType": "confetti"
+          }
+        }
+      ]
+    },
+    {
+      "id": "light_funding_prompt_encouragement",
+      "name": "LightFundingPromptEncouragement",
+      "emotionalStateId": "encouragement",
+      "components": [
+        {
+          "componentId": "FundingEntryBanner",
+          "props": {
+            "headline": "string",
+            "subcopy": "string",
+            "primaryCtaText": "string",
+            "secondaryCtaText": "string | null"
+          },
+          "copyPatterns": {
+            "headline": [
+              "If this story moved you, support the work behind it.",
+              "Love African storytelling? Help keep it going."
+            ],
+            "subcopy": [
+              "Even small contributions help sustain creators.",
+              "Your support keeps this platform independent."
+            ]
+          },
+          "visualPatterns": {
+            "backgroundTone": "subtle",
+            "icon": "heart_outline"
+          }
+        }
+      ]
+    },
+    {
+      "id": "error_state_care",
+      "name": "ErrorStateCare",
+      "emotionalStateId": "care",
+      "components": [
+        {
+          "componentId": "ErrorState",
+          "props": {
+            "title": "string",
+            "message": "string",
+            "primaryCtaText": "string | null",
+            "secondaryCtaText": "string | null"
+          },
+          "copyPatterns": {
+            "title": [
+              "Something went wrong.",
+              "We hit a bump."
+            ],
+            "message": [
+              "Letâ€™s try that again in a moment.",
+              "Your work is safe. Refresh and weâ€™ll pick up where you left off."
+            ]
+          },
+          "visualPatterns": {
+            "illustrationStyle": "soft",
+            "showRetry": true
+          }
+        }
+      ]
+    }
+  ],
+  "mapping_to_components": [
+    {
+      "componentId": "FundingSuccessScreen",
+      "defaultEmotionalStateId": "celebration"
+    },
+    {
+      "componentId": "FundingEntryBanner",
+      "defaultEmotionalStateId": "encouragement"
+    },
+    {
+      "componentId": "ErrorState",
+      "defaultEmotionalStateId": "care"
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "helper": "getEmotionalPattern(componentId, context)",
+        "logic": "Map component + context (e.g. severity, firstTime) to an emotionalStateId and pattern.id, then choose copy/visualVariants."
+      }
+    ],
+    "stateModel": {
+      "context": {
+        "eventType": "success | error | prompt",
+        "importance": "low | medium | high",
+        "isFirstTime": "boolean"
+      }
+    }
+  }
+}
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "emotional_ui_source",
+    "source": "RTBC_inspired",
+    "roleInSystem": "reference_only",
+    "lastUpdated": "2026-03-17"
+  },
+  "emotional_archetypes": [
+    {
+      "id": "reassuring_confidence",
+      "name": "ReassuringConfidence",
+      "description": "Calm, steady voice that says 'we've got you' in complex or high-stakes flows.",
+      "useCases": [
+        "Payments and checkout",
+        "Account security and privacy UI",
+        "Data or consent prompts"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "none",
+        "colorTokens": ["neutral", "success"],
+        "layoutFeel": "spacious_minimal"
+      }
+    },
+    {
+      "id": "calm_clarity",
+      "name": "CalmClarity",
+      "description": "Stripped-down, clear language for explainer modals and info panels.",
+      "useCases": [
+        "Explaining membership or funding terms",
+        "Policy or guidelines UI",
+        "Onboarding walkthroughs"
+      ],
+      "style": {
+        "toneId": "platform_voice",
+        "intensity": "low",
+        "animationLevel": "low",
+        "colorTokens": ["neutral"],
+        "layoutFeel": "left_aligned_text_first"
+      }
+    }
+  ],
+  "patterns": [
+    {
+      "id": "payment_reassurance_block",
+      "name": "PaymentReassuranceBlock",
+      "archetypeId": "reassuring_confidence",
+      "components": [
+        {
+          "componentId": "ReassuranceInline",
+          "props": {
+            "icon": "string",
+            "headline": "string",
+            "bullets": "string[]"
+          },
+          "copyPatterns": {
+            "headline": [
+              "Your payment is secure.",
+              "We protect your details."
+            ],
+            "bullets": [
+              "Encrypted payments via trusted providers.",
+              "We never share your card details."
+            ]
+          },
+          "visualPatterns": {
+            "icon": "shield_check",
+            "backgroundTone": "subtle",
+            "borderStyle": "soft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "consent_explainer_panel",
+      "name": "ConsentExplainerPanel",
+      "archetypeId": "calm_clarity",
+      "components": [
+        {
+          "componentId": "InfoPanel",
+          "props": {
+            "title": "string",
+            "body": "string",
+            "learnMoreHref": "string | null"
+          },
+          "copyPatterns": {
+            "title": [
+              "How we use your data.",
+              "Why we ask for this info."
+            ],
+            "body": [
+              "We use this to improve your experience and support African creators.",
+              "You can change these settings at any time in your account."
+            ]
+          },
+          "visualPatterns": {
+            "showDivider": true,
+            "icon": "info",
+            "alignment": "left"
+          }
+        }
+      ]
+    }
+  ],
+  "mapping_to_boa_emotions": {
+    "targetFile": "EMOTIONAL_UI_PATTERNS_BOA_okayafrica.json",
+    "links": [
+      {
+        "sourceArchetypeId": "reassuring_confidence",
+        "mapsToEmotionalStateId": "care",
+        "notes": "Use RTBC patterns to shape the calm, caring variants of BOA error and payment states."
+      },
+      {
+        "sourceArchetypeId": "calm_clarity",
+        "mapsToEmotionalStateId": "encouragement",
+        "notes": "Use for info-heavy encouragement (e.g. explaining why funding matters) without hype."
+      }
+    ]
+  },
+  "ui_usage_hints": {
+    "components": [
+      {
+        "componentId": "CheckoutForm",
+        "recommendedPatterns": ["payment_reassurance_block"],
+        "thenApplyBoaRulesFrom": "EMOTIONAL_UI_PATTERNS_BOA_okayafrica.json"
+      },
+      {
+        "componentId": "PrivacySettingsPanel",
+        "recommendedPatterns": ["consent_explainer_panel"]
+      }
+    ],
+    "lintingNotes": [
+      "Avoid overly emotional or hyped language in RTBC-derived patterns.",
+      "Favor short sentences and concrete assurances over vibes."
+    ]
+  }
+}

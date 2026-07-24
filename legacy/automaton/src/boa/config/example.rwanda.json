@@ -1,0 +1,18 @@
+{
+    "countryCode": "RW",
+    "displayName": "Rwanda",
+    "boaApiBaseUrl": "http://localhost:8000",
+    "boaApiKey": "",
+    "walletDataDir": ".automaton/boa/RW",
+    "maxMonthlySpendUsd": 50.0,
+    "minBalanceThresholdUsd": 0.5,
+    "auditThresholds": {
+        "engagementDropPercent": 10,
+        "minTimeBetweenAuditsHours": 1
+    },
+    "priorityPages": [
+        "rwanda-tourism-overview",
+        "invest-rwanda"
+    ],
+    "campaignActive": false
+}

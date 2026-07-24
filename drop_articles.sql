@@ -1,0 +1,5 @@
+DROP TRIGGER IF EXISTS articles_ai;
+DROP TRIGGER IF EXISTS articles_ad;
+DROP TRIGGER IF EXISTS articles_au;
+DROP TABLE IF EXISTS articles_fts;
+DROP TABLE IF EXISTS articles;

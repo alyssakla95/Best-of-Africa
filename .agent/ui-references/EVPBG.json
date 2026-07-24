@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "editorial_voice_source",
+    "source": "The Guardian",
+    "roleInSystem": "reference_only",
+    "lastUpdated": "2026-03-17"
+  },
+  "mapping_to_boa_voice": {
+    "targetFile": "EDITORIAL_VOICE_PATTERNS_BOA_row.json",
+    "notes": [
+      "Use this file to inspire structure and rhythm, not to clone phrasing.",
+      "When generating BOA copy, always apply BOA tones and rules as the final filter."
+    ]
+  },
+  "headline_patterns": {
+    "characteristics": [
+      "Clear, information-rich",
+      "Often includes who + what + where",
+      "Avoids clickbait, focuses on substance"
+    ],
+    "templates": [
+      "{who} {does_what} in {where}",
+      "{issue}: {concise_angle}",
+      "{number} ways {group} is {doing_what}"
+    ],
+    "boa_adaptations": [
+      "Highlight African subjects and agency in {who}.",
+      "For BOA, bring African context (place, community, field) into the template."
+    ]
+  },
+  "intro_paragraph_patterns": {
+    "characteristics": [
+      "Start with a concrete scene or moment",
+      "Quickly zoom out to broader context",
+      "Often one or two fairly long sentences"
+    ],
+    "structure": [
+      "Sentence 1: vivid, specific scene or quote",
+      "Sentence 2: explain why this matters more broadly"
+    ],
+    "boa_adaptations": [
+      "Anchor the scene in African locations or experiences.",
+      "Connect individual stories to wider African cultural, social or tech context."
+    ]
+  },
+  "sectioning_patterns": {
+    "characteristics": [
+      "Subheadings break up long reads",
+      "Each section explores a single angle (policy, human impact, history)"
+    ],
+    "templates": [
+      "The bigger picture",
+      "On the ground",
+      "What happens next",
+      "Why it matters"
+    ],
+    "boa_adaptations": [
+      "Use subheads to foreground African expertise and solutions.",
+      "Prefer solution-oriented subheads, e.g. 'How {community} is responding'."
+    ]
+  },
+  "tone_characteristics": {
+    "overall": [
+      "Analytical but accessible",
+      "Values evidence, quotes and sources",
+      "Avoids sensationalism"
+    ],
+    "boa_target_tone_links": [
+      {
+        "guardianTrait": "Analytical, evidence-based",
+        "mapsToBoaToneId": "editorial_feature",
+        "notes": "Keep the analytical clarity while centering African voices and sources."
+      }
+    ]
+  },
+  "ui_usage_hints": {
+    "longformComponents": [
+      {
+        "componentType": "ArticlePage",
+        "useFromThisFile": ["headline_patterns", "intro_paragraph_patterns", "sectioning_patterns"],
+        "thenApplyBoaRulesFrom": "EDITORIAL_VOICE_PATTERNS_BOA_row.json"
+      }
+    ],
+    "shortformComponents": [
+      {
+        "componentType": "StoryCard",
+        "useFromThisFile": ["headline_patterns"],
+        "headlineMaxChars": 90
+      }
+    ],
+    "lintingNotes": [
+      "Guard against copying Guardian phrases verbatim.",
+      "Treat this as structural guidance, then regenerate actual text via BOA tone rules."
+    ]
+  }
+}

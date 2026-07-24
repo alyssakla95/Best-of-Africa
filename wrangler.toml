@@ -1,0 +1,152 @@
+name = "best-of-africa-backend"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Email Sending — native transactional email binding (env.EMAIL).
+# Requires onboarding the FROM domain once: `wrangler email sending enable <domain>`.
+send_email = [
+  { name = "EMAIL" }
+]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# D1 DATABASE - Articles, Users, Countries, Analytics
+# ═══════════════════════════════════════════════════════════════════════════════
+[[d1_databases]]
+binding = "DB"
+database_name = "best-of-africa-db"
+database_id = "532cd4e1-1d5f-4562-a11a-561ec3fd8d77"
+migrations_dir = "migrations"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# KV NAMESPACE - Sessions, Cache, Rate Limiting
+# ═══════════════════════════════════════════════════════════════════════════════
+[[kv_namespaces]]
+binding = "CACHE"
+id = "ad2a3549ed6f43d89c89c39bd4479860"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "0857fddd4ac44687ae11f58c009c3a87"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# R2 BUCKET - Media Storage (images, assets)
+# ═══════════════════════════════════════════════════════════════════════════════
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "best-of-africa-media"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VECTORIZE - Semantic Search & Narrative Gap Detection
+# ═══════════════════════════════════════════════════════════════════════════════
+[[vectorize]]
+binding = "VECTORS"
+index_name = "best-of-africa-content"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# QUEUES - Async Job Processing
+# ═══════════════════════════════════════════════════════════════════════════════
+[[queues.producers]]
+binding = "CONTENT_QUEUE"
+queue = "content-generation"
+
+[[queues.producers]]
+binding = "TRANSLATION_QUEUE"
+queue = "article-translations"
+
+[[queues.producers]]
+binding = "OPTIMIZATION_QUEUE"
+queue = "headline-optimization"
+
+[[queues.consumers]]
+queue = "content-generation"
+max_batch_size = 1      # Process one at a time — AI generation can run >30s
+max_batch_timeout = 60  # Maximum batch timeout allowed by Cloudflare is 60s
+max_retries = 5
+
+[[queues.consumers]]
+queue = "article-translations"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 5
+
+[[queues.consumers]]
+queue = "headline-optimization"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WORKERS AI - Article Generation & Embeddings
+# ═══════════════════════════════════════════════════════════════════════════════
+[ai]
+binding = "AI"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANALYTICS ENGINE - Real-time User Behavior
+# ═══════════════════════════════════════════════════════════════════════════════
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "best-of-africa-events"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DURABLE OBJECTS - Live Counters & Real-time Aggregation
+# ═══════════════════════════════════════════════════════════════════════════════
+[[durable_objects.bindings]]
+name = "LIVE_COUNTER"
+class_name = "LiveCounter"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["LiveCounter"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SCHEDULED WORKERS (CRON)
+# ═══════════════════════════════════════════════════════════════════════════════
+[triggers]
+crons = [
+  "* * * * *"      # Master Cron (handles 1m, 2m, daily internally)
+]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT VARIABLES
+# ═══════════════════════════════════════════════════════════════════════════════
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+# Public origin of this worker — used to build absolute URLs for uploaded media
+# (article hero images) so the Pages frontend can load them cross-origin.
+PUBLIC_API_URL = "https://best-of-africa-backend.cortesmailles01.workers.dev"
+# Public origin of the reader-facing site; sitemap/RSS/podcast links point here.
+# Switch to https://bestofafrica.com once the domain is registered and wired.
+PUBLIC_SITE_URL = "https://best-of-africa.pages.dev"
+# Comma-separated extra CORS origins beyond bestofafrica.com (e.g. staging domain).
+# For local frontend dev add "http://localhost:5173" to .dev.vars instead.
+ADDITIONAL_ORIGINS = "https://best-of-africa.pages.dev"
+
+# ── Secrets — set via wrangler CLI before deploying ───────────────────────────
+# wrangler secret put JWT_SECRET       # openssl rand -hex 32
+# wrangler secret put ADMIN_API_KEY    # random admin key for /admin endpoints
+# wrangler secret put NEWS_API_KEY     # newsapi.org key
+# wrangler secret put DEV_SECRET       # protects /dev/* endpoints in prod
+#
+# Optional AI Provider secrets (platform falls back to Workers AI if unset).
+# These can also be configured at runtime via POST /api/v1/agent/providers.
+# wrangler secret put OPENAI_API_KEY
+# wrangler secret put ANTHROPIC_API_KEY
+# wrangler secret put GOOGLE_AI_API_KEY
+# wrangler secret put OPENROUTER_API_KEY
+# wrangler secret put MOONSHOT_CLIENT_ID      # Moonshot OAuth app client ID (platform.moonshot.cn)
+# wrangler secret put MOONSHOT_CLIENT_SECRET  # Moonshot OAuth app client secret
+# wrangler secret put MOONSHOT_API_KEY        # fallback only — OAuth is preferred
+# wrangler secret put KOFI_TOKEN
+# wrangler secret put ELEVENLABS_API_KEY
+# wrangler secret put ELEVENLABS_VOICE_ID  # optional; defaults to Rachel voice
+
+# ── Environment profiles ───────────────────────────────────────────────────────
+# Override per-environment with: wrangler deploy --env staging
+[env.production]
+vars = { ENVIRONMENT = "production", API_VERSION = "v1", ADDITIONAL_ORIGINS = "" }
+
+[env.staging]
+vars = { ENVIRONMENT = "staging", API_VERSION = "v1", ADDITIONAL_ORIGINS = "https://staging.bestofafrica.com" }

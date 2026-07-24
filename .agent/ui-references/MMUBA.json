@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "platform": "Best of Africa",
+    "type": "membership_monetization_system",
+    "source": "Atlantic_inspired",
+    "roleInSystem": "reference_and_patterns",
+    "lastUpdated": "2026-03-17"
+  },
+  "principles": [
+    "Use membership to deepen relationships with African audiences, not just lock content.",
+    "Explain clearly what membership enables for African storytellers and projects.",
+    "Balance reader generosity with accessibility; keep some content freely discoverable."
+  ],
+  "tiers": [
+    {
+      "id": "free",
+      "name": "Free",
+      "accessRules": {
+        "maxMeteredArticlesPerMonth": 3,
+        "showMeterBannerAfter": 2
+      },
+      "benefits": [
+        "Access to a limited number of stories per month",
+        "Basic newsletter access"
+      ]
+    },
+    {
+      "id": "member",
+      "name": "Member",
+      "accessRules": {
+        "unlimitedStories": true,
+        "exclusiveSections": ["members_stories", "deep_dives"]
+      },
+      "benefits": [
+        "Unlimited access to Best of Africa stories",
+        "Members-only deep dive reporting and features",
+        "Invites to virtual events and Q&As with African creators"
+      ],
+      "pricingModel": {
+        "currency": "USD",
+        "plans": [
+          { "interval": "monthly", "price": 7 },
+          { "interval": "annual", "price": 70 }
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "membership_meter_banner",
+      "name": "MembershipMeterBanner",
+      "category": "meter",
+      "props": {
+        "remainingArticles": "number",
+        "tierId": "string",
+        "ctaPrimaryText": "string",
+        "ctaSecondaryText": "string | null"
+      },
+      "layout": {
+        "orientation": "horizontal",
+        "sections": ["copy", "cta"],
+        "maxWidth": 960
+      },
+      "states": ["warning", "final_free_article"],
+      "copy_guidelines": {
+        "toneId": "funding_appeal",
+        "patterns": [
+          "You have {remainingArticles} free stories left this month.",
+          "Become a member to keep exploring African stories."
+        ]
+      }
+    },
+    {
+      "id": "membership_paywall_inline",
+      "name": "MembershipPaywallInline",
+      "category": "paywall",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "bullets": "string[]",
+        "primaryCtaText": "string",
+        "secondaryCtaText": "string | null"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["headline", "bullets", "cta"],
+        "maxWidth": 640
+      },
+      "states": ["default", "loading", "error"],
+      "examples": {
+        "headline": [
+          "This story is for members who power African journalism.",
+          "Members sustain in-depth reporting across the continent."
+        ]
+      }
+    },
+    {
+      "id": "membership_offer_modal",
+      "name": "MembershipOfferModal",
+      "category": "offer",
+      "props": {
+        "tierId": "string",
+        "headline": "string",
+        "subcopy": "string",
+        "planOptions": "Array<{ interval: string; price: number }>",
+        "primaryCtaText": "string",
+        "dismissText": "string"
+      },
+      "layout": {
+        "orientation": "vertical",
+        "sections": ["header", "benefits", "plans", "actions"],
+        "maxWidth": 520
+      },
+      "states": ["default", "processing", "success", "error"]
+    },
+    {
+      "id": "member_badge",
+      "name": "MemberBadge",
+      "category": "status",
+      "props": {
+        "label": "string",
+        "variant": "enum:subtle,highlighted"
+      },
+      "styleDefaults": {
+        "subtle": {
+          "backgroundToken": "tokens.colors.badgeSubtle",
+          "textToken": "tokens.colors.badgeSubtleText"
+        },
+        "highlighted": {
+          "backgroundToken": "tokens.colors.badgeHighlight",
+          "textToken": "tokens.colors.badgeHighlightText"
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "meter_to_membership_flow",
+      "name": "MeterToMembershipFlow",
+      "description": "User hits meter limit and is guided into membership.",
+      "trigger": "User views article with remainingArticles === 0 and tier === 'free'",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "membership_paywall_inline",
+          "goal": "Explain membership and invite user to join",
+          "successEvent": "membership_cta_clicked"
+        },
+        {
+          "step": 2,
+          "componentId": "membership_offer_modal",
+          "goal": "Select plan and confirm membership",
+          "successEvent": "membership_plan_selected"
+        },
+        {
+          "step": 3,
+          "componentId": "checkout_form",
+          "goal": "Complete payment",
+          "successEvent": "membership_activated"
+        }
+      ]
+    },
+    {
+      "id": "lightweight_meter_prompt",
+      "name": "LightweightMeterPrompt",
+      "description": "Low-friction top-of-article banner before hard paywall.",
+      "trigger": "User has <= 2 free articles remaining",
+      "steps": [
+        {
+          "step": 1,
+          "componentId": "membership_meter_banner",
+          "goal": "Set expectation about meter and membership",
+          "successEvent": "membership_banner_shown"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "meter_strictness_test_v1",
+      "name": "MeterStrictnessTestV1",
+      "hypothesis": "Gentler meters keep more African readers engaged while sustaining membership conversions.",
+      "variants": [
+        {
+          "key": "strict",
+          "tierOverrides": {
+            "free": { "maxMeteredArticlesPerMonth": 3 }
+          }
+        },
+        {
+          "key": "gentle",
+          "tierOverrides": {
+            "free": { "maxMeteredArticlesPerMonth": 5 }
+          }
+        }
+      ],
+      "metrics": [
+        "membership_conversion_rate",
+        "returning_reader_rate",
+        "avg_articles_per_reader"
+      ]
+    }
+  ],
+  "integration_hints": {
+    "reactUsage": [
+      {
+        "component": "ArticlePage",
+        "logic": "Read `tiers` and `flows` to decide when to show `membership_meter_banner` or `membership_paywall_inline`."
+      }
+    ],
+    "stateModel": {
+      "user": {
+        "tierId": "string",
+        "articlesReadThisPeriod": "number"
+      },
+      "article": {
+        "isMembersOnly": "boolean"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /settings
+Disallow: /member-access
+
+Sitemap: https://best-of-africa.pages.dev/sitemap.xml

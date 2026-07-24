@@ -40,10 +40,15 @@ export async function generateArticleFromQueue(
             return;
         }
 
-        // Mark as processing
-        await env.DB.prepare(`
-      UPDATE ingested_items SET status = 'processing' WHERE id = ?
+        // Claim atomically. Recovery can enqueue the same pending row again on a
+        // later tick; only one consumer may spend generation capacity on it.
+        const claim = await env.DB.prepare(`
+      UPDATE ingested_items SET status = 'processing' WHERE id = ? AND status = 'pending'
     `).bind(message.ingested_item_id).run();
+        if ((claim.meta?.changes || 0) === 0) {
+            console.log(`[generator] Skipping already-claimed item: ${message.ingested_item_id}`);
+            return;
+        }
 
         const itemData = item as Record<string, any>;
         const evidenceFailure = sourceEvidenceFailure(itemData.content);

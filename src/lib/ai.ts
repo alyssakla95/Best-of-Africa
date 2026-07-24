@@ -52,6 +52,8 @@ export interface AICallOptions {
     response_profile?: AIResponseProfile;
     /** Require valid JSON/schema output while retaining the depth repair pass. */
     structured_output?: boolean;
+    /** Native Workers AI JSON mode/schema passed to supported models. */
+    response_format?: Record<string, unknown>;
 }
 
 export type AIResponseProfile = 'editorial-article' | 'evidence-brief' | 'deep-analysis' | 'structured-analysis' | 'decision-brief' | 'reader-explainer' | 'spoken-brief';
@@ -236,8 +238,18 @@ async function callConfiguredAIOnce(env: Env, options: AICallOptions): Promise<s
         () => (env.AI as Record<string, any>).run(
             MODELS.TEXT_GENERATION,
             options.messages
-                ? { messages: options.messages, max_tokens: options.max_tokens, temperature: options.temperature }
-                : { prompt: options.prompt, max_tokens: options.max_tokens, temperature: options.temperature }
+                ? {
+                    messages: options.messages,
+                    max_tokens: options.max_tokens,
+                    temperature: options.temperature,
+                    response_format: options.response_format,
+                }
+                : {
+                    prompt: options.prompt,
+                    max_tokens: options.max_tokens,
+                    temperature: options.temperature,
+                    response_format: options.response_format,
+                }
         )
     );
     return extractAIText(response);

@@ -19,6 +19,7 @@ export interface ModerationResult {
         message: string;
         suggestion?: string;
     }>;
+    technicalFailure?: boolean;
 }
 
 /**
@@ -67,6 +68,30 @@ Use status "approved" only with score at least 0.8 and an empty findings array.`
             max_tokens: 1800,
             temperature: 0.1,
             structured_output: true,
+            response_format: {
+                type: 'json_schema',
+                json_schema: {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', enum: ['approved', 'flagged', 'needs_review'] },
+                        score: { type: 'number', minimum: 0, maximum: 1 },
+                        findings: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    type: { type: 'string', enum: ['fact-check', 'tone', 'bias', 'source'] },
+                                    severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+                                    message: { type: 'string' },
+                                    suggestion: { type: 'string' },
+                                },
+                                required: ['type', 'severity', 'message'],
+                            },
+                        },
+                    },
+                    required: ['status', 'score', 'findings'],
+                },
+            },
         });
 
         const jsonMatch = aiResponseRaw.match(/\{.*\}/s);
@@ -90,6 +115,7 @@ Use status "approved" only with score at least 0.8 and an empty findings array.`
         return {
             status: 'needs_review',
             score: 0.5,
+            technicalFailure: true,
             findings: [{
                 type: 'source',
                 severity: 'medium',
@@ -160,6 +186,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
         WHERE a.status = 'pending_audit'
           AND a.moderation_status = 'pending'
           AND a.last_audited_at IS NULL
+          AND i.content IS NOT NULL
         ORDER BY LENGTH(COALESCE(i.content, '')) DESC, a.created_at ASC
         LIMIT ?
     `).bind(Math.max(1, Math.min(limit, 5))).all<PendingAuditArticle>();
@@ -178,6 +205,19 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
             article.source_title || undefined,
             article.source_content || undefined,
         );
+        if (moderation.technicalFailure) {
+            await env.DB.prepare(`
+                UPDATE articles
+                SET moderation_status = 'pending', moderation_score = ?,
+                    moderation_notes = ?, updated_at = datetime('now')
+                WHERE id = ?
+            `).bind(
+                moderation.score,
+                JSON.stringify({ technical_failure: true, findings: moderation.findings }),
+                article.id,
+            ).run();
+            continue;
+        }
         const failure = automaticPublicationFailure({
             content: article.content,
             investorBrief: article.ai_investor_brief,

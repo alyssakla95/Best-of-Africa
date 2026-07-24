@@ -8,6 +8,27 @@ describe('AI response depth contract', () => {
         expect(MODELS.FAST_TEXT_GENERATION).toBe('@cf/zai-org/glm-4.7-flash');
     });
 
+    it('passes native structured-output schemas through to Workers AI', async () => {
+        const run = vi.fn().mockResolvedValue({ response: '{"ok":true}' });
+        const env = createMockEnv({ AI: { run } as any });
+        const responseFormat = {
+            type: 'json_schema',
+            json_schema: {
+                type: 'object',
+                properties: { ok: { type: 'boolean' } },
+                required: ['ok'],
+            },
+        };
+
+        await callConfiguredAI(env, {
+            prompt: 'Return the status.',
+            structured_output: true,
+            response_format: responseFormat,
+        });
+
+        expect(run.mock.calls[0][1].response_format).toEqual(responseFormat);
+    });
+
     it('counts words and flags an underdeveloped reader-facing analysis', () => {
         expect(countResponseWords('one two\nthree')).toBe(3);
         expect(shouldExpandAIResponse('A short unsupported answer.', 'deep-analysis')).toBe(true);

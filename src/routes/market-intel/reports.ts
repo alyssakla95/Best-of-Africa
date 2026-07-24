@@ -28,6 +28,39 @@ router.get('/generated-reports', async (c) => {
     });
 });
 
+// GET /market-intel/generated-reports/:id - One report as structured JSON.
+// Sections render as native application pages; the stored HTML artifact is
+// internal (PDF/email) and is never returned here.
+router.get('/generated-reports/:id', async (c) => {
+    const report = await c.env.DB.prepare(`
+        SELECT id, type, title, metadata, created_at
+        FROM generated_reports
+        WHERE id = ?
+    `).bind(c.req.param('id')).first();
+
+    if (!report) {
+        return c.json({ error: 'not_found', message: 'Report not found' }, 404);
+    }
+
+    const r = report as Record<string, any>;
+    let metadata: Record<string, any> = {};
+    try { metadata = r.metadata ? JSON.parse(r.metadata as string) : {}; } catch { metadata = {}; }
+    const { sections, subtitle, generated_at, ...rest } = metadata;
+
+    return c.json({
+        data: {
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            subtitle: subtitle || null,
+            sections: Array.isArray(sections) ? sections : [],
+            metadata: rest,
+            generated_at: generated_at || r.created_at,
+            created_at: r.created_at,
+        },
+    });
+});
+
 // GET /market-intel/reports - List available reports
 router.get('/reports', async (c) => {
     const clientTier = c.get('clientTier') as string;

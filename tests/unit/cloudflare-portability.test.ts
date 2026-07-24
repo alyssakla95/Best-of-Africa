@@ -42,5 +42,7 @@ describe('portable Cloudflare deployment contract', () => {
     expect(installer).toContain("'--use-remote', '--update-config'");
     expect(installer).toContain("options['require-r2']");
     expect(installer).toContain('migrations_dir = "../migrations"');
+    expect(installer).toContain("'--binding', 'MEDIA_KV'");
+    expect(installer).toContain('mediaKv');
   });
 });

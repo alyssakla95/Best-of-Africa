@@ -185,6 +185,70 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    // Check media storage used by article narration and locally stored assets.
+    const mediaStart = Date.now();
+    try {
+        const { deleteMedia, getMedia, putMedia } = await import('../lib/media');
+        const key = `health/${crypto.randomUUID()}.txt`;
+        await putMedia(c.env, key, new TextEncoder().encode('ok'), 'text/plain');
+        const stored = await getMedia(c.env, key);
+        await deleteMedia(c.env, key);
+        checks.push({
+            name: 'media_storage',
+            status: stored ? 'healthy' : 'unhealthy',
+            responseTimeMs: Date.now() - mediaStart,
+            details: { provider: c.env.MEDIA ? 'r2' : c.env.MEDIA_KV ? 'kv' : 'none' },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'media_storage',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - mediaStart,
+            message: error instanceof Error ? error.message : 'Media storage unavailable',
+        });
+    }
+
+    // Check whether scheduled workers are producing the outputs promised by
+    // the reader UI, not merely whether their underlying bindings respond.
+    const outputStart = Date.now();
+    try {
+        const output = await c.env.DB.prepare(`
+            SELECT
+                (SELECT COUNT(*) FROM articles WHERE status = 'published') AS published,
+                (SELECT COUNT(*) FROM articles WHERE status = 'published' AND audio_url IS NOT NULL AND audio_url != '') AS audio,
+                (SELECT COUNT(*) FROM article_translations WHERE quality = 1) AS translations,
+                (SELECT COUNT(*) FROM generated_reports) AS reports
+        `).first<{ published: number; audio: number; translations: number; reports: number }>();
+        const published = Number(output?.published || 0);
+        const audio = Number(output?.audio || 0);
+        const translations = Number(output?.translations || 0);
+        const reports = Number(output?.reports || 0);
+        const complete = published === 0 || (audio >= published && translations >= published * 6);
+        checks.push({
+            name: 'worker_outputs',
+            status: complete && reports > 0 ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - outputStart,
+            details: { published, audio, translations, expectedTranslations: published * 6, reports },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'worker_outputs',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - outputStart,
+            message: error instanceof Error ? error.message : 'Worker output check failed',
+        });
+    }
+
+    const emailConfigured = Boolean(
+        c.env.EMAIL_FROM && (c.env.EMAIL?.send || c.env.RESEND_API_KEY)
+    );
+    checks.push({
+        name: 'email_delivery',
+        status: emailConfigured ? 'healthy' : 'degraded',
+        responseTimeMs: 0,
+        message: emailConfigured ? undefined : 'No verified transactional email provider and sender are configured',
+    });
+
     // Check Vectorize
     const vectorStart = Date.now();
     try {

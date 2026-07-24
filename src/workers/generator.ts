@@ -5,9 +5,8 @@
 
 import type { Env, ContentGenerationMessage } from '../types';
 import { generateArticle as generateArticleContent, identifyCountry, identifySector, generateArticleImage, buildHeroPrompt, ARTICLE_PROMPT_VERSION, MODELS } from '../lib/ai';
-import { uploadImage, uploadArticleHero, makeHeroVariant, heroVariantKey } from '../lib/media';
+import { getMedia, uploadImage, uploadArticleHero, makeHeroVariant, heroVariantKey } from '../lib/media';
 import { generateAudioNarration } from '../lib/audio';
-import { autoTranslateArticle } from '../lib/translate';
 import { checkContentIntegrity } from '../lib';
 import { publisherNameForArticle } from '../lib/source-attribution';
 import { sourceEvidenceFailure } from '../lib/editorial-quality';
@@ -166,26 +165,29 @@ export async function generateArticleFromQueue(
         // but we'll await them to ensure they complete within the generous queue limits.
         // Audio narration ships with the article (the UI shows Listen buttons on
         // every card — audio must exist, not be a member-gated maybe).
-        try {
-            await generateAudioNarration(env, articleId, generated.title, generated.content);
-        } catch (err) { console.error('Audio gen failed:', err); }
-
-        try {
-            await autoTranslateArticle(env, articleId, {
-                title: generated.title, subtitle: generated.subtitle, summary: generated.summary, content: generated.content, country_code: countryCode ?? null,
-            });
-        } catch (err) { console.error('Translation failed:', err); }
+        // Audio and translations wait for the independent source-grounded
+        // publication audit so they always reflect the final approved text.
 
     } catch (error) {
         console.error('Article generation failed:', error);
+        const failure = error instanceof Error ? error.message : 'Unknown error';
+        const previous = await env.DB.prepare(
+            'SELECT rejection_reason FROM ingested_items WHERE id = ?'
+        ).bind(message.ingested_item_id).first<{ rejection_reason: string | null }>();
+        const priorAttempts = Number(previous?.rejection_reason?.match(/^generation attempt (\d+)\//)?.[1] || 0);
+        const attempt = priorAttempts + 1;
+        const terminal = attempt >= 5;
 
-        // Mark as rejected
         await env.DB.prepare(`
-      UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?
-    `).bind(
-            error instanceof Error ? error.message : 'Unknown error',
+            UPDATE ingested_items
+            SET status = ?, rejection_reason = ?
+            WHERE id = ?
+        `).bind(
+            terminal ? 'rejected' : 'pending',
+            `generation attempt ${attempt}/5: ${failure}`.slice(0, 1000),
             message.ingested_item_id
         ).run();
+        if (!terminal) throw error;
     }
 }
 
@@ -347,9 +349,13 @@ export async function backfillHeroVariants(env: Env, batch = 4): Promise<number>
     for (const a of rows.results || []) {
         try {
             const key = decodeURIComponent(a.hero_image_url.replace(/^.*\/assets\//, ''));
-            const obj = await env.MEDIA.get(key);
+            const obj = await getMedia(env, key);
             if (obj) {
-                const bytes = new Uint8Array(await obj.arrayBuffer());
+                const bytes = new Uint8Array(
+                    obj.body instanceof ArrayBuffer
+                        ? obj.body
+                        : await new Response(obj.body).arrayBuffer()
+                );
                 const variant = await makeHeroVariant(bytes);
                 if (variant) await uploadImage(env, heroVariantKey(key), variant, 'image/jpeg');
                 // Mark done even when no variant was produced (source ≤768w or
@@ -592,19 +598,8 @@ export async function processStaleArticleTasks(env: Env): Promise<void> {
             }
 
             // 5. Translation (independent — failure does not block article)
-            try {
-                await autoTranslateArticle(env, articleId, {
-                    title:        generated.title,
-                    subtitle:     generated.subtitle,
-                    summary:      generated.summary,
-                    content:      generated.content,
-                    country_code: countryCode,
-                });
-            } catch (transErr) {
-                console.error(`[generator] Translation failed for article ${articleId}:`, transErr);
-            }
-
-            // 6. Mark task done. Search indexing and distribution wait for approval.
+            // 6. Mark task done. Media, translations, search indexing and
+            // distribution wait for publication approval.
             await env.DB.prepare(`
                 UPDATE agent_tasks
                 SET status = 'completed',

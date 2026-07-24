@@ -14,7 +14,10 @@ export interface Env {
     RATE_LIMIT: KVNamespace;
 
     // Storage
-    MEDIA: R2Bucket;
+    // R2 is preferred; MEDIA_KV is the portable fallback for Cloudflare
+    // accounts where R2 has not been enabled.
+    MEDIA?: R2Bucket;
+    MEDIA_KV?: KVNamespace;
 
     // & Vectors
     AI: Ai;

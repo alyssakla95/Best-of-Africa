@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { Env, OptimizationMessage } from '../../types';
-import { generateHeadlineVariants, fillNarrativeGap, callConfiguredAI } from '../../lib/ai';
+import { generateHeadlineVariants, fillNarrativeGap, callConfiguredAI, hasProcessLeakage } from '../../lib/ai';
 import { findNarrativeGaps, indexArticle } from '../../lib/vectorize';
 import { updateArticleEngagement } from '../../lib/analytics';
 
@@ -27,20 +27,11 @@ export async function populateMarketMetrics(env: Env): Promise<void> {
 
         if (existing) continue;
 
-        // Calculate metrics from article data
-        const stats = await env.DB.prepare(`
-            SELECT 
-                COUNT(*) as article_count,
-                AVG(engagement_score) as avg_engagement,
-                SUM(view_count) as total_views
-            FROM articles 
-            WHERE sector_id = ? AND status = 'published'
-        `).bind(sector.id).first() as Record<string, any>;
-
-        // RAG: Research real market data
-        let marketSize = 1000000000; // fallback
-        let growthRate = 5.0; // fallback
-        let outlook = 'Neutral';
+        // A metric is stored only when a source-linked record supports it.
+        let marketSize: number | null = null;
+        let growthRate: number | null = null;
+        let outlook: string | null = null;
+        let sourceUrls: string[] = [];
 
         try {
             const query = `${sector.name} Africa market size report statistics forecast`;
@@ -48,34 +39,54 @@ export async function populateMarketMetrics(env: Env): Promise<void> {
             const vector = (embedding as Record<string, any>).data[0];
             const relevant = await env.VECTORS.query(vector, { topK: 3, returnMetadata: true });
 
-            const context = relevant.matches.map(m => (m.metadata as Record<string, any>).title).join('\n');
-            if (context) {
+            const records = relevant.matches
+                .map(m => m.metadata as Record<string, any>)
+                .filter(metadata => typeof metadata?.source_url === 'string' && metadata.source_url.startsWith('http'));
+            sourceUrls = [...new Set(records.map(metadata => String(metadata.source_url)))];
+            const context = records
+                .map((metadata, index) => `[${index + 1}] ${metadata.title || 'Untitled record'} | ${metadata.source_url}`)
+                .join('\n');
+            if (context && sourceUrls.length) {
                 const prompt = `System: Extract market metrics. Return JSON only: {"size_usd": number, "growth_percent": number, "outlook": "Favorable/Neutral/Challenging"}
 
 User: Sector: ${sector.name}. Context:\n${context}`;
-                const aiResponseRaw = await callConfiguredAI(env, { prompt, max_tokens: 150, temperature: 0.2 });
+                const aiResponseRaw = await callConfiguredAI(env, {
+                    prompt,
+                    max_tokens: 700,
+                    temperature: 0.1,
+                    structured_output: true,
+                });
                 const jsonMatch = (aiResponseRaw || '').match(/\{[^}]+\}/);
                 if (jsonMatch) {
                     const data = JSON.parse(jsonMatch[0]);
-                    if (data.size_usd) marketSize = data.size_usd;
-                    if (data.growth_percent) growthRate = data.growth_percent;
-                    if (data.outlook) outlook = data.outlook;
+                    if (Number.isFinite(data.size_usd) && data.size_usd > 0) marketSize = data.size_usd;
+                    if (Number.isFinite(data.growth_percent)) growthRate = data.growth_percent;
+                    if (['Favorable', 'Neutral', 'Challenging'].includes(data.outlook)) outlook = data.outlook;
                 }
             }
         } catch (e) {
             console.error('AI Market Research Failed', e);
         }
 
+        if (!sourceUrls.length || (marketSize === null && growthRate === null && outlook === null)) {
+            console.warn(`[optimizer] Skipped unsourced market metrics for sector: ${sector.name}`);
+            continue;
+        }
+
         await env.DB.prepare(`
-            INSERT INTO market_metrics (id, sector_id, year, market_size_usd, growth_rate, regulatory_outlook)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO market_metrics (
+                id, sector_id, year, market_size_usd, growth_rate,
+                regulatory_outlook, source_urls, last_updated_by
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'source-linked-worker')
         `).bind(
             crypto.randomUUID(),
             sector.id,
             currentYear,
             marketSize,
             growthRate,
-            outlook
+            outlook,
+            JSON.stringify(sourceUrls),
         ).run();
 
         console.log(`Populated market metrics for sector: ${sector.name}`);
@@ -167,15 +178,27 @@ export async function generateDynamicSectorSummaries(env: Env): Promise<void> {
         `).bind(`${sector}%`, `%${sector}%`).all();
 
         const contextText = (context.results || []).map((a: any) => a.title).join('\n');
-        let summary = "Trends and insights"; // fallback
+        let summary = `${sector} evidence watch`;
 
         if (contextText) {
             try {
                 const prompt = `System: Generate a 3-5 word "Current Trend Summary" for this sector based on headlines. Example: "Lithium Export Bans effective". No quotes.
 
 User: Sector: ${sector}\nHeadlines:\n${contextText}`;
-                const aiResRaw = await callConfiguredAI(env, { prompt, max_tokens: 30, temperature: 0.5 });
-                summary = (aiResRaw || '').trim().replace(/^"|"$/g, '') || summary;
+                const aiResRaw = await callConfiguredAI(env, { prompt, max_tokens: 400, temperature: 0.2 });
+                const candidate = (aiResRaw || '')
+                    .replace(/^["']|["']$/g, '')
+                    .replace(/^current trend summary\s*:\s*/i, '')
+                    .split(/\r?\n/)[0]
+                    .trim();
+                const words = candidate.split(/\s+/).filter(Boolean);
+                if (
+                    words.length >= 3
+                    && words.length <= 7
+                    && candidate.length <= 80
+                    && !hasProcessLeakage(candidate)
+                    && !/[`{}[\]]/.test(candidate)
+                ) summary = candidate;
             } catch (e) {
                 console.error(`AI Sector Summary failed for ${sector}`, e);
             }
@@ -185,10 +208,7 @@ User: Sector: ${sector}\nHeadlines:\n${contextText}`;
         // key format: sector_energy_desc (lowercase, first word only for simple matching)
         const key = `sector_${sector.split(' ')[0].toLowerCase()}_desc`;
 
-        await env.DB.prepare(`
-            INSERT OR REPLACE INTO system_config (key, value, updated_at)
-            VALUES (?, ?, datetime('now'))
-        `).bind(key, summary).run();
+        await saveConfig(env, key, summary);
 
         console.log(`Updated dynamic summary for ${sector}: ${summary}`);
     }
@@ -500,9 +520,20 @@ User: Generate the event description.`;
 // ───────────────────────────────────────────────────────────────────────────────
 // Helper: Save config key
 // ───────────────────────────────────────────────────────────────────────────────
-export async function saveConfig(env: Env, key: string, value: string): Promise<void> {
+export async function saveConfig(env: Env, key: string, value: unknown): Promise<void> {
+    if (typeof value !== 'string') return;
+    const clean = value.trim();
+    if (
+        clean.length < 2
+        || clean === '...'
+        || hasProcessLeakage(clean)
+        || /```|<think|<analysis/i.test(clean)
+    ) {
+        console.warn(`[optimizer] Refused non-publishable config value for ${key}`);
+        return;
+    }
     await env.DB.prepare(`
         INSERT OR REPLACE INTO system_config (key, value, updated_at)
         VALUES (?, ?, datetime('now'))
-    `).bind(key, value).run();
+    `).bind(key, clean).run();
 }

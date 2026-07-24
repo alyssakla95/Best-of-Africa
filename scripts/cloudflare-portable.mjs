@@ -95,6 +95,7 @@ const namesFor = prefix => ({
   cache: `${prefix}-cache`,
   rateLimit: `${prefix}-rate-limit`,
   media: `${prefix}-media`,
+  mediaKv: `${prefix}-media-store`,
   vectors: `${prefix}-content`,
   contentQueue: `${prefix}-content-generation`,
   translationQueue: `${prefix}-article-translations`,
@@ -134,7 +135,7 @@ const plan = names => {
     siteUrl,
     resources: {
       d1: names.database, kv: [names.cache, names.rateLimit],
-      r2: `${names.media} (optional until R2 account onboarding is enabled)`,
+      r2: `${names.media} (optional; ${names.mediaKv} KV namespace is provisioned as the media fallback when R2 is unavailable)`,
       vectorize: names.vectors, queues: [names.contentQueue, names.translationQueue, names.optimizationQueue],
       analytics: names.analytics, durableObject: 'LiveCounter', workersAi: true,
     },
@@ -174,7 +175,8 @@ const bootstrap = names => {
     r2Provisioned = true;
   } catch (error) {
     if (options['require-r2']) throw error;
-    console.warn('\nR2 was not provisioned. Enable R2 in the Cloudflare dashboard and add the MEDIA binding before using media uploads.');
+    wrangler(['kv', 'namespace', 'create', names.mediaKv, ...baseConfig, '--binding', 'MEDIA_KV', '--use-remote', '--update-config']);
+    console.warn(`\nR2 was not provisioned. Media storage falls back to the ${names.mediaKv} KV namespace (MEDIA_KV binding). Enable R2 later and add the MEDIA binding to upgrade.`);
   }
   wrangler(['vectorize', 'create', names.vectors, '--preset', '@cf/baai/bge-base-en-v1.5', ...baseConfig, '--binding', 'VECTORS', '--use-remote', '--update-config']);
   wrangler(['queues', 'create', names.contentQueue]);

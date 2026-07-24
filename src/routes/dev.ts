@@ -166,6 +166,9 @@ router.post('/test-tts', devAuthGuard, async (c) => {
 // Paginated by R2 list cursor; DB.batch keeps each call to two subrequests.
 router.post('/audio-sizes', devAuthGuard, async (c) => {
     const cursor = c.req.query('cursor') || undefined;
+    if (!c.env.MEDIA) {
+        return c.json({ error: 'audio-sizes backfill requires the R2 MEDIA binding; the KV fallback cannot list keys' }, 503);
+    }
     const listed = await c.env.MEDIA.list({ prefix: 'audio/', limit: 500, cursor });
     const stmts = [];
     for (const obj of listed.objects) {

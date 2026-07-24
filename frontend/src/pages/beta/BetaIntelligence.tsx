@@ -58,6 +58,7 @@ export const BetaIntelligence = () => {
     <nav className="sticky top-[4.5rem] z-30 border-b border-navy/15 bg-white/95 backdrop-blur-md lg:top-16" aria-label="Market intelligence sections">
       <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
         {[['overview','Performance matrix'],['sectors','Sector dossiers'],['methodology','Methodology']].map(([slug,label]) => <Link key={slug} to={`/intelligence/${slug}`} aria-current={view === slug ? 'page' : undefined} className={`shrink-0 rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${view === slug ? 'bg-navy text-white' : 'text-navy/70 hover:bg-navy/5 hover:text-navy'}`}>{label}</Link>)}
+        <Link to="/intelligence/reports" className="shrink-0 rounded-md px-4 py-2.5 text-sm font-bold text-navy/70 transition-colors hover:bg-navy/5 hover:text-navy">Briefing reports</Link>
       </div>
     </nav>
 

@@ -5,6 +5,80 @@
 
 import type { Env } from '../types';
 
+const KV_MEDIA_PREFIX = 'media:v1:';
+
+export interface StoredMedia {
+    body: ReadableStream | ArrayBuffer;
+    contentType: string;
+    etag: string;
+}
+
+function bytesToHex(bytes: ArrayBuffer): string {
+    return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export async function putMedia(
+    env: Env,
+    key: string,
+    data: ArrayBuffer | Uint8Array,
+    contentType: string,
+): Promise<void> {
+    const bytes: ArrayBuffer = data instanceof Uint8Array
+        ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+        : data;
+    if (env.MEDIA) {
+        await env.MEDIA.put(key, bytes, { httpMetadata: { contentType } });
+        return;
+    }
+    if (!env.MEDIA_KV) throw new Error('No media storage binding is configured');
+
+    const etag = bytesToHex(await crypto.subtle.digest('SHA-256', bytes));
+    await Promise.all([
+        env.MEDIA_KV.put(`${KV_MEDIA_PREFIX}${key}`, bytes),
+        env.MEDIA_KV.put(
+            `${KV_MEDIA_PREFIX}${key}:metadata`,
+            JSON.stringify({ contentType, etag }),
+        ),
+    ]);
+}
+
+export async function getMedia(env: Env, key: string): Promise<StoredMedia | null> {
+    if (env.MEDIA) {
+        const object = await env.MEDIA.get(key);
+        if (object) {
+            return {
+                body: object.body,
+                contentType: object.httpMetadata?.contentType || 'application/octet-stream',
+                etag: object.httpEtag,
+            };
+        }
+    }
+    if (!env.MEDIA_KV) return null;
+
+    const [body, metadataRaw] = await Promise.all([
+        env.MEDIA_KV.get(`${KV_MEDIA_PREFIX}${key}`, 'arrayBuffer'),
+        env.MEDIA_KV.get(`${KV_MEDIA_PREFIX}${key}:metadata`),
+    ]);
+    if (!body) return null;
+    let metadata: { contentType?: string; etag?: string } = {};
+    try { metadata = metadataRaw ? JSON.parse(metadataRaw) : {}; } catch { /* use safe defaults */ }
+    return {
+        body,
+        contentType: metadata.contentType || 'application/octet-stream',
+        etag: metadata.etag || bytesToHex(await crypto.subtle.digest('SHA-256', body)),
+    };
+}
+
+export async function deleteMedia(env: Env, key: string): Promise<void> {
+    if (env.MEDIA) await env.MEDIA.delete(key);
+    if (env.MEDIA_KV) {
+        await Promise.all([
+            env.MEDIA_KV.delete(`${KV_MEDIA_PREFIX}${key}`),
+            env.MEDIA_KV.delete(`${KV_MEDIA_PREFIX}${key}:metadata`),
+        ]);
+    }
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 // Upload Image to R2
 // ───────────────────────────────────────────────────────────────────────────────
@@ -27,9 +101,7 @@ export async function uploadImage(
     contentType: string = 'image/jpeg'
 ): Promise<string> {
     try {
-        await env.MEDIA.put(key, data, {
-            httpMetadata: { contentType: sniffImageType(data) || contentType },
-        });
+        await putMedia(env, key, data, sniffImageType(data) || contentType);
 
         // Return an ABSOLUTE URL to this worker's /assets route so the Pages
         // frontend (a different origin) can load the image. Falls back to a

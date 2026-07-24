@@ -133,16 +133,15 @@ app.get('/assets/*', async (c) => {
 
     // ?w=768 → serve the pre-generated mobile variant when it exists (created
     // at generation time / by the variant backfill cron), else the original.
-    let obj: R2ObjectBody | null = null;
+    const { getMedia, heroVariantKey } = await import('./lib/media');
+    let obj = null;
     if (c.req.query('w') === '768') {
-        const { heroVariantKey } = await import('./lib/media');
-        obj = await c.env.MEDIA.get(heroVariantKey(key));
+        obj = await getMedia(c.env, heroVariantKey(key));
     }
-    if (!obj) obj = await c.env.MEDIA.get(key);
+    if (!obj) obj = await getMedia(c.env, key);
     if (!obj) return c.notFound();
-    const headers = new Headers();
-    obj.writeHttpMetadata(headers);
-    headers.set('etag', obj.httpEtag);
+    const headers = new Headers({ 'Content-Type': obj.contentType });
+    headers.set('etag', obj.etag);
     // Article media lives at STABLE URLs but is mutable (hero regeneration,
     // audio re-narration overwrite in place) — a year of "immutable" caching
     // would hide every regenerated hero from returning visitors. One day is
@@ -159,16 +158,21 @@ app.get('/assets/*', async (c) => {
     // existing objects without re-uploading anything.
     const body = obj.body;
     if ((headers.get('content-type') || '').startsWith('image/') && body) {
-        const [probe, rest] = body.tee();
-        const reader = probe.getReader();
-        const { value } = await reader.read();
-        reader.cancel().catch(() => {});
+        const [value, responseBody] = body instanceof ArrayBuffer
+            ? [new Uint8Array(body.slice(0, 16)), body]
+            : await (async () => {
+                const [probe, rest] = body.tee();
+                const reader = probe.getReader();
+                const read = await reader.read();
+                reader.cancel().catch(() => {});
+                return [read.value, rest] as const;
+            })();
         if (value && value.length >= 12) {
             if (value[0] === 0xff && value[1] === 0xd8) headers.set('content-type', 'image/jpeg');
             else if (value[0] === 0x89 && value[1] === 0x50) headers.set('content-type', 'image/png');
             else if (value[0] === 0x52 && value[1] === 0x49 && value[8] === 0x57 && value[9] === 0x45) headers.set('content-type', 'image/webp');
         }
-        return new Response(rest, { headers });
+        return new Response(responseBody, { headers });
     }
     return new Response(body, { headers });
 });
@@ -290,11 +294,27 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     // Isolate each job: a failure in one step (e.g. ingestion when NEWS_API_KEY
     // is unset or Workers AI is over quota) must not block the others —
     // especially the daily reporting and newsletter dispatch below.
+    // Every step also appends one agent_metrics statement, flushed in a single
+    // DB batch at the end of the tick: persistent worker-run telemetry without
+    // spending a subrequest per step.
+    const metricStatements: D1PreparedStatement[] = [];
     const safe = async (label: string, fn: () => Promise<unknown>) => {
+        const started = Date.now();
         try {
             await fn();
+            metricStatements.push(env.DB.prepare(`
+                INSERT INTO agent_metrics (id, agent_name, run_at, duration_ms, tasks_seen, tasks_done, tasks_failed)
+                VALUES (?, ?, datetime('now'), ?, 1, 1, 0)
+            `).bind(crypto.randomUUID(), `cron:${label}`, Date.now() - started));
         } catch (e) {
             console.error(`[cron] ${label} failed:`, e);
+            metricStatements.push(env.DB.prepare(`
+                INSERT INTO agent_metrics (id, agent_name, run_at, duration_ms, tasks_seen, tasks_done, tasks_failed, error)
+                VALUES (?, ?, datetime('now'), ?, 1, 0, 1, ?)
+            `).bind(
+                crypto.randomUUID(), `cron:${label}`, Date.now() - started,
+                (e instanceof Error ? e.message : 'Unknown cron failure').slice(0, 1000),
+            ));
         }
     };
 
@@ -387,9 +407,13 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         await backfillSectors(env, 8);
     });
 
-    // 2. Optimization + stale task recovery: every 2 minutes
-    if (minutes % 2 === 0) {
+    // 2. Full optimization is intentionally bounded to every six hours. It
+    // includes multiple synthesis calls and must not run thirty times an hour.
+    if (hours % 6 === 0 && minutes === 10) {
         await safe('optimization', () => runOptimization(env));
+    }
+    // Stale generation recovery remains cheap and responsive.
+    if (minutes % 2 === 0) {
         await safe('stale-task-recovery', () => runStaleTaskRecovery(env));
     }
 
@@ -426,6 +450,23 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
             await safe('newsletter-weekly', () => runNewsletterDispatch(env, 'weekly'));
         }
     }
+
+    // Prune telemetry to the documented 7-day retention once a day.
+    if (hours === 4 && minutes === 0) {
+        metricStatements.push(env.DB.prepare(
+            "DELETE FROM agent_metrics WHERE run_at < datetime('now', '-7 days')"
+        ));
+    }
+
+    // Flush the tick's telemetry in one batch. Telemetry must never crash the
+    // cron, so a failed flush is logged and dropped.
+    if (metricStatements.length) {
+        try {
+            await env.DB.batch(metricStatements);
+        } catch (e) {
+            console.error('[cron] metrics flush failed:', e);
+        }
+    }
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -444,14 +485,17 @@ async function queue(batch: MessageBatch, env: Env) {
                 const articleId = typeof data.articleId === 'string' ? data.articleId : '';
                 const language = typeof data.language === 'string' ? data.language : '';
                 if (!articleId || !['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language)) {
-                    throw new Error('Invalid article translation queue message');
+                    // Malformed messages are terminal: retrying cannot fix the shape.
+                    console.error('Dropping malformed article translation message:', JSON.stringify(data).slice(0, 300));
+                    message.ack();
+                    continue;
                 }
                 const { processArticleTranslationJob } = await import('./lib/translate');
                 await processArticleTranslationJob(env, {
                     type: 'article_translation',
                     articleId,
                     language: language as 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh',
-                });
+                }, message.attempts);
             }
 
             message.ack();

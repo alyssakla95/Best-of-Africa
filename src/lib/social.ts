@@ -72,8 +72,7 @@ export async function postToTwitter(
 
     if (!twitterApiKey || !twitterAccessToken) {
         console.log('[TWITTER] No API keys configured, skipping post');
-        console.log('[TWITTER] Would post:', tweet);
-        return { success: true, tweet_id: 'simulated' };
+        return { success: false, error: 'Twitter credentials are not configured' };
     }
 
     try {

@@ -155,6 +155,31 @@ export type SectorMarketPerformance = {
     diligence_questions: string[];
 };
 
+export interface GeneratedReportSummary {
+    id: string;
+    type: 'country_brief' | 'sector_analysis' | 'weekly_digest' | 'investment_outlook' | string;
+    title: string;
+    metadata: Record<string, unknown>;
+    created_at: string;
+}
+
+export interface GeneratedReportSection {
+    title: string;
+    content?: string;
+    data?: unknown;
+}
+
+export interface GeneratedReport {
+    id: string;
+    type: GeneratedReportSummary['type'];
+    title: string;
+    subtitle: string | null;
+    sections: GeneratedReportSection[];
+    metadata: Record<string, unknown>;
+    generated_at: string;
+    created_at: string;
+}
+
 export const api = {
     // Articles
     getArticles: (params: Record<string, string> = {}) => {
@@ -284,8 +309,8 @@ export const api = {
         sector_coverage: { id: string; name: string; article_count: number; }[];
     }>(`/narratives/country/${code}`),
     getReports: () => readerRequest<{ data: ArticleListItem[] }>('/market-intel/reports'),
-    getGeneratedReports: () => readerRequest<{ data: ArticleListItem[] }>('/market-intel/generated-reports'),
-    getGeneratedReport: (id: string) => readerRequest<{ report: Article; related: ArticleListItem[] }>(`/market-intel/generated-reports/${id}`),
+    getGeneratedReports: () => readerRequest<{ data: GeneratedReportSummary[] }>('/market-intel/generated-reports'),
+    getGeneratedReport: (id: string) => readerRequest<{ data: GeneratedReport }>(`/market-intel/generated-reports/${id}`),
     getReportsBySector: (sectorId: string) => readerRequest<{ data: ArticleListItem[] }>(`/market-intel/reports/sector/${sectorId}`),
     getReport: (id: string) => readerRequest<{ report: Article; related: ArticleListItem[] }>(`/market-intel/reports/${id}`),
     getAudienceInsights: () => request<{

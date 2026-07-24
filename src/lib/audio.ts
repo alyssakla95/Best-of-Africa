@@ -1,6 +1,7 @@
 import type { Env } from '../types';
 import { getCached } from './cache';
 import { callConfiguredAI } from './ai';
+import { putMedia } from './media';
 
 type TtsProvider = 'elevenlabs' | 'aura-2' | 'aura-1';
 
@@ -151,9 +152,7 @@ export async function generateAudioNarration(
 
         const audioKey = `audio/${articleId}.mp3`;
         const durationSeconds = Math.ceil((narrationText.split(/\s+/).length / 150) * 60);
-        await env.MEDIA.put(audioKey, audio, {
-            httpMetadata: { contentType: 'audio/mpeg' },
-        });
+        await putMedia(env, audioKey, audio, 'audio/mpeg');
 
         const base = ((env as Record<string, any>).PUBLIC_API_URL || '').replace(/\/$/, '');
         const path = base ? `${base}/assets/${audioKey}` : `/assets/${audioKey}`;
@@ -234,7 +233,7 @@ ${evidence}`,
         if (!generated) return null;
 
         const audioKey = `briefs/${countryCode}/${date}.mp3`;
-        await env.MEDIA.put(audioKey, generated.audio, { httpMetadata: { contentType: 'audio/mpeg' } });
+        await putMedia(env, audioKey, generated.audio, 'audio/mpeg');
         const base = ((env as Record<string, any>).PUBLIC_API_URL || '').replace(/\/$/, '');
         const path = base ? `${base}/assets/${audioKey}` : `/assets/${audioKey}`;
         return { audioUrl: `${path}?v=5`, transcript };

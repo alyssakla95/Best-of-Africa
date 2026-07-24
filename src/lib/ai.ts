@@ -98,6 +98,11 @@ const RESPONSE_PROFILES: Record<AIResponseProfile, { minimumWords: number; minim
 
 const THIN_EVIDENCE_LANGUAGE = /\b(insufficient (?:data|evidence|context)|no (?:relevant|supporting) (?:data|evidence|records)|evidence (?:is|was) too thin|unable to substantiate)\b/i;
 const PUBLISHED_OUTPUT_CONTRACT = `Return only the finished deliverable. Never expose chain-of-thought, hidden reasoning, scratch work, planning, prompt interpretation, model identity, tool narration or drafting commentary. Do not use <think>, <analysis>, "reasoning", "as an AI", "I considered", "let me", or similar process language. Present supported evidence, conclusions, uncertainty and next actions directly.`;
+const PROCESS_LEAKAGE = /\b(?:we need to|the user (?:asked|gave|wants)|use the appropriate format|only output the final|cite citations|private planning|internal plan|prompt interpretation|chain[- ]of[- ]thought)\b|(?:^|\n)\s*(?:analysis|reasoning|output)\s*:/i;
+
+export function hasProcessLeakage(text: string): boolean {
+    return PROCESS_LEAKAGE.test(text);
+}
 
 export function countResponseWords(text: string): number {
     return text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -192,13 +197,16 @@ export async function callConfiguredAI(env: Env, options: AICallOptions): Promis
     const prepared = applyResponseProfile(options);
     const first = await callConfiguredAIOnce(env, prepared);
     const malformedStructure = Boolean(options.structured_output && !isValidStructuredOutput(first));
-    if (!malformedStructure && !shouldExpandAIResponse(first, options.response_profile)) return first;
+    const leakedProcess = hasProcessLeakage(first);
+    if (!malformedStructure && !leakedProcess && !shouldExpandAIResponse(first, options.response_profile)) return first;
 
     const contract = options.response_profile ? RESPONSE_PROFILES[options.response_profile] : null;
     const structuredInstruction = options.structured_output
         ? 'Return one complete replacement JSON value matching the original schema. Output JSON only, with every brace and bracket closed.'
         : 'Return the complete rewritten response under the original format.';
-    const repairReason = contract
+    const repairReason = leakedProcess
+        ? 'The draft exposes internal process or prompt-following commentary that cannot be published.'
+        : contract
         ? `The draft below is materially underdeveloped (${countResponseWords(first)} words; the requested analytical floor is ${contract.minimumWords} words when evidence permits).`
         : 'The draft below does not satisfy the requested structured-output schema.';
     const expansionPrompt = `${repairReason}
@@ -215,8 +223,10 @@ ${first}`;
         messages: options.messages
             ? [...options.messages, { role: 'assistant', content: first }, { role: 'user', content: expansionPrompt }]
             : undefined,
+        max_tokens: Math.max(options.max_tokens || 0, 600),
         temperature: Math.min(options.temperature ?? 0.3, 0.3),
     }));
+    if (hasProcessLeakage(expanded)) return '';
     if (!options.structured_output || isValidStructuredOutput(expanded)) return expanded;
 
     const repairPrompt = `Repair the malformed structured response below. Preserve all substantive detail, but return exactly one valid JSON value matching the original requested schema. Do not summarize, omit fields, add commentary or use markdown fences.\n\nMALFORMED RESPONSE:\n${expanded}`;

@@ -224,13 +224,15 @@ export function parseLongTranslationBatch(raw: string, expected: number): string
     }
 }
 
+// Returns undefined when the model itself failed (transient infrastructure),
+// null when the model answered but the output failed validation (quality).
 async function llmTranslateBatch(
     env: Env,
     texts: string[],
     targetLang: SupportedLanguage,
-): Promise<string[] | null> {
+): Promise<string[] | null | undefined> {
     if (!texts.length) return [];
-    const { extractAIText, MODELS } = await import('./ai');
+    const { extractAIText, hasProcessLeakage, MODELS } = await import('./ai');
     try {
         const res = await (env.AI as Record<string, any>).run(MODELS.TEXT_GENERATION, {
             messages: [
@@ -245,10 +247,14 @@ async function llmTranslateBatch(
             max_tokens: 12000,
             temperature: 0.1,
         });
-        return parseLongTranslationBatch(extractAIText(res), texts.length);
+        const parsed = parseLongTranslationBatch(extractAIText(res), texts.length);
+        if (!parsed) return null;
+        // A structurally valid batch can still smuggle model commentary into a
+        // translation string; reject the whole batch rather than publish it.
+        return parsed.some(value => hasProcessLeakage(value)) ? null : parsed;
     } catch (e) {
         console.error('[translate] llm batch failed:', e);
-        return null;
+        return undefined;
     }
 }
 
@@ -309,6 +315,14 @@ export async function ensureArticleTranslation(
             ...bodyChunks,
         ];
         const translated = await llmTranslateBatch(env, sourceTexts, targetLang);
+        if (translated === undefined) {
+            // Infrastructure failure — retryable, never a terminal refusal.
+            await recordTranslationStatus(env, articleId, targetLang, {
+                phase: 'model-unavailable',
+                inputs: sourceTexts.length,
+            });
+            return false;
+        }
         if (!translated) {
             await recordTranslationStatus(env, articleId, targetLang, {
                 phase: 'model-output-invalid',
@@ -433,6 +447,7 @@ export async function enqueueArticleTranslation(
 export async function processArticleTranslationJob(
     env: Env,
     message: ArticleTranslationQueueMessage,
+    attempts = 1,
 ): Promise<void> {
     const article = await env.DB.prepare(`
         SELECT title, subtitle, summary, content
@@ -454,7 +469,31 @@ export async function processArticleTranslationJob(
 
     const complete = await ensureArticleTranslation(env, message.articleId, article, message.language);
     if (!complete) {
-        throw new Error(`Translation incomplete for ${message.articleId} (${message.language})`);
+        // Distinguish terminal quality refusals from transient infrastructure
+        // failures. Gate phases mean the model produced unusable output for
+        // THIS article; once the message has been retried, further attempts
+        // re-run the same content against the same gates. Store a quality=-1
+        // row holding the English source fields (the same convention as the
+        // backfill: a no-op for readers that stops re-queueing) and ack.
+        const statusRaw = await env.CACHE.get(translationStatusKey(message.articleId, message.language));
+        let phase: string | undefined;
+        try { phase = statusRaw ? (JSON.parse(statusRaw) as Record<string, unknown>).phase as string | undefined : undefined; }
+        catch { phase = undefined; }
+        const qualityRefusal = phase === 'model-output-invalid' || phase === 'title-gate'
+            || phase === 'body-count-gate' || phase === 'body-gate';
+        if (qualityRefusal && attempts >= 3) {
+            await env.DB.prepare(`
+                INSERT OR REPLACE INTO article_translations
+                    (id, article_id, language, title, subtitle, summary, content, quality, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, -1, datetime('now'))
+            `).bind(
+                crypto.randomUUID(), message.articleId, message.language,
+                article.title, article.subtitle, article.summary, article.content,
+            ).run();
+            console.warn(`[translate] terminal quality refusal for ${message.articleId} (${message.language}, phase ${phase}) — marked -1 after ${attempts} attempts`);
+        } else {
+            throw new Error(`Translation incomplete for ${message.articleId} (${message.language})`);
+        }
     }
 
     await env.CACHE.delete(queuedTranslationKey(message.articleId, message.language));

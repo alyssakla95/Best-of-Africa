@@ -3,8 +3,6 @@ import type { Env, Variables } from '../types';
 import { z } from 'zod';
 import { validate } from '../lib';
 import { evaluateArticleDepth, identifyCountry, identifySector, ARTICLE_PROMPT_VERSION, MIN_PUBLISHABLE_ARTICLE_WORDS, MIN_PUBLISHABLE_INVESTOR_BRIEF_WORDS, MODELS } from '../lib/ai';
-import { autoTranslateArticle } from '../lib/translate';
-import { generateAudioNarration } from '../lib/audio';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -481,25 +479,11 @@ router.post('/tasks/complete', validate('json', CompleteTaskSchema), async (c) =
                         WHERE id = ?
                     `).bind(articleId, itemId).run();
 
-                    // Async enrichment: translation and hero image are independent —
-                    // failure of one must not prevent the other from running.
-                    try {
-                        await autoTranslateArticle(c.env, articleId, {
-                            title:        generated.title,
-                            subtitle:     generated.subtitle,
-                            summary:      generated.summary,
-                            content:      generated.content,
-                            country_code: countryCode,
-                        });
-                    } catch (translateError) {
-                        console.error(`[enrichment] Translation failed for article ${articleId}:`, translateError);
-                    }
-
-                    try {
-                        await generateAudioNarration(c.env, articleId, generated.title, generated.content);
-                    } catch (audioError) {
-                        console.error(`[enrichment] Audio generation failed for article ${articleId}:`, audioError);
-                    }
+                    // Audio narration and the six translation jobs run only after
+                    // the post-publication audit approves the final text (see
+                    // auditPendingArticles in lib/moderation). Enriching a draft
+                    // here would narrate and translate content that remediation
+                    // may still rewrite.
                 }
             } catch (e) {
                 console.error('Failed to process completed article generation task', e);

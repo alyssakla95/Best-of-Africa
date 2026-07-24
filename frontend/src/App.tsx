@@ -40,6 +40,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 import { BetaLanding } from './pages/beta/BetaLanding';
 const BetaMembership  = lazyWithRetry(() => import('./pages/beta/BetaMembership').then(m => ({ default: m.BetaMembership })));
 const BetaIntelligence = lazyWithRetry(() => import('./pages/beta/BetaIntelligence').then(m => ({ default: m.BetaIntelligence })));
+const BetaReport = lazyWithRetry(() => import('./pages/beta/BetaReport').then(m => ({ default: m.BetaReport })));
 const BetaStories     = lazyWithRetry(() => import('./pages/beta/BetaStories').then(m => ({ default: m.BetaStories })));
 const BetaLibrary     = lazyWithRetry(() => import('./pages/beta/BetaLibrary').then(m => ({ default: m.BetaLibrary })));
 const BetaArticle     = lazyWithRetry(() => import('./pages/beta/BetaArticle').then(m => ({ default: m.BetaArticle })));
@@ -156,6 +157,8 @@ const AnimatedRoutes = () => {
           <Route path="/countries/:code" element={<PageTransition><BetaCountryHub /></PageTransition>} />
           <Route path="/countries/:code/narratives" element={<PageTransition><BetaNarrativeToolkit /></PageTransition>} />
           <Route path="/intelligence"    element={<PageTransition><BetaIntelligence /></PageTransition>} />
+          <Route path="/intelligence/reports" element={<PageTransition><BetaReport /></PageTransition>} />
+          <Route path="/intelligence/reports/:id" element={<PageTransition><BetaReport /></PageTransition>} />
           <Route path="/intelligence/:view" element={<PageTransition><BetaIntelligence /></PageTransition>} />
           {/* /intel is a legacy alias, canonical intelligence page is /intelligence.
               (Supporter Feed lives at /supporter-feed.) Redirect avoids a duplicate route. */}

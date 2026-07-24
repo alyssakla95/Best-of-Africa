@@ -26,92 +26,12 @@ CREATE TABLE IF NOT EXISTS market_metrics (
     updated_at TEXT DEFAULT (datetime('now')),
     UNIQUE(sector_id, country_code, year)
 );
--- 2. Seed Baseline Data (2024-2025)
--- We use INSERT OR IGNORE or ON CONFLICT to allow agents to overwrite later.
-INSERT OR IGNORE INTO market_metrics (
-        id,
-        sector_id,
-        year,
-        market_size_usd,
-        growth_rate,
-        investment_volume_usd,
-        regulatory_outlook,
-        top_companies_json
-    )
-VALUES -- Technology (Pan-African Baseline)
-    (
-        'uuid-tech-24',
-        'technology',
-        2024,
-        18000000000,
-        12.5,
-        4500000000,
-        'Positive',
-        '["Flutterwave", "Interswitch", "Fawry", "M-Pesa"]'
-    ),
-    (
-        'uuid-tech-25',
-        'technology',
-        2025,
-        20500000000,
-        14.2,
-        5200000000,
-        'Positive',
-        '["Flutterwave", "Interswitch", "M-Pesa", "Paystack"]'
-    ),
-    -- Agriculture
-    (
-        'uuid-agri-24',
-        'agriculture',
-        2024,
-        300000000000,
-        4.2,
-        12000000000,
-        'Neutral',
-        '["OCP Group", "Kenya Tea Dev", "Dangote Sugar"]'
-    ),
-    (
-        'uuid-agri-25',
-        'agriculture',
-        2025,
-        315000000000,
-        5.1,
-        13500000000,
-        'Positive',
-        '["OCP Group", "Olam Agri", "Dangote Sugar"]'
-    ),
-    -- Finance
-    (
-        'uuid-fin-24',
-        'finance',
-        2024,
-        150000000000,
-        6.8,
-        8000000000,
-        'Volatile',
-        '["Standard Bank", "Ecobank", "Access Bank"]'
-    ),
-    (
-        'uuid-fin-25',
-        'finance',
-        2025,
-        162000000000,
-        7.5,
-        9500000000,
-        'Neutral',
-        '["Standard Bank", "FirstRand", "Attijariwafa"]'
-    ),
-    -- Energy
-    (
-        'uuid-nrg-25',
-        'energy',
-        2025,
-        110000000000,
-        3.5,
-        25000000000,
-        'Volatile',
-        '["Sonatrach", "NNPC", "Sasol"]'
-    );
+-- 2. Market metrics are intentionally NOT seeded. Baselines fabricated without
+-- primary sources were removed during the data-integrity remediation; rows are
+-- now inserted only by the optimizer worker when a source-linked evidence
+-- record supports the figures (see populateMarketMetrics in
+-- src/lib/optimizer/market-data.ts, which sets source_urls and
+-- last_updated_by = 'source-linked-worker').
 -- 3. Update Countries with 2024/2025 Estimates (Live Data Baseline)
 -- Nigeria
 UPDATE countries

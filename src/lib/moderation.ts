@@ -10,6 +10,8 @@ import { editorialApprovalFailure } from './editorial-quality';
 import { indexArticle } from './vectorize';
 import { onArticlePublished } from './alerts';
 import { autoPostArticle } from './social';
+import { generateAudioNarration } from './audio';
+import { autoTranslateArticle } from './translate';
 
 export interface ModerationResult {
     status: 'approved' | 'flagged' | 'needs_review';
@@ -248,6 +250,12 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
                         UPDATE articles
                         SET title = ?, subtitle = ?, content = ?, summary = ?,
                             ai_investor_brief = ?, tags = ?, reading_time_minutes = ?,
+                            -- Remediation replaces the article text, so any prior
+                            -- narration is stale: clear it and let the
+                            -- post-approval follow-up narrate the final content.
+                            audio_url = NULL, audio_duration_seconds = NULL,
+                            audio_file_size = NULL, audio_regen = NULL,
+                            audio_provider = NULL,
                             refinement_count = COALESCE(refinement_count, 0) + 1,
                             moderation_status = 'pending', moderation_score = 1,
                             moderation_notes = ?, last_audited_at = NULL,
@@ -296,6 +304,14 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
         published += 1;
 
         const followUps = await Promise.allSettled([
+            generateAudioNarration(env, article.id, article.title, article.content),
+            autoTranslateArticle(env, article.id, {
+                title: article.title,
+                subtitle: article.subtitle,
+                summary: article.summary,
+                content: article.content,
+                country_code: article.country_code,
+            }),
             indexArticle(env, article.id, article.title, article.content, {
                 country_code: article.country_code ?? undefined,
                 sector_id: article.sector_id ?? undefined,

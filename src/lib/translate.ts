@@ -571,10 +571,8 @@ async function backfillMissingTranslations(env: Env, batch: number): Promise<num
     const missing = await env.DB.prepare(`
         SELECT a.id AS aid, l.lang, a.title, a.subtitle, a.summary, a.content
         FROM articles a
-        CROSS JOIN (
-            SELECT 'fr' AS lang UNION ALL SELECT 'ar' UNION ALL SELECT 'pt'
-            UNION ALL SELECT 'de' UNION ALL SELECT 'hi' UNION ALL SELECT 'zh'
-        ) l
+        -- json_each avoids a compound SELECT (D1 rejects UNION ALL chains).
+        CROSS JOIN (SELECT value AS lang FROM json_each('["fr","ar","pt","de","hi","zh"]')) l
         WHERE a.status = 'published'
           AND NOT EXISTS (
               SELECT 1 FROM article_translations t

@@ -312,6 +312,17 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         await recoverPendingItems(env, 25);
     });
 
+    // Complete the publication lifecycle. Generation remains quarantined until
+    // a separate source-grounded audit passes every existing editorial gate.
+    // One item per tick keeps verification quality ahead of throughput.
+    await safe('editorial-audit', async () => {
+        const { auditPendingArticles } = await import('./lib/moderation');
+        const result = await auditPendingArticles(env, 1);
+        if (result.reviewed) {
+            console.log(`[cron] editorial audit: ${result.published}/${result.reviewed} published`);
+        }
+    });
+
     // Regenerate existing narration newest-first, then extend audio coverage.
     // This runs before expensive ingestion and image workloads so those jobs
     // cannot consume the invocation budget before TTS is reached.

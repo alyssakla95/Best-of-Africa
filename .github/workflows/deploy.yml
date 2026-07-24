@@ -1,8 +1,6 @@
-name: Deploy to Cloudflare
+name: Deploy to Alyssa Cloudflare
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 env:
@@ -10,120 +8,54 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
 jobs:
-  # ════════════════════════════════════════════════════════════════════
-  # QUALITY GATE — nothing deploys unless types, tests and the build pass
-  # ════════════════════════════════════════════════════════════════════
   check:
-    name: Typecheck & Test
+    name: Typecheck, Test, Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-
       - name: Install backend dependencies
-        run: npm ci
-
-      - name: Backend typecheck
-        run: npx tsc --noEmit
-
-      - name: Unit & integration tests
-        run: npx vitest run
-
+        run: npm install
+      - name: Backend typecheck and tests
+        run: |
+          npx tsc --noEmit
+          npx vitest run
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
-
-      - name: Frontend typecheck
+        run: npm install
+      - name: Frontend typecheck and build
         working-directory: frontend
-        run: npx tsc --noEmit -p tsconfig.app.json
+        env:
+          VITE_API_URL: https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1
+          VITE_SITE_URL: https://alyssa-boa-web.pages.dev
+        run: |
+          npx tsc --noEmit -p tsconfig.app.json
+          npm run build
 
-  # ════════════════════════════════════════════════════════════════════
-  # BACKEND WORKER DEPLOYMENT
-  # ════════════════════════════════════════════════════════════════════
-  deploy-backend:
-    name: Deploy Backend Worker
+  deploy:
+    name: Backend first, then Pages
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
-
-  # ════════════════════════════════════════════════════════════════════
-  # FRONTEND PAGES DEPLOYMENT
-  # ════════════════════════════════════════════════════════════════════
-  deploy-frontend:
-    name: Deploy Frontend (Pages)
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install Dependencies
+      - name: Install dependencies
+        run: npm install
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply DB --remote --config wrangler.alyssa.toml
+      - name: Deploy backend Worker
+        run: npx wrangler deploy --config wrangler.alyssa.toml
+      - name: Install and build frontend
         working-directory: frontend
-        run: npm ci
-
-      - name: Build Frontend
-        working-directory: frontend
-        run: npm run build
-
-      - name: Deploy to Cloudflare Pages (Primary)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=boa-platform-frontend --commit-dirty=true
-
-      - name: Deploy to Cloudflare Pages (Secondary)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=best-of-africa-frontend --commit-dirty=true
-
-      # Direct-upload to the two public URLs. This bypasses the flaky Cloudflare
-      # Git-integration build on best-of-africa-platform (which was failing on the
-      # remote builder) by shipping the dist built in CI above. --branch main
-      # targets the production environment for both projects.
-      - name: Deploy to Cloudflare Pages (best-of-africa-platform)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=best-of-africa-platform --branch=main --commit-dirty=true
-
-      - name: Deploy to Cloudflare Pages (best-of-africa)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=best-of-africa --branch=main --commit-dirty=true
+        env:
+          VITE_API_URL: https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1
+          VITE_SITE_URL: https://alyssa-boa-web.pages.dev
+        run: |
+          npm install
+          npm run build
+      - name: Deploy Pages
+        run: npx wrangler pages deploy frontend/dist --project-name alyssa-boa-web --branch main --commit-dirty=true

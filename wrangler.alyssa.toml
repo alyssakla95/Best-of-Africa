@@ -1,0 +1,77 @@
+name = "alyssa-boa-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "alyssa-boa-db"
+database_id = "a08f4bb4-59df-4ed1-8609-a3bee703d36c"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "3960081461c24921bca36240cd25afe9"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "1327c364129b4bb9bf30c3d32c6a9109"
+
+[[vectorize]]
+binding = "VECTORS"
+index_name = "alyssa-boa-content"
+
+[[queues.producers]]
+binding = "CONTENT_QUEUE"
+queue = "alyssa-boa-content-generation"
+
+[[queues.producers]]
+binding = "TRANSLATION_QUEUE"
+queue = "alyssa-boa-article-translations"
+
+[[queues.producers]]
+binding = "OPTIMIZATION_QUEUE"
+queue = "alyssa-boa-headline-optimization"
+
+[[queues.consumers]]
+queue = "alyssa-boa-content-generation"
+max_batch_size = 1
+max_batch_timeout = 60
+max_retries = 5
+
+[[queues.consumers]]
+queue = "alyssa-boa-article-translations"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 5
+
+[[queues.consumers]]
+queue = "alyssa-boa-headline-optimization"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+
+[ai]
+binding = "AI"
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "alyssa-boa-events"
+
+[[durable_objects.bindings]]
+name = "LIVE_COUNTER"
+class_name = "LiveCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LiveCounter"]
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+PUBLIC_API_URL = "https://alyssa-boa-api.alyssavanklassen.workers.dev"
+PUBLIC_SITE_URL = "https://alyssa-boa-web.pages.dev"
+ADDITIONAL_ORIGINS = "https://alyssa-boa-web.pages.dev"

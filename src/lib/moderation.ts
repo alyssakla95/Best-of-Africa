@@ -4,6 +4,7 @@ import {
     countResponseWords,
     MIN_PUBLISHABLE_ARTICLE_WORDS,
     MIN_PUBLISHABLE_INVESTOR_BRIEF_WORDS,
+    repairArticleFromAudit,
 } from './ai';
 import { editorialApprovalFailure } from './editorial-quality';
 import { indexArticle } from './vectorize';
@@ -169,6 +170,8 @@ interface PendingAuditArticle {
     sector_name: string | null;
     hero_image_url: string | null;
     ai_social_post: string | null;
+    subtitle: string | null;
+    refinement_count: number | null;
 }
 
 /**
@@ -177,9 +180,9 @@ interface PendingAuditArticle {
  */
 export async function auditPendingArticles(env: Env, limit = 1): Promise<{ reviewed: number; published: number }> {
     const rows = await env.DB.prepare(`
-        SELECT a.id, a.slug, a.title, a.summary, a.content, a.ai_investor_brief,
+        SELECT a.id, a.slug, a.title, a.subtitle, a.summary, a.content, a.ai_investor_brief,
                a.source_url, a.source_title, a.country_code, a.sector_id,
-               a.hero_image_url, a.ai_social_post, s.name AS sector_name,
+               a.hero_image_url, a.ai_social_post, a.refinement_count, s.name AS sector_name,
                i.content AS source_content
         FROM articles a
         LEFT JOIN sectors s ON s.id = a.sector_id
@@ -226,6 +229,47 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
         }, moderation);
 
         if (failure) {
+            if ((article.refinement_count || 0) < 2 && article.source_content) {
+                try {
+                    const repaired = await repairArticleFromAudit(
+                        env,
+                        article.source_title || article.title,
+                        article.source_content,
+                        {
+                            title: article.title,
+                            subtitle: article.subtitle,
+                            content: article.content,
+                            summary: article.summary,
+                            investorBrief: article.ai_investor_brief,
+                        },
+                        moderation.findings,
+                    );
+                    await env.DB.prepare(`
+                        UPDATE articles
+                        SET title = ?, subtitle = ?, content = ?, summary = ?,
+                            ai_investor_brief = ?, tags = ?, reading_time_minutes = ?,
+                            refinement_count = COALESCE(refinement_count, 0) + 1,
+                            moderation_status = 'pending', moderation_score = 1,
+                            moderation_notes = ?, last_audited_at = NULL,
+                            updated_at = datetime('now')
+                        WHERE id = ? AND status = 'pending_audit'
+                    `).bind(
+                        repaired.title,
+                        repaired.subtitle || null,
+                        repaired.content,
+                        repaired.summary || null,
+                        repaired.investor_brief,
+                        JSON.stringify(repaired.tags),
+                        Math.max(1, Math.ceil(countResponseWords(repaired.content) / 200)),
+                        JSON.stringify({ remediated_from: { failure, findings: moderation.findings } }),
+                        article.id,
+                    ).run();
+                    console.log(`[automated-editorial] Remediated ${article.id}; queued for independent re-audit.`);
+                    continue;
+                } catch (repairError) {
+                    console.error(`[automated-editorial] Remediation failed for ${article.id}:`, repairError);
+                }
+            }
             await env.DB.prepare(`
                 UPDATE articles
                 SET moderation_status = ?, moderation_score = ?, moderation_notes = ?,

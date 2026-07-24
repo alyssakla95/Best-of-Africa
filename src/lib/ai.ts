@@ -289,6 +289,89 @@ export async function generateArticle(
     return article;
 }
 
+export async function repairArticleFromAudit(
+    env: Env,
+    sourceTitle: string,
+    sourceContent: string,
+    currentArticle: {
+        title: string;
+        subtitle?: string | null;
+        content: string;
+        summary?: string | null;
+        investorBrief?: string | null;
+    },
+    findings: ModerationFindingForRepair[],
+): Promise<{
+    title: string;
+    subtitle: string;
+    content: string;
+    summary: string;
+    investor_brief: string;
+    tags: string[];
+}> {
+    const findingText = findings.map((finding, index) =>
+        `${index + 1}. [${finding.severity}] ${finding.message}${finding.suggestion ? ` Correction: ${finding.suggestion}` : ''}`
+    ).join('\n');
+    const prompt = `You are revising a BOA-Story draft that failed factual publication review.
+
+The SOURCE RECORD below is the closed factual universe. Do not use memory, general knowledge, plausible examples or invented scene-setting. Every person, organisation, quotation, date, number, location, event and causal statement in the revision must be directly supported by the source record. Remove every unsupported detail identified by the audit. Never create a composite person, illustrative company, hypothetical quote or unnamed expert.
+
+If the source cannot support a broad conclusion, state the exact evidence limit in plain language. Conditional implications must be explicitly labelled as questions for verification, not reported facts.
+
+SOURCE TITLE:
+${sourceTitle}
+
+SOURCE RECORD:
+${sourceContent.slice(0, 18000)}
+
+FAILED DRAFT:
+TITLE: ${currentArticle.title}
+SUBTITLE: ${currentArticle.subtitle || ''}
+CONTENT:
+${currentArticle.content.slice(0, 16000)}
+SUMMARY:
+${currentArticle.summary || ''}
+PROFESSIONAL BRIEF:
+${currentArticle.investorBrief || ''}
+
+AUDIT FINDINGS TO RESOLVE:
+${findingText || 'The draft failed source-grounding review. Rebuild it from the source record only.'}
+
+Before returning the revision, silently check every proper noun, quotation and figure against the source record and delete anything that cannot be found there. Return exactly:
+
+TITLE: [source-grounded headline, maximum 80 characters]
+
+SUBTITLE: [source-grounded context, maximum 120 characters]
+
+CONTENT:
+[Complete reported article with descriptive section headings. No unsupported background.]
+
+SUMMARY: [3-5 source-grounded sentences]
+
+INVESTOR_BRIEF: [250-400 words limited to documented mechanisms, actors, constraints, evidence limits and verification questions. No invented metrics or ratings.]
+
+TAGS: [3-5 source-grounded tags]`;
+
+    const text = await callConfiguredAI(env, {
+        prompt,
+        max_tokens: 7000,
+        temperature: 0.1,
+        response_profile: 'editorial-article',
+    });
+    const repaired = parseArticleResponse(text);
+    const depth = evaluateArticleDepth(repaired.content, repaired.investor_brief);
+    if (!depth.publishable) {
+        throw new Error(`Repaired draft did not meet depth gates (${depth.articleWords} article words, ${depth.briefWords} brief words).`);
+    }
+    return repaired;
+}
+
+interface ModerationFindingForRepair {
+    severity: 'low' | 'medium' | 'high';
+    message: string;
+    suggestion?: string;
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 // Generate Headlines for A/B Testing
 // ───────────────────────────────────────────────────────────────────────────────

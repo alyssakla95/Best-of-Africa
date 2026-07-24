@@ -112,6 +112,7 @@ Use status "approved" only with score at least 0.8 and an empty findings array.`
 
     } catch (err) {
         console.error('Moderation failed, defaulting to manual review required:', err);
+        const detail = err instanceof Error ? err.message : String(err);
         return {
             status: 'needs_review',
             score: 0.5,
@@ -119,7 +120,7 @@ Use status "approved" only with score at least 0.8 and an empty findings array.`
             findings: [{
                 type: 'source',
                 severity: 'medium',
-                message: 'Automated moderation engine failed to respond.'
+                message: `Automated moderation engine failed to respond: ${detail.slice(0, 500)}`
             }]
         };
     }

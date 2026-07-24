@@ -40,11 +40,11 @@ export async function checkContentIntegrity(
 SOURCE TITLE: ${sourceTitle || 'Not supplied'}
 SOURCE URL: ${sourceUrl || 'Not supplied'}
 SOURCE RECORD:
-${(sourceContent || '').slice(0, 7000)}
+${(sourceContent || '').slice(0, 18000)}
 
 FINISHED ARTICLE TITLE: ${title}
 FINISHED ARTICLE:
-${content.slice(0, 9000)}
+${content.slice(0, 16000)}
 
 Check factual support, attribution, chronology, unsupported extrapolation, misleading certainty, repetition, templated phrasing and whether the article remains faithful to the source. A thin source cannot support added background unless that background appears in the supplied record. Return JSON only:
 {

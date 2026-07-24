@@ -18,13 +18,13 @@ jobs:
           node-version: '20'
       - name: Install backend dependencies
         run: npm install
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
       - name: Backend typecheck and tests
         run: |
           npx tsc --noEmit
           npx vitest run
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
       - name: Frontend typecheck and build
         working-directory: frontend
         env:

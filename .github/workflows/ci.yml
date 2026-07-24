@@ -25,15 +25,15 @@ jobs:
       - name: Install backend dependencies
         run: npm install
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
       - name: Backend typecheck
         run: npx tsc --noEmit
 
       - name: Unit & integration tests
         run: npx vitest run
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
 
       - name: Frontend typecheck
         working-directory: frontend

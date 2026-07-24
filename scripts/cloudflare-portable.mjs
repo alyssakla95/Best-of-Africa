@@ -45,6 +45,7 @@ Options:
   --pages-project <id>  Pages project name; defaults to <prefix>-web.
   --worker-name <id>    Worker name; defaults to <prefix>-api.
   --no-pages            Provision or deploy only the backend.
+  --require-r2          Stop setup if R2 has not been enabled in the account.
 
 Generated resource IDs and secrets stay under ignored .cloudflare/ files.
 The script never deletes or replaces Cloudflare resources.
@@ -132,7 +133,8 @@ const plan = names => {
     pages: options['no-pages'] ? 'disabled' : names.pagesProject,
     siteUrl,
     resources: {
-      d1: names.database, kv: [names.cache, names.rateLimit], r2: names.media,
+      d1: names.database, kv: [names.cache, names.rateLimit],
+      r2: `${names.media} (optional until R2 account onboarding is enabled)`,
       vectorize: names.vectors, queues: [names.contentQueue, names.translationQueue, names.optimizationQueue],
       analytics: names.analytics, durableObject: 'LiveCounter', workersAi: true,
     },
@@ -163,17 +165,28 @@ const bootstrap = names => {
   ensureSecrets();
   const baseConfig = ['--config', configPath];
 
-  wrangler(['d1', 'create', names.database, ...baseConfig, '--binding', 'DB', '--update-config']);
-  wrangler(['kv', 'namespace', 'create', names.cache, ...baseConfig, '--binding', 'CACHE', '--update-config']);
-  wrangler(['kv', 'namespace', 'create', names.rateLimit, ...baseConfig, '--binding', 'RATE_LIMIT', '--update-config']);
-  wrangler(['r2', 'bucket', 'create', names.media, ...baseConfig, '--binding', 'MEDIA', '--update-config']);
-  wrangler(['vectorize', 'create', names.vectors, '--preset', '@cf/baai/bge-base-en-v1.5', ...baseConfig, '--binding', 'VECTORS', '--update-config']);
+  wrangler(['d1', 'create', names.database, ...baseConfig, '--binding', 'DB', '--use-remote', '--update-config']);
+  wrangler(['kv', 'namespace', 'create', names.cache, ...baseConfig, '--binding', 'CACHE', '--use-remote', '--update-config']);
+  wrangler(['kv', 'namespace', 'create', names.rateLimit, ...baseConfig, '--binding', 'RATE_LIMIT', '--use-remote', '--update-config']);
+  let r2Provisioned = false;
+  try {
+    wrangler(['r2', 'bucket', 'create', names.media, ...baseConfig, '--binding', 'MEDIA', '--use-remote', '--update-config']);
+    r2Provisioned = true;
+  } catch (error) {
+    if (options['require-r2']) throw error;
+    console.warn('\nR2 was not provisioned. Enable R2 in the Cloudflare dashboard and add the MEDIA binding before using media uploads.');
+  }
+  wrangler(['vectorize', 'create', names.vectors, '--preset', '@cf/baai/bge-base-en-v1.5', ...baseConfig, '--binding', 'VECTORS', '--use-remote', '--update-config']);
   wrangler(['queues', 'create', names.contentQueue]);
   wrangler(['queues', 'create', names.translationQueue]);
   wrangler(['queues', 'create', names.optimizationQueue]);
   if (!options['no-pages']) wrangler(['pages', 'project', 'create', names.pagesProject, '--production-branch', 'main']);
 
-  const state = { ...names, siteUrl, apiUrl, configPath, createdAt: new Date().toISOString() };
+  const generatedConfig = readFileSync(configPath, 'utf8')
+    .replace('migrations_dir = "migrations"', 'migrations_dir = "../migrations"');
+  writeFileSync(configPath, generatedConfig, 'utf8');
+
+  const state = { ...names, siteUrl, apiUrl, r2Provisioned, configPath, createdAt: new Date().toISOString() };
   writeState(state);
   console.log('\nCloudflare resources provisioned. No application code has been deployed.');
   return state;

@@ -14,7 +14,7 @@ BOA-Story supports two deployment paths:
 3. If the login can access more than one account, pass `--account-id <account-id>` or set `CLOUDFLARE_ACCOUNT_ID`.
 4. Choose a unique lowercase prefix, such as `denise-boa`. It becomes the prefix for every resource and prevents collisions with an existing installation.
 
-Some platform features can require a paid Workers plan or separate account onboarding: Queues, Workers AI usage, Vectorize, R2, and Email Sending. Email Sending is deliberately not provisioned automatically because Cloudflare requires a verified sending domain. The application continues to use its configured provider fallback when the binding is absent.
+Some platform features can require a paid Workers plan or separate account onboarding: Queues, Workers AI usage, Vectorize, R2, and Email Sending. If R2 has not been enabled in the target account, setup reports the onboarding requirement and continues without the `MEDIA` binding so the core application can deploy. Pass `--require-r2` when media storage must be present before any deployment. Email Sending is deliberately not provisioned automatically because Cloudflare requires a verified sending domain. The application continues to use its configured provider fallback when the binding is absent.
 
 ### Preview the exact account plan
 
@@ -42,6 +42,12 @@ The setup command:
 6. Stores IDs, state and secrets only under the gitignored `.cloudflare/` directory.
 
 It never deletes, replaces, imports or mutates resources belonging to another installation.
+
+To require R2 instead of allowing a core deployment while account onboarding is pending:
+
+```powershell
+npm run cloudflare:setup -- --prefix denise-boa --account-id YOUR_ACCOUNT_ID --require-r2 --deploy
+```
 
 ### One-command provision and deployment
 

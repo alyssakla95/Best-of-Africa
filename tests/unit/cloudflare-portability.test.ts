@@ -9,6 +9,8 @@ describe('portable Cloudflare deployment contract', () => {
     const template = readFileSync(resolve(root, 'wrangler.portable.toml.example'), 'utf8');
 
     expect(template).toContain('name = "__WORKER_NAME__"');
+    expect(template).toContain('main = "../src/index.ts"');
+    expect(template).toContain('new_sqlite_classes = ["LiveCounter"]');
     expect(template).toContain('PUBLIC_API_URL = "__PUBLIC_API_URL__"');
     expect(template).toContain('PUBLIC_SITE_URL = "__PUBLIC_SITE_URL__"');
     expect(template).not.toMatch(/account_id\s*=|[0-9a-f]{8}-[0-9a-f-]{27,}|[0-9a-f]{32}|\.workers\.dev/);
@@ -32,5 +34,13 @@ describe('portable Cloudflare deployment contract', () => {
     const ignore = readFileSync(resolve(root, '.gitignore'), 'utf8');
     expect(ignore).toContain('.cloudflare/');
     expect(ignore).toContain('frontend/.env.production.local');
+  });
+
+  it('creates remote bindings and tolerates accounts awaiting optional R2 onboarding', () => {
+    const installer = readFileSync(resolve(root, 'scripts/cloudflare-portable.mjs'), 'utf8');
+
+    expect(installer).toContain("'--use-remote', '--update-config'");
+    expect(installer).toContain("options['require-r2']");
+    expect(installer).toContain('migrations_dir = "../migrations"');
   });
 });

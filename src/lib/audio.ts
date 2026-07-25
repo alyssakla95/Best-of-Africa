@@ -13,6 +13,7 @@ function base64ToBytes(value: string): Uint8Array {
 }
 
 async function audioBytes(result: unknown): Promise<ArrayBuffer | Uint8Array | null> {
+    if (result instanceof Response) return result.arrayBuffer();
     if (result instanceof ReadableStream) return new Response(result).arrayBuffer();
     if (result instanceof ArrayBuffer) return result;
     if (typeof result === 'string') return base64ToBytes(result);
@@ -115,12 +116,18 @@ async function synthesizeNarration(
         { name: '@cf/deepgram/aura-1', provider: 'aura-1' as const },
     ]) {
         try {
-            const result = await (env.AI as Record<string, any>).run(model.name, {
-                text: text.slice(0, 2000),
-                speaker: 'athena',
-                encoding: 'mp3',
-                bit_rate: 48000,
-            });
+            const result = await (env.AI as Record<string, any>).run(
+                model.name,
+                {
+                    text: text.slice(0, 2000),
+                    speaker: 'athena',
+                    encoding: 'mp3',
+                    bit_rate: 48000,
+                },
+                // Deepgram partner models return binary audio. Asking Workers AI
+                // for the raw response avoids JSON coercion and preserves bytes.
+                { returnRawResponse: true },
+            );
             const audio = await audioBytes(result);
             if (audio && looksLikeMp3(audio)) return { audio, provider: model.provider };
             console.warn(`[TTS] ${model.name} returned invalid or empty audio`);

@@ -57,6 +57,19 @@ describe('audio provider selection', () => {
         expect(bound).toEqual([result?.audioUrl, 5, 2048, 'aura-2', 'article-1']);
     });
 
+    it('accepts the raw Response returned by Cloudflare partner TTS models', async () => {
+        const statement = { bind: () => statement, run: async () => ({ success: true }) };
+        const env = createMockEnv({
+            AI: { run: async () => new Response(mp3(), { headers: { 'Content-Type': 'audio/mpeg' } }) } as unknown as Ai,
+            DB: { prepare: () => statement } as unknown as D1Database,
+        });
+
+        const result = await generateAudioNarration(env, 'article-response', 'Title', 'Summary.');
+
+        expect(result).not.toBeNull();
+        expect(result?.audioUrl).toContain('/assets/audio/article-response.mp3?v=3');
+    });
+
     it('falls back to Aura 1 without calling MeloTTS', async () => {
         const calls: string[] = [];
         const statement = { bind: () => statement, run: async () => ({ success: true }) };

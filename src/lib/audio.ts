@@ -138,6 +138,27 @@ async function synthesizeNarration(
     return null;
 }
 
+async function synthesizeNarrationResilient(
+    env: Env,
+    text: string,
+    depth = 0,
+): Promise<Array<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider }> | null> {
+    const generated = await synthesizeNarration(env, text);
+    if (generated) return [generated];
+    // Some partner-TTS failures are input-window or punctuation interactions,
+    // not provider outages. Retry the same complete prose in smaller pieces so
+    // one difficult passage cannot make the whole article inaudible.
+    if (depth >= 2 || text.length < 500) return null;
+    const target = Math.floor(text.length / 2);
+    let splitAt = text.lastIndexOf(' ', target);
+    if (splitAt < Math.floor(text.length * 0.3)) splitAt = text.indexOf(' ', target);
+    if (splitAt <= 0 || splitAt >= text.length - 1) return null;
+    const left = await synthesizeNarrationResilient(env, text.slice(0, splitAt).trim(), depth + 1);
+    if (!left) return null;
+    const right = await synthesizeNarrationResilient(env, text.slice(splitAt).trim(), depth + 1);
+    return right ? [...left, ...right] : null;
+}
+
 export async function generateAudioNarration(
     env: Env,
     articleId: string,
@@ -150,9 +171,9 @@ export async function generateAudioNarration(
         if (!chunks.length) return null;
         const generatedSegments: Array<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider }> = [];
         for (const chunk of chunks) {
-            const generated = await synthesizeNarration(env, chunk);
+            const generated = await synthesizeNarrationResilient(env, chunk);
             if (!generated) return null; // Never publish a deceptively partial narration.
-            generatedSegments.push(generated);
+            generatedSegments.push(...generated);
         }
         const audio = combineMp3Segments(generatedSegments.map(segment => segment.audio));
         const provider = generatedSegments[0].provider;

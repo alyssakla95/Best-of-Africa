@@ -106,4 +106,25 @@ describe('audio provider selection', () => {
         expect(calls.every(options => String(options.text).length <= 1800)).toBe(true);
         expect(result!.durationSeconds).toBeGreaterThan(60);
     });
+
+    it('retries a difficult TTS passage in smaller complete segments', async () => {
+        const calls: number[] = [];
+        const statement = { bind: () => statement, run: async () => ({ success: true }) };
+        const env = createMockEnv({
+            AI: { run: async (_model: string, options: Record<string, unknown>) => {
+                const length = String(options.text).length;
+                calls.push(length);
+                if (length > 1000) throw new Error('input rejected');
+                return mp3();
+            } } as unknown as Ai,
+            DB: { prepare: () => statement } as unknown as D1Database,
+        });
+        const content = Array.from({ length: 60 }, (_, index) => `Sentence ${index + 1} preserves every fact in the difficult passage for the listener.`).join(' ');
+
+        const result = await generateAudioNarration(env, 'article-retry', 'Full report', content);
+
+        expect(result).not.toBeNull();
+        expect(calls.some(length => length > 1000)).toBe(true);
+        expect(calls.filter(length => length <= 1000).length).toBeGreaterThan(2);
+    });
 });

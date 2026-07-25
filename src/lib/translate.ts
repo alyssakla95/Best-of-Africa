@@ -267,6 +267,20 @@ async function llmTranslate(env: Env, text: string, targetLang: SupportedLanguag
     return translated?.[0] || null;
 }
 
+async function llmTranslateBatchResilient(
+    env: Env,
+    texts: string[],
+    targetLang: SupportedLanguage,
+): Promise<string[] | null | undefined> {
+    const translated = await llmTranslateBatch(env, texts, targetLang);
+    if (translated || translated === undefined || texts.length <= 1) return translated;
+    const middle = Math.ceil(texts.length / 2);
+    const left = await llmTranslateBatchResilient(env, texts.slice(0, middle), targetLang);
+    if (!left) return left;
+    const right = await llmTranslateBatchResilient(env, texts.slice(middle), targetLang);
+    return right ? [...left, ...right] : right;
+}
+
 /** Split markdown into paragraph-aligned chunks of ~1400 chars. */
 function chunkMarkdown(md: string, max = 1400): string[] {
     const parts = md.split(/\n\n+/);
@@ -290,21 +304,9 @@ export async function translateLongText(
     targetLang: SupportedLanguage
 ): Promise<string | null> {
     const chunks = chunkMarkdown(text);
-    const translateResiliently = async (values: string[]): Promise<string[] | null> => {
-        const translated = await llmTranslateBatch(env, values, targetLang);
-        if (translated) return translated;
-        // A structurally invalid large JSON response is a model formatting
-        // failure, not evidence that the translation itself is impossible.
-        // Split the same highest-quality model request until each response is
-        // small enough to validate. Infrastructure failures remain retryable.
-        if (translated === undefined || values.length <= 1) return null;
-        const middle = Math.ceil(values.length / 2);
-        const left = await translateResiliently(values.slice(0, middle));
-        if (!left) return null;
-        const right = await translateResiliently(values.slice(middle));
-        return right ? [...left, ...right] : null;
-    };
-    const out = await translateResiliently(chunks);
+    // A structurally invalid large JSON response is a model formatting
+    // failure, not evidence that the translation itself is impossible.
+    const out = await llmTranslateBatchResilient(env, chunks, targetLang);
     if (!out || out.length !== chunks.length) return null;
     if (out.some((translation, index) => looksDegenerate(chunks[index], translation, targetLang))) return null;
     return out.join('\n\n');
@@ -332,7 +334,7 @@ export async function ensureArticleTranslation(
             ...(article.summary ? [article.summary] : []),
             ...bodyChunks,
         ];
-        const translated = await llmTranslateBatch(env, sourceTexts, targetLang);
+        const translated = await llmTranslateBatchResilient(env, sourceTexts, targetLang);
         if (translated === undefined) {
             // Infrastructure failure — retryable, never a terminal refusal.
             await recordTranslationStatus(env, articleId, targetLang, {
@@ -533,7 +535,7 @@ export async function processArticleTranslationJob(
  */
 export async function backfillTranslations(env: Env, batch = 2): Promise<number> {
     const rows = await env.DB.prepare(`
-        SELECT t.id AS tid, t.language, a.title, a.subtitle, a.summary, a.content
+        SELECT t.id AS tid, t.article_id AS aid, t.language, a.title, a.subtitle, a.summary, a.content
         FROM article_translations t
         JOIN articles a ON a.id = t.article_id
         WHERE (
@@ -542,30 +544,22 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         ) AND a.status = 'published'
         ORDER BY a.published_at DESC
         LIMIT ?
-    `).bind(batch).all<{ tid: string; language: SupportedLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
+    `).bind(batch).all<{ tid: string; aid: string; language: SupportedLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 
     let done = 0;
     for (const r of rows.results || []) {
         try {
-            const [title, subtitle, summary] = await Promise.all([
-                llmTranslate(env, r.title, r.language),
-                r.subtitle ? llmTranslate(env, r.subtitle, r.language) : Promise.resolve(null),
-                r.summary ? llmTranslate(env, r.summary, r.language) : Promise.resolve(null),
-            ]);
-            if (title === null) break; // model unavailable — retry next tick
-            const content = await translateLongText(env, r.content || '', r.language);
-
-            if (!content || looksDegenerate(r.title, title, r.language)) {
+            const ok = await ensureArticleTranslation(
+                env,
+                r.aid,
+                { title: r.title, subtitle: r.subtitle, summary: r.summary, content: r.content || '' },
+                r.language as ReaderTranslationLanguage,
+            );
+            if (!ok) {
                 await env.DB.prepare("UPDATE article_translations SET quality = -1, created_at = datetime('now') WHERE id = ?").bind(r.tid).run();
-                console.warn(`[translate] degenerate output for ${r.tid} (${r.language}) — marked -1`);
+                console.warn(`[translate] quality-gated output for ${r.tid} (${r.language}) — marked -1`);
                 continue;
             }
-
-            await env.DB.prepare(`
-                UPDATE article_translations
-                SET title = ?, subtitle = ?, summary = ?, content = ?, quality = 1, created_at = datetime('now')
-                WHERE id = ?
-            `).bind(title, subtitle, summary, content, r.tid).run();
             done++;
         } catch (e) {
             console.error('[translate] backfill failed for', r.tid, e);

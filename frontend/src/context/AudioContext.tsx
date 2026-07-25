@@ -16,6 +16,8 @@ interface AudioContextState {
     isPlaying: boolean;
     currentTime: number;
     duration: number;
+    playbackRate: number;
+    volume: number;
     isMinimized: boolean;
     playTrack: (track: PlayableTrack, playlist?: PlayableTrack[]) => void;
     addToQueue: (track: PlayableTrack) => void;
@@ -26,6 +28,9 @@ interface AudioContextState {
     closePlayer: () => void;
     toggleMinimize: () => void;
     seek: (time: number) => void;
+    skipBy: (seconds: number) => void;
+    setPlaybackRate: (rate: number) => void;
+    setVolume: (volume: number) => void;
     currentTrack: PlayableTrack | null;
     primeAudio: () => void;
 }
@@ -38,6 +43,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [playbackRate, setPlaybackRateState] = useState(1);
+    const [volume, setVolumeState] = useState(1);
     const [isMinimized, setIsMinimized] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -79,6 +86,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             if (lastAudioUrlRef.current !== currentTrack.audioUrl) {
                 lastAudioUrlRef.current = currentTrack.audioUrl;
                 audioRef.current.src = currentTrack.audioUrl;
+                // Re-apply user preferences: some engines reset these on src change.
+                audioRef.current.playbackRate = playbackRate;
+                audioRef.current.volume = volume;
                 audioRef.current.play().catch(e => console.warn('Audio playback prevented:', e));
             }
         } else if (!currentTrack && audioRef.current) {
@@ -161,6 +171,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const skipBy = (seconds: number) => {
+        if (!audioRef.current) return;
+        const target = audioRef.current.currentTime + seconds;
+        seek(Math.min(Math.max(0, target), duration || target));
+    };
+
+    const setPlaybackRate = (rate: number) => {
+        setPlaybackRateState(rate);
+        if (audioRef.current) {
+            audioRef.current.playbackRate = rate;
+        }
+    };
+
+    const setVolume = (nextVolume: number) => {
+        const clamped = Math.min(Math.max(0, nextVolume), 1);
+        setVolumeState(clamped);
+        if (audioRef.current) {
+            audioRef.current.volume = clamped;
+        }
+    };
+
     const closePlayer = () => {
         setPlaylist([]);
         setCurrentIndex(-1);
@@ -189,6 +220,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             isPlaying,
             currentTime,
             duration,
+            playbackRate,
+            volume,
             isMinimized,
             playTrack,
             addToQueue,
@@ -199,6 +232,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             closePlayer,
             toggleMinimize,
             seek,
+            skipBy,
+            setPlaybackRate,
+            setVolume,
             currentTrack,
             primeAudio
         }}>

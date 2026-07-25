@@ -77,4 +77,26 @@ describe('publication-quality translation batches', () => {
         expect(result).toContain('Français market evidence');
         expect(result).toContain('Français trade evidence');
     });
+
+    it('repairs a singleton translation when the model cannot format JSON', async () => {
+        let calls = 0;
+        const source = `English infrastructure evidence ${'documents a complete market observation. '.repeat(30)}`;
+        const translated = source.replace('English', 'Français');
+        const env = createMockEnv({
+            AI: {
+                run: async (_model: string, options: { messages: Array<{ content: string }> }) => {
+                    calls++;
+                    const system = options.messages[0].content;
+                    return system.includes('no JSON wrapper')
+                        ? { response: translated }
+                        : { response: 'not valid JSON' };
+                },
+            } as unknown as Ai,
+        });
+
+        const result = await translateLongText(env, source, 'fr');
+
+        expect(calls).toBe(2);
+        expect(result).toBe(translated.trim());
+    });
 });

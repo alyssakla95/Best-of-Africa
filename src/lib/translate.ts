@@ -273,7 +273,39 @@ async function llmTranslateBatchResilient(
     targetLang: SupportedLanguage,
 ): Promise<string[] | null | undefined> {
     const translated = await llmTranslateBatch(env, texts, targetLang);
-    if (translated || translated === undefined || texts.length <= 1) return translated;
+    if (translated || translated === undefined) return translated;
+    if (texts.length === 1) {
+        try {
+            const { extractAIText, hasProcessLeakage, MODELS } = await import('./ai');
+            const response = await (env.AI as Record<string, any>).run(MODELS.TEXT_GENERATION, {
+                messages: [
+                    {
+                        role: 'system',
+                        content: `Translate the supplied English text into ${LANG_NAMES[targetLang] || targetLang}. Preserve every fact, name, date, number, URL, paragraph and markdown element. Do not summarize or explain. Return only the translated text with no JSON wrapper, label or code fence.`,
+                    },
+                    { role: 'user', content: texts[0] },
+                ],
+                max_tokens: 7000,
+                temperature: 0.1,
+            });
+            const repaired = extractAIText(response).trim()
+                .replace(/^```(?:markdown|text)?\s*/i, '')
+                .replace(/\s*```$/i, '');
+            if (
+                repaired
+                && !hasProcessLeakage(repaired)
+                && !looksDegenerate(texts[0], repaired, targetLang)
+                && !/^(translation|translated text|here is)\s*:/i.test(repaired)
+                && !(repaired.length < 200 && /\b(json|translation|translated|request|cannot|unable)\b/i.test(repaired))
+            ) {
+                return [repaired];
+            }
+        } catch (error) {
+            console.error('[translate] single-text repair failed:', error);
+            return undefined;
+        }
+        return null;
+    }
     const middle = Math.ceil(texts.length / 2);
     const left = await llmTranslateBatchResilient(env, texts.slice(0, middle), targetLang);
     if (!left) return left;

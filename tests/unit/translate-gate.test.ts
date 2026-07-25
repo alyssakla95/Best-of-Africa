@@ -61,4 +61,12 @@ describe('looksDegenerate', () => {
         const chinese = '新的交通连接缩短交付时间后，非洲制造商扩大了区域生产。'.repeat(8);
         expect(looksDegenerate(source, chinese, 'zh')).toBe(false);
     });
+
+    it('uses script-aware length gates for complete Arabic and Hindi prose', () => {
+        const source = 'African manufacturers expanded regional production after new transport links reduced delivery times. '.repeat(4);
+        const arabic = 'وسّع المصنعون الأفارقة الإنتاج الإقليمي بعدما خفّضت روابط النقل الجديدة أوقات التسليم. '.repeat(4);
+        const hindi = 'नई परिवहन कड़ियों से आपूर्ति समय घटने के बाद अफ्रीकी निर्माताओं ने क्षेत्रीय उत्पादन बढ़ाया। '.repeat(4);
+        expect(looksDegenerate(source, arabic, 'ar')).toBe(false);
+        expect(looksDegenerate(source, hindi, 'hi')).toBe(false);
+    });
 });

@@ -201,7 +201,11 @@ export function looksDegenerate(source: string, out: string, targetLang?: Suppor
     // Chinese conveys the same prose in materially fewer Unicode characters
     // than English. Keep the strict default for alphabetic-script languages,
     // but do not misclassify complete Chinese translations as truncations.
-    const minimumRatio = targetLang === 'zh' ? 0.18 : 0.35;
+    const minimumRatio = targetLang === 'zh'
+        ? 0.18
+        : targetLang === 'ar' || targetLang === 'hi'
+            ? 0.25
+            : 0.35;
     if (o.length < source.length * minimumRatio || o.length > source.length * 2.5) return true;
     const srcRep = maxWindowRepeat(source);
     const outRep = maxWindowRepeat(o);
@@ -518,7 +522,10 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         SELECT t.id AS tid, t.language, a.title, a.subtitle, a.summary, a.content
         FROM article_translations t
         JOIN articles a ON a.id = t.article_id
-        WHERE t.quality = 0 AND a.status = 'published'
+        WHERE (
+            t.quality = 0
+            OR (t.quality = -1 AND t.created_at < datetime('now', '-6 hours'))
+        ) AND a.status = 'published'
         ORDER BY a.published_at DESC
         LIMIT ?
     `).bind(batch).all<{ tid: string; language: SupportedLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
@@ -534,8 +541,8 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
             if (title === null) break; // model unavailable — retry next tick
             const content = await translateLongText(env, r.content || '', r.language);
 
-            if (!content || looksDegenerate(r.title, title)) {
-                await env.DB.prepare('UPDATE article_translations SET quality = -1 WHERE id = ?').bind(r.tid).run();
+            if (!content || looksDegenerate(r.title, title, r.language)) {
+                await env.DB.prepare("UPDATE article_translations SET quality = -1, created_at = datetime('now') WHERE id = ?").bind(r.tid).run();
                 console.warn(`[translate] degenerate output for ${r.tid} (${r.language}) — marked -1`);
                 continue;
             }
@@ -597,7 +604,7 @@ async function backfillMissingTranslations(env: Env, batch: number): Promise<num
             ]);
             if (title === null) break; // model unavailable — retry next tick
             const content = await translateLongText(env, r.content || '', r.lang);
-            const ok = !!content && !looksDegenerate(r.title, title);
+            const ok = !!content && !looksDegenerate(r.title, title, r.lang);
 
             await env.DB.prepare(`
                 INSERT OR REPLACE INTO article_translations

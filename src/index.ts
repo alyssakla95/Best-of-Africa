@@ -301,11 +301,23 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     const safe = async (label: string, fn: () => Promise<unknown>) => {
         const started = Date.now();
         try {
-            await fn();
+            const result = await fn();
+            let tasksSeen = 1;
+            let tasksDone = 1;
+            if (typeof result === 'number') {
+                tasksSeen = Math.max(0, result);
+                tasksDone = Math.max(0, result);
+            } else if (result && typeof result === 'object') {
+                const output = result as Record<string, unknown>;
+                const seen = output.reviewed ?? output.checked ?? output.processed ?? output.tasks_seen;
+                const done = output.published ?? output.recovered ?? output.completed ?? output.tasks_done;
+                if (typeof seen === 'number') tasksSeen = Math.max(0, seen);
+                if (typeof done === 'number') tasksDone = Math.max(0, done);
+            }
             metricStatements.push(env.DB.prepare(`
                 INSERT INTO agent_metrics (id, agent_name, run_at, duration_ms, tasks_seen, tasks_done, tasks_failed)
-                VALUES (?, ?, datetime('now'), ?, 1, 1, 0)
-            `).bind(crypto.randomUUID(), `cron:${label}`, Date.now() - started));
+                VALUES (?, ?, datetime('now'), ?, ?, ?, 0)
+            `).bind(crypto.randomUUID(), `cron:${label}`, Date.now() - started, tasksSeen, tasksDone));
         } catch (e) {
             console.error(`[cron] ${label} failed:`, e);
             metricStatements.push(env.DB.prepare(`
@@ -329,7 +341,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     // re-feeds the backlog; it does not generate inline.
     await safe('recover-pending', async () => {
         const { recoverPendingItems } = await import('./workers/generator');
-        await recoverPendingItems(env, 25);
+        return recoverPendingItems(env, 25);
     });
 
     // Complete the publication lifecycle. Generation remains quarantined until
@@ -341,6 +353,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         if (result.reviewed) {
             console.log(`[cron] editorial audit: ${result.published}/${result.reviewed} published`);
         }
+        return result;
     });
 
     // Regenerate existing narration newest-first, then extend audio coverage.
@@ -349,7 +362,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     await safe('backfill-audio', async () => {
         const { backfillAudio, regenerateAudio } = await import('./workers/generator');
         const regenerated = await regenerateAudio(env, 3);
-        if (regenerated === 0) await backfillAudio(env, 3);
+        return regenerated === 0 ? backfillAudio(env, 3) : regenerated;
     });
 
     // 1. Ingestion: every minute
@@ -381,7 +394,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     // Self-terminates when done.
     await safe('backfill-hero-variants', async () => {
         const { backfillHeroVariants } = await import('./workers/generator');
-        await backfillHeroVariants(env, 12);
+        return backfillHeroVariants(env, 12);
     });
 
     // Backfill audio narration (summary-length TTS), newest-first — the Listen
@@ -397,14 +410,14 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     // degeneracy-gated, self-terminating.
     await safe('backfill-translations', async () => {
         const { backfillTranslations } = await import('./lib/translate');
-        await backfillTranslations(env, 2);
+        return backfillTranslations(env, 2);
     });
 
     // Classify the ~6k pre-taxonomy articles with no sector (invisible to
     // sector filters/trends/kickers). Newest-first, self-terminating.
     await safe('backfill-sectors', async () => {
         const { backfillSectors } = await import('./workers/generator');
-        await backfillSectors(env, 8);
+        return backfillSectors(env, 8);
     });
 
     // 2. Full optimization is intentionally bounded to every six hours. It

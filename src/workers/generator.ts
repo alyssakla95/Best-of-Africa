@@ -433,17 +433,18 @@ export async function backfillAudio(env: Env, batch = 3): Promise<number> {
         WHERE status = 'published' AND (audio_url IS NULL OR audio_url = '')
         ORDER BY published_at DESC
         LIMIT ?
-    `).bind(batch).all<{ id: string; title: string; summary: string | null; content: string | null }>();
+    `).bind(Math.max(batch, batch * 3)).all<{ id: string; title: string; summary: string | null; content: string | null }>();
 
     let done = 0;
     for (const a of rows.results || []) {
         try {
             const res = await generateAudioNarration(env, a.id, a.title, a.content || a.summary || '');
-            if (!res) break; // TTS unavailable — retry next tick rather than loop
+            if (!res) continue; // A single difficult article must not starve the queue.
             done++;
+            if (done >= batch) break;
         } catch (err) {
             console.error('[backfill-audio] failed for', a.id, err);
-            break;
+            continue;
         }
     }
     if (done) console.log(`[backfill-audio] Narrated ${done} article(s).`);
@@ -467,17 +468,18 @@ export async function regenerateAudio(env: Env, batch = 3): Promise<number> {
         WHERE status = 'published' AND audio_url IS NOT NULL AND (audio_regen IS NULL OR audio_regen < 2)
         ORDER BY published_at DESC
         LIMIT ?
-    `).bind(batch).all<{ id: string; title: string; summary: string | null; content: string | null }>();
+    `).bind(Math.max(batch, batch * 3)).all<{ id: string; title: string; summary: string | null; content: string | null }>();
 
     let done = 0;
     for (const a of rows.results || []) {
         try {
             const res = await generateAudioNarration(env, a.id, a.title, a.content || a.summary || '');
-            if (!res) break; // TTS unavailable — retry next tick
+            if (!res) continue; // Keep the archive moving when one item fails.
             done++;
+            if (done >= batch) break;
         } catch (err) {
             console.error('[regen-audio] failed for', a.id, err);
-            break;
+            continue;
         }
     }
     if (done) console.log(`[regen-audio] Re-narrated ${done} article(s) with Aura 2.`);

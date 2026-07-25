@@ -131,6 +131,10 @@ export async function parseRSS(url: string): Promise<RSSItem[]> {
             const title = itemXml.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/)?.[1] || '';
             const link = itemXml.match(/<link>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/link>/)?.[1] || '';
             const description = itemXml.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/)?.[1] || '';
+            // WordPress-style feeds carry the full article body in
+            // <content:encoded>; <description> is only a teaser. Prefer the
+            // fuller text so generation has enough source evidence to audit.
+            const encoded = itemXml.match(/<content:encoded>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i)?.[1] || '';
             const pubDate = itemXml.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
             const rawImage =
                 itemXml.match(/<media:content[^>]+url=["']([^"']+)["']/i)?.[1] ||
@@ -145,7 +149,11 @@ export async function parseRSS(url: string): Promise<RSSItem[]> {
                 items.push({
                     title: title.trim(),
                     link: link.trim(),
-                    description: description.replace(/<[^>]*>/g, '').trim(),
+                    description: (() => {
+                        const body = encoded.replace(/<[^>]*>/g, '').trim();
+                        const summary = description.replace(/<[^>]*>/g, '').trim();
+                        return body.length > summary.length ? body : summary;
+                    })(),
                     pubDate: pubDate.trim(),
                     imageUrl: normalizeEditorialImageUrl(rawImage, link.trim()),
                     imageCredit,

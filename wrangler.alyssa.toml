@@ -17,6 +17,10 @@ id = "3960081461c24921bca36240cd25afe9"
 binding = "RATE_LIMIT"
 id = "1327c364129b4bb9bf30c3d32c6a9109"
 
+[[kv_namespaces]]
+binding = "MEDIA_KV"
+id = "bfae992814434006b3532d8920b4ac13"
+
 [[vectorize]]
 binding = "VECTORS"
 index_name = "alyssa-boa-content"

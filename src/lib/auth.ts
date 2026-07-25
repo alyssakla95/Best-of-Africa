@@ -32,20 +32,50 @@ export async function requireAdmin(c: AppContext, next: Next) {
 // Middleware: Require Auth (any authenticated user)
 // ───────────────────────────────────────────────────────────────────────────────
 export async function requireAuth(c: AppContext, next: Next) {
+    return requireClientAuth(c, next);
+}
+
+/**
+ * Authenticate a first-party client using either its signed bearer token or
+ * API key. Every successful authentication is checked against the current
+ * client row so revoked and expired accounts stop working immediately.
+ */
+export async function requireClientAuth(c: AppContext, next: Next) {
     const authHeader = c.req.header('Authorization');
+    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const payload = bearer ? await verifyJWT(bearer, c.env.JWT_SECRET) : null;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-        return c.json({ error: 'unauthorized', message: 'Bearer token required' }, 401);
+    let client: Record<string, unknown> | null = null;
+    if (payload) {
+        client = await c.env.DB.prepare(`
+            SELECT id, name, type, tier, rate_limit_per_hour, is_active, expires_at
+            FROM clients WHERE id = ?
+        `).bind(payload.sub).first<Record<string, unknown>>();
+    } else {
+        const apiKey = c.req.header('X-API-Key');
+        if (apiKey) {
+            client = await c.env.DB.prepare(`
+                SELECT id, name, type, tier, rate_limit_per_hour, is_active, expires_at
+                FROM clients WHERE api_key_hash = ?
+            `).bind(await hashApiKey(apiKey)).first<Record<string, unknown>>();
+        }
     }
 
-    const token = authHeader.slice(7);
-    const payload = await verifyJWT(token, c.env.JWT_SECRET);
-
-    if (!payload) {
-        return c.json({ error: 'unauthorized', message: 'Invalid token' }, 401);
+    if (!client) {
+        return c.json({ error: 'unauthorized', message: 'Valid bearer token or API key required' }, 401);
+    }
+    if (!client.is_active) {
+        return c.json({ error: 'forbidden', message: 'Account is deactivated' }, 403);
+    }
+    if (client.expires_at && new Date(String(client.expires_at)) < new Date()) {
+        return c.json({ error: 'forbidden', message: 'Account has expired' }, 403);
     }
 
-    c.set('userId', payload.sub);
+    const clientId = String(client.id);
+    c.set('userId', clientId);
+    c.set('clientId', clientId);
+    c.set('clientTier', String(client.tier || 'basic'));
+    c.set('rateLimit', Number(client.rate_limit_per_hour || 100));
     await next();
 }
 
@@ -126,7 +156,7 @@ export async function rateLimit(c: AppContext, next: Next) {
 // JWT Helpers
 // ───────────────────────────────────────────────────────────────────────────────
 
-interface JWTPayload {
+export interface JWTPayload {
     sub: string;
     iat: number;
     exp: number;
@@ -141,8 +171,8 @@ export async function createJWT(userId: string, secret: string, expiresIn = 8640
         exp: now + expiresIn,
     };
 
-    const headerB64 = btoa(JSON.stringify(header));
-    const payloadB64 = btoa(JSON.stringify(payload));
+    const headerB64 = encodeBase64Url(new TextEncoder().encode(JSON.stringify(header)));
+    const payloadB64 = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
     const message = `${headerB64}.${payloadB64}`;
 
     const key = await crypto.subtle.importKey(
@@ -154,7 +184,7 @@ export async function createJWT(userId: string, secret: string, expiresIn = 8640
     );
 
     const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
-    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    const signatureB64 = encodeBase64Url(new Uint8Array(signature));
 
     return `${message}.${signatureB64}`;
 }
@@ -163,8 +193,11 @@ export async function verifyJWT(token: string, secret: string): Promise<JWTPaylo
     try {
         const [headerB64, payloadB64, signatureB64] = token.split('.');
         if (!headerB64 || !payloadB64 || !signatureB64) return null;
+        if (!secret) return null;
 
         const message = `${headerB64}.${payloadB64}`;
+        const header = JSON.parse(new TextDecoder().decode(decodeBase64Url(headerB64))) as { alg?: string; typ?: string };
+        if (header.alg !== 'HS256' || header.typ !== 'JWT') return null;
 
         const key = await crypto.subtle.importKey(
             'raw',
@@ -174,20 +207,38 @@ export async function verifyJWT(token: string, secret: string): Promise<JWTPaylo
             ['verify']
         );
 
-        const signature = Uint8Array.from(atob(signatureB64), c => c.charCodeAt(0));
+        const signature = decodeBase64Url(signatureB64);
         const isValid = await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(message));
 
         if (!isValid) return null;
 
-        const payload: JWTPayload = JSON.parse(atob(payloadB64));
+        const payload: JWTPayload = JSON.parse(new TextDecoder().decode(decodeBase64Url(payloadB64)));
 
-        // Check expiration
-        if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+        const now = Math.floor(Date.now() / 1000);
+        if (
+            typeof payload.sub !== 'string' || !payload.sub ||
+            !Number.isFinite(payload.iat) || !Number.isFinite(payload.exp) ||
+            payload.iat > now + 60 ||
+            payload.exp <= now ||
+            payload.exp <= payload.iat
+        ) return null;
 
         return payload;
     } catch {
         return null;
     }
+}
+
+function encodeBase64Url(bytes: Uint8Array): string {
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodeBase64Url(value: string): Uint8Array {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    return Uint8Array.from(atob(padded), character => character.charCodeAt(0));
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

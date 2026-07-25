@@ -75,7 +75,7 @@ const readerRequest = <T>(endpoint: string, maxAgeMs?: number) => {
 
 export interface Campaign {
     id: string;
-    sponsor_id: string;
+    client_id: string;
     name: string;
     description?: string;
     target_countries?: string[];
@@ -87,9 +87,6 @@ export interface Campaign {
     status: 'draft' | 'active' | 'paused' | 'completed';
     impressions: number;
     clicks: number;
-    roi_score?: number;
-    reach_score?: number;
-    credibility_impact?: number;
     created_at: string;
 }
 
@@ -98,11 +95,8 @@ export interface CampaignAnalytics {
     impressions: number;
     clicks: number;
     ctr: number;
-    budget_spent: number;
-    roi_percentage: number;
-    roi_score: number;
-    reach_score: number;
-    credibility_impact: number;
+    configured_budget_usd: number;
+    methodology: string;
     status: string;
     start_date: string;
     end_date: string;
@@ -240,6 +234,7 @@ export const api = {
         regions: { region: string; country_count: number; gdp: { value: number; countries_reported: number; period_start: number; period_end: number }; population: { value: number; countries_reported: number; period_start: number; period_end: number }; growth: { value: number; countries_reported: number; period_start: number; period_end: number }; inflation: { value: number; countries_reported: number; period_start: number; period_end: number }; fdi: { value: number; countries_reported: number; period_start: number; period_end: number }; investment: { value: number; countries_reported: number; period_start: number; period_end: number } }[];
         rankings: { largest_economies: { country_code: string; country_name: string; region: string; year: number; value: number }[]; fastest_growth: { country_code: string; country_name: string; region: string; year: number; value: number }[]; largest_fdi_inflows: { country_code: string; country_name: string; region: string; year: number; value: number }[] };
         sector_performance: SectorMarketPerformance[]; sectors_measured: number; sector_methodology: string;
+        narrated_briefings: { id: string; slug: string; title: string; summary: string | null; audio_url: string; audio_duration_seconds: number | null; published_at: string; country_code: string | null; country_name: string | null; sector_name: string | null }[];
     }>('/dashboards/continental/overview?contract=economy-v1'),
 
     // Search
@@ -412,11 +407,17 @@ export const api = {
         } catch { /* ignore */ }
     },
 
-    verifyEmail: (email: string) => request<{ success: boolean; message: string }>('/members/verify-email', {
+    verifyEmail: (email: string) => request<{ ok: true; status: 'pending_otp' }>('/members/verify-email', {
         method: 'POST',
         body: JSON.stringify({ email })
     }),
-    verifyOtp: (email: string, code: string) => request<{ token: string; user: any; isNewUser: boolean }>('/members/verify-otp', {
+    verifyOtp: (email: string, code: string) => request<{
+        ok: true;
+        token: string;
+        tier: 'free' | 'premium' | 'enterprise';
+        name: string;
+        expires_at: string | null;
+    }>('/members/verify-otp', {
         method: 'POST',
         // The endpoint reads `otp`, not `code` — the wrong field name made every
         // login through this helper 400 with "Email and OTP required".
@@ -485,10 +486,8 @@ export const api = {
             diligence_questions: string[];
             claim_ledger: string[];
             coverage_stories: number;
-            audience_response: number;
             latest_reported_at: string | null;
             methodology: string;
-            score: number;
         }[]
     }>('/market-intel/opportunities', 24 * 60 * 60 * 1000),
 
@@ -514,7 +513,7 @@ export const api = {
     // Campaigns & Sponsorships
     getCampaigns: (status?: string) => request<{ data: Campaign[] }>(`/campaigns${status ? `?status=${status}` : ''}`),
     getCampaign: (id: string) => request<{ data: Campaign & { articles: any[]; stats: any } }>(`/campaigns/${id}`),
-    createCampaign: (data: Partial<Campaign>) => request<{ id: string }>('/campaigns', {
+    createCampaign: (data: Partial<Campaign>) => request<{ success: boolean; data: { id: string } }>('/campaigns', {
         method: 'POST',
         body: JSON.stringify(data)
     }),

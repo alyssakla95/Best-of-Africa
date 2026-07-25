@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
   build: {
     target: 'es2015',
     cssTarget: 'safari14',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

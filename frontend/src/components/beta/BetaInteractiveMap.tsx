@@ -1,127 +1,89 @@
-import React, { useState } from 'react';
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  ZoomableGroup
-} from 'react-simple-maps';
-import { scaleLinear } from 'd3-scale';
-
-// Bundled locally — the previous external GitHub URL 404'd, leaving the map blank.
-const geoUrl = "/geo/africa.geojson";
+import React from 'react';
 
 interface MapData {
     country_code: string;
     country_name: string;
-    score: number; // 0 to 100
+    score: number;
 }
 
 interface BetaInteractiveMapProps {
     data: MapData[];
     onCountryClick?: (countryCode: string) => void;
-    /** Legend endpoint labels — must name what `score` measures on THIS page
-     *  (the old hardcoded "Higher divergence" survived a page whose scores
-     *  became story counts). */
     legendLow?: string;
     legendHigh?: string;
 }
 
-export const BetaInteractiveMap: React.FC<BetaInteractiveMapProps> = ({ data, onCountryClick, legendLow = 'Fewer', legendHigh = 'More stories' }) => {
-    const [tooltipContent, setTooltipContent] = useState('');
+/**
+ * A responsive country-intensity view.
+ *
+ * The former implementation downloaded and parsed a full geographic map and
+ * pulled an obsolete d3 zoom stack into the reader bundle. That map became
+ * cramped on phones and its dependency chain carries an unfixed ReDoS advisory.
+ * This native grid preserves every country value, works with touch and keyboard,
+ * and stays readable without horizontal scrolling.
+ */
+export const BetaInteractiveMap: React.FC<BetaInteractiveMapProps> = ({
+    data,
+    onCountryClick,
+    legendLow = 'Lower value',
+    legendHigh = 'Higher value',
+}) => {
+    const countries = [...data]
+        .map(country => ({ ...country, score: Math.max(0, Number(country.score) || 0) }))
+        .sort((a, b) => b.score - a.score || a.country_name.localeCompare(b.country_name));
+    const maximum = Math.max(1, ...countries.map(country => country.score));
 
-    // Divergence gap is a MAGNITUDE → sequential ramp, one hue light→dark
-    // (pale champagne → deep gold). No-data countries get a faint navy tint
-    // that reads against the light card without competing with the data.
-    const colorScale = scaleLinear<string>()
-        .domain([0, 100])
-        .range(["#FFFFFF", "#0F1F3D"]);
-
-    const getScore = (geoName: string) => {
-        // Simple mapping, might need more robust country name matching in production
-        const countryData = data.find(d => 
-            d.country_name.toLowerCase() === geoName.toLowerCase() ||
-            d.country_name.toLowerCase().includes(geoName.toLowerCase()) ||
-            geoName.toLowerCase().includes(d.country_name.toLowerCase())
+    if (!countries.length) {
+        return (
+            <div className="rounded-2xl border border-dashed border-navy/20 bg-white p-6 text-sm leading-7 text-navy/70">
+                No country values were supplied to this view.
+            </div>
         );
-        return countryData ? countryData.score : 0;
-    };
+    }
 
     return (
-        <div className="relative w-full h-full bg-white rounded-2xl border border-primary/10 overflow-hidden">
-            <ComposableMap
-                projection="geoAzimuthalEqualArea"
-                projectionConfig={{
-                    // Centered near [20E, 1N] at a scale that fits the WHOLE
-                    // continent — at scale 400 the southern third was clipped.
-                    rotate: [-20.0, 4.0, 0],
-                    scale: 292
-                }}
-            >
-                <ZoomableGroup zoom={1}>
-                    <Geographies geography={geoUrl}>
-                        {({ geographies }) =>
-                            geographies.map(geo => {
-                                const geoName = geo.properties.name || geo.properties.geounit;
-                                const score = getScore(geoName);
-                                
-                                return (
-                                    <Geography
-                                        key={geo.rsmKey}
-                                        geography={geo}
-                                        onMouseEnter={() => {
-                                            setTooltipContent(`${geoName}: ${score > 0 ? `Score ${score}` : 'No Data'}`);
-                                        }}
-                                        onMouseLeave={() => {
-                                            setTooltipContent("");
-                                        }}
-                                        onClick={() => {
-                                            if (onCountryClick && score > 0) {
-                                                const countryData = data.find(d => 
-                                                    d.country_name.toLowerCase() === geoName.toLowerCase() ||
-                                                    d.country_name.toLowerCase().includes(geoName.toLowerCase()) ||
-                                                    geoName.toLowerCase().includes(d.country_name.toLowerCase())
-                                                );
-                                                if (countryData) {
-                                                    onCountryClick(countryData.country_code);
-                                                }
-                                            }
-                                        }}
-                                        style={{
-                                            default: {
-                                                fill: score > 0 ? colorScale(score) : "#FFFFFF",
-                                                stroke: "rgba(15,31,61,0.35)",
-                                                strokeWidth: 0.75,
-                                                outline: "none"
-                                            },
-                                            hover: {
-                                                fill: "#0a2540", // primary color
-                                                stroke: "#0F1F3D",
-                                                strokeWidth: 1,
-                                                outline: "none",
-                                                cursor: score > 0 ? "pointer" : "default"
-                                            },
-                                            pressed: {
-                                                fill: "#0F1F3D",
-                                                outline: "none"
-                                            }
-                                        }}
-                                    />
-                                );
-                            })
-                        }
-                    </Geographies>
-                </ZoomableGroup>
-            </ComposableMap>
-            {tooltipContent && (
-                <div className="absolute bottom-4 left-4 bg-navy text-white border border-accent/35 px-4 py-2 rounded-xl shadow-[0_12px_32px_rgba(15,31,61,0.35)] text-sm font-semibold pointer-events-none">
-                    {tooltipContent}
-                </div>
-            )}
-            {/* Legend — sequential ramp with ink labels (identity never color-alone) */}
-            <div aria-hidden="true" className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-2 rounded-lg border border-primary/10 shadow-sm">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60">{legendLow}</span>
-                <span className="h-2 w-24 rounded-full border border-navy/20" style={{ background: 'linear-gradient(to right, #FFFFFF, #0F1F3D)' }} />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60">{legendHigh}</span>
+        <div className="overflow-hidden rounded-2xl border border-navy/15 bg-white">
+            <div className="grid grid-cols-1 gap-px bg-navy/10 min-[380px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                {countries.map(country => {
+                    const intensity = country.score / maximum;
+                    const interactive = Boolean(onCountryClick);
+                    return (
+                        <button
+                            key={country.country_code}
+                            type="button"
+                            disabled={!interactive}
+                            onClick={() => onCountryClick?.(country.country_code)}
+                            className="group min-w-0 bg-white p-4 text-left transition-colors enabled:hover:bg-navy enabled:hover:text-white disabled:cursor-default sm:p-5"
+                            aria-label={`${country.country_name}: ${country.score}`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="mb-4 block h-2.5 w-full rounded-full bg-navy/10"
+                            >
+                                <span
+                                    className="block h-full rounded-full bg-navy transition-[width]"
+                                    style={{ width: `${Math.max(4, intensity * 100)}%`, opacity: 0.35 + intensity * 0.65 }}
+                                />
+                            </span>
+                            <span className="flex min-w-0 items-baseline justify-between gap-3">
+                                <span className="truncate text-sm font-bold text-navy group-enabled:group-hover:text-white">
+                                    {country.country_name}
+                                </span>
+                                <span className="shrink-0 font-serif text-xl tabular-nums text-navy group-enabled:group-hover:text-white">
+                                    {country.score}
+                                </span>
+                            </span>
+                            <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[.12em] text-navy/50 group-enabled:group-hover:text-white/70">
+                                {country.country_code}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy/10 px-4 py-3 text-[10px] font-bold uppercase tracking-[.12em] text-navy/55 sm:px-5">
+                <span>{legendLow}</span>
+                <span className="h-2 min-w-24 flex-1 rounded-full bg-gradient-to-r from-navy/10 to-navy sm:max-w-48" aria-hidden="true"/>
+                <span>{legendHigh}</span>
             </div>
         </div>
     );

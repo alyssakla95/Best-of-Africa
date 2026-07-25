@@ -5,14 +5,28 @@
 
 import { Hono } from 'hono';
 import type { Env, Variables } from '../types';
+import { requireClientAuth } from '../lib/auth';
+import { throttle } from '../lib/ratelimit';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+const isAdmin = (c: { req: { header(name: string): string | undefined }; env: Env }) =>
+    Boolean(c.env.ADMIN_API_KEY && c.req.header('X-Admin-Key') === c.env.ADMIN_API_KEY);
+
+// Tracking a rendered sponsored article is the only public operation. Campaign
+// records and all direct mutations are private to their owning client or admin.
+router.use('*', async (c, next) => {
+    if (c.req.path.endsWith('/track-impression')) return next();
+    if (isAdmin(c)) return next();
+    return requireClientAuth(c, next);
+});
 
 // ───────────────────────────────────────────────────────────────────────────────
 // GET /campaigns - List all campaigns (for admin dashboard)
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/', async (c) => {
-    const { status, sponsor_id, limit = '20' } = c.req.query();
+    const { status, limit = '20' } = c.req.query();
+    const boundedLimit = Math.max(1, Math.min(Number.parseInt(limit, 10) || 20, 100));
 
     let query = `
         SELECT c.*, 
@@ -20,20 +34,20 @@ router.get('/', async (c) => {
         FROM campaigns c
         WHERE 1=1
     `;
-    const params: string[] = [];
+    const params: Array<string | number> = [];
+
+    if (!isAdmin(c)) {
+        query += ' AND c.client_id = ?';
+        params.push(c.get('clientId'));
+    }
 
     if (status) {
         query += ' AND c.status = ?';
         params.push(status);
     }
 
-    if (sponsor_id) {
-        query += ' AND c.sponsor_id = ?';
-        params.push(sponsor_id);
-    }
-
     query += ' ORDER BY c.created_at DESC LIMIT ?';
-    params.push(limit);
+    params.push(boundedLimit);
 
     const campaigns = await c.env.DB.prepare(query).bind(...params).all();
 
@@ -52,12 +66,14 @@ router.get('/', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/:id', async (c) => {
     const id = c.req.param('id');
+    const ownerClause = isAdmin(c) ? '' : ' AND c.client_id = ?';
+    const ownerParams = isAdmin(c) ? [id] : [id, c.get('clientId')];
 
     const campaign = await c.env.DB.prepare(`
         SELECT c.*
         FROM campaigns c
-        WHERE c.id = ?
-    `).bind(id).first();
+        WHERE c.id = ?${ownerClause}
+    `).bind(...ownerParams).first();
 
     if (!campaign) {
         return c.json({
@@ -69,12 +85,12 @@ router.get('/:id', async (c) => {
 
     // Get associated sponsored articles
     const articles = await c.env.DB.prepare(`
-        SELECT id, slug, title, summary, published_at, view_count, engagement_score
+        SELECT id, slug, title, summary, published_at, view_count
         FROM articles
         WHERE sponsor_id = ? AND is_sponsored = 1
         ORDER BY published_at DESC
         LIMIT 20
-    `).bind((campaign as Record<string, any>).sponsor_id).all();
+    `).bind((campaign as Record<string, any>).client_id).all();
 
     const data = campaign as Record<string, any>;
 
@@ -88,9 +104,7 @@ router.get('/:id', async (c) => {
             stats: {
                 total_articles: articles.results?.length || 0,
                 total_views: articles.results?.reduce((sum: number, a: any) => sum + (a.view_count || 0), 0) || 0,
-                avg_engagement: articles.results?.length
-                    ? (articles.results.reduce((sum: number, a: any) => sum + (a.engagement_score || 0), 0) / articles.results.length).toFixed(1)
-                    : 0
+                methodology: 'Article count and views are stored first-party delivery records. No engagement, reach, return or impact estimate is inferred.',
             }
         }
     });
@@ -102,7 +116,7 @@ router.get('/:id', async (c) => {
 router.post('/', async (c) => {
     const body = await c.req.json();
     const {
-        sponsor_id,
+        client_id,
         name,
         description,
         target_countries,
@@ -115,27 +129,29 @@ router.post('/', async (c) => {
     } = body;
 
     // Validation
-    if (!sponsor_id || !name) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
         return c.json({
             success: false,
             error: 'validation_error',
-            message: 'sponsor_id and name are required'
+            message: 'name is required'
         }, 400);
     }
 
     const id = crypto.randomUUID();
+    const ownerId = isAdmin(c) ? client_id : c.get('clientId');
+    if (!ownerId) return c.json({ success: false, error: 'client_id is required for admin creation' }, 400);
 
     await c.env.DB.prepare(`
         INSERT INTO campaigns (
-            id, sponsor_id, name, description, 
+        id, client_id, name, description,
             target_countries, target_sectors, target_audience,
             budget_usd, start_date, end_date, 
             narrative_strategy_id, status, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', datetime('now'))
     `).bind(
         id,
-        sponsor_id,
-        name,
+        ownerId,
+        name.trim(),
         description || null,
         target_countries ? JSON.stringify(target_countries) : null,
         target_sectors ? JSON.stringify(target_sectors) : null,
@@ -161,7 +177,9 @@ router.patch('/:id', async (c) => {
     const body = await c.req.json();
 
     // Check if campaign exists
-    const existing = await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ?').bind(id).first();
+    const existing = isAdmin(c)
+        ? await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ?').bind(id).first()
+        : await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).first();
     if (!existing) {
         return c.json({
             success: false,
@@ -200,7 +218,10 @@ router.patch('/:id', async (c) => {
     }
 
     values.push(id);
-    await c.env.DB.prepare(`UPDATE campaigns SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run();
+    if (!isAdmin(c)) values.push(c.get('clientId'));
+    await c.env.DB.prepare(
+        `UPDATE campaigns SET ${updates.join(', ')} WHERE id = ?${isAdmin(c) ? '' : ' AND client_id = ?'}`
+    ).bind(...values).run();
 
     return c.json({
         success: true,
@@ -214,7 +235,9 @@ router.patch('/:id', async (c) => {
 router.post('/:id/launch', async (c) => {
     const id = c.req.param('id');
 
-    const campaign = await c.env.DB.prepare('SELECT id, status FROM campaigns WHERE id = ?').bind(id).first();
+    const campaign = isAdmin(c)
+        ? await c.env.DB.prepare('SELECT id, status FROM campaigns WHERE id = ?').bind(id).first()
+        : await c.env.DB.prepare('SELECT id, status FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).first();
 
     if (!campaign) {
         return c.json({
@@ -248,9 +271,10 @@ router.post('/:id/launch', async (c) => {
 router.post('/:id/pause', async (c) => {
     const id = c.req.param('id');
 
-    await c.env.DB.prepare(`
-        UPDATE campaigns SET status = 'paused' WHERE id = ?
-    `).bind(id).run();
+    const result = isAdmin(c)
+        ? await c.env.DB.prepare("UPDATE campaigns SET status = 'paused' WHERE id = ?").bind(id).run()
+        : await c.env.DB.prepare("UPDATE campaigns SET status = 'paused' WHERE id = ? AND client_id = ?").bind(id, c.get('clientId')).run();
+    if (!result.meta?.changes) return c.json({ success: false, error: 'not_found' }, 404);
 
     return c.json({
         success: true,
@@ -264,7 +288,9 @@ router.post('/:id/pause', async (c) => {
 router.delete('/:id', async (c) => {
     const id = c.req.param('id');
 
-    const result = await c.env.DB.prepare('DELETE FROM campaigns WHERE id = ?').bind(id).run();
+    const result = isAdmin(c)
+        ? await c.env.DB.prepare('DELETE FROM campaigns WHERE id = ?').bind(id).run()
+        : await c.env.DB.prepare('DELETE FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).run();
 
     if (result.meta?.changes === 0) {
         return c.json({
@@ -286,7 +312,9 @@ router.delete('/:id', async (c) => {
 router.get('/:id/analytics', async (c) => {
     const id = c.req.param('id');
 
-    const campaign = await c.env.DB.prepare('SELECT * FROM campaigns WHERE id = ?').bind(id).first();
+    const campaign = isAdmin(c)
+        ? await c.env.DB.prepare('SELECT * FROM campaigns WHERE id = ?').bind(id).first()
+        : await c.env.DB.prepare('SELECT * FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).first();
 
     if (!campaign) {
         return c.json({
@@ -303,11 +331,6 @@ router.get('/:id/analytics', async (c) => {
         ? ((data.clicks / data.impressions) * 100).toFixed(2)
         : '0.00';
 
-    // Calculate ROI (simplified)
-    const cost = data.budget_usd || 0;
-    const value = data.clicks * 2.5; // Assumed $2.50 per click value
-    const roi = cost > 0 ? (((value - cost) / cost) * 100).toFixed(1) : '0';
-
     return c.json({
         success: true,
         data: {
@@ -315,11 +338,8 @@ router.get('/:id/analytics', async (c) => {
             impressions: data.impressions || 0,
             clicks: data.clicks || 0,
             ctr: parseFloat(ctr),
-            budget_spent: data.budget_usd || 0,
-            roi_percentage: parseFloat(roi),
-            roi_score: data.roi_score || 0,
-            reach_score: data.reach_score || 0,
-            credibility_impact: data.credibility_impact || 0,
+            configured_budget_usd: data.budget_usd || 0,
+            methodology: 'Impressions and clicks are counted first-party delivery events. CTR is clicks divided by impressions. No ROI, reach multiplier or credibility score is inferred.',
             status: data.status,
             start_date: data.start_date,
             end_date: data.end_date
@@ -333,6 +353,11 @@ router.get('/:id/analytics', async (c) => {
 router.get('/:id/timeseries', async (c) => {
     const id = c.req.param('id');
     const days = Math.min(parseInt(c.req.query('days') || '14', 10) || 14, 90);
+
+    const owner = isAdmin(c)
+        ? await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ?').bind(id).first()
+        : await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).first();
+    if (!owner) return c.json({ success: false, error: 'not_found' }, 404);
 
     const rows = await c.env.DB.prepare(`
         SELECT date(created_at) AS day,
@@ -356,7 +381,9 @@ router.post('/:id/track', async (c) => {
     try { body = await c.req.json(); } catch { /* allow empty */ }
     const eventType = body.event_type === 'click' ? 'click' : 'impression';
 
-    const campaign = await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ?').bind(id).first();
+    const campaign = isAdmin(c)
+        ? await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ?').bind(id).first()
+        : await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ? AND client_id = ?').bind(id, c.get('clientId')).first();
     if (!campaign) return c.json({ success: false, error: 'not_found' }, 404);
 
     await c.env.DB.prepare(
@@ -378,6 +405,8 @@ router.post('/:id/track', async (c) => {
 // campaign server-side so nothing is tamperable and non-sponsored views are no-ops.
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/track-impression', async (c) => {
+    const limited = await throttle(c, 'sponsor-delivery');
+    if (limited) return limited;
     let body: Record<string, any> = {};
     try { body = await c.req.json(); } catch { /* ignore */ }
     const articleId = body.article_id as string | undefined;

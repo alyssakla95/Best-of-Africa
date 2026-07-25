@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Target, Eye, MousePointerClick, DollarSign, TrendingUp, BarChart3, PauseCircle, Activity } from 'lucide-react';
+import { Target, Eye, MousePointerClick, DollarSign, BarChart3, PauseCircle, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
@@ -10,10 +10,9 @@ import { KO_FI_URL } from '../../constants/beta';
 
 export const BetaSponsorDashboard: React.FC = () => {
   const { isMember } = useMember();
-  // Using a mock "active" sponsor ID logic for the UI. Usually this comes from auth context.
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
-  const { data: campaignsRes, isLoading: isLoadingList } = useQuery({
+  const { data: campaignsRes, isLoading: isLoadingList, isError: campaignsError } = useQuery({
     queryKey: ['campaigns'],
     queryFn: () => api.getCampaigns(),
     staleTime: 5 * 60 * 1000,
@@ -54,7 +53,7 @@ export const BetaSponsorDashboard: React.FC = () => {
           </div>
           <h1 className="font-serif text-4xl text-primary mb-4">Sponsor Dashboard</h1>
           <p className="text-primary/60 max-w-md mb-8">
-            Manage your corporate sponsorship campaigns, track ROI, and view real-time engagement analytics. 
+            Manage corporate sponsorship delivery and review first-party impression, click and click-through records.
             Access is strictly limited to corporate partners.
           </p>
           <a
@@ -83,6 +82,17 @@ export const BetaSponsorDashboard: React.FC = () => {
     );
   }
 
+  if (campaignsError) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col justify-center px-5 py-16 sm:px-6">
+        <p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Partner authorization required</p>
+        <h1 className="mt-3 font-serif text-4xl text-navy">Campaign records are isolated by sponsoring organization.</h1>
+        <p className="mt-4 text-base leading-7 text-muted-foreground">Member preview opens subscriber editorial benefits, but it does not expose private partner campaign data. Sign in with the sponsoring organization’s authorized account to retrieve its delivery record.</p>
+        <a href="/login" className="mt-7 inline-flex min-h-12 w-fit items-center justify-center rounded-lg bg-navy px-5 text-sm font-bold text-white">Open secure sign-in</a>
+      </div>
+    );
+  }
+
   if (campaigns.length === 0) {
     return (
       <>
@@ -101,7 +111,7 @@ export const BetaSponsorDashboard: React.FC = () => {
     <>
       <SEO 
         title="Sponsor Analytics | BOA-Story Dashboard"
-        description="Track your campaign ROI, impressions, and credibility impact across the platform."
+        description="Review first-party campaign impressions, clicks, click-through rate and configured budget."
       />
       
       <div className="bg-background min-h-screen pb-24">
@@ -120,7 +130,7 @@ export const BetaSponsorDashboard: React.FC = () => {
                 Campaign Analytics
               </h1>
               <p className="text-foreground/70 text-lg max-w-2xl leading-relaxed">
-                Real-time performance tracking and ROI measurement for your sponsored content.
+                First-party delivery records for sponsored content, with no inferred return or impact score.
               </p>
             </div>
 
@@ -163,7 +173,7 @@ export const BetaSponsorDashboard: React.FC = () => {
           )}
 
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-background rounded-2xl p-6 border border-primary/10 shadow-sm flex flex-col justify-between h-full">
               <div className="flex items-center gap-2 text-primary/40 text-xs font-bold uppercase tracking-widest mb-4">
                 <Eye size={16} className="text-accent" /> Impressions
@@ -187,28 +197,10 @@ export const BetaSponsorDashboard: React.FC = () => {
 
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="bg-background rounded-2xl p-6 border border-primary/10 shadow-sm flex flex-col justify-between h-full">
               <div className="flex items-center gap-2 text-primary/40 text-xs font-bold uppercase tracking-widest mb-4">
-                <DollarSign size={16} className="text-accent" /> Budget Spent
+                <DollarSign size={16} className="text-accent" /> Configured Budget
               </div>
               <div className="text-4xl font-serif text-primary">
-                {isLoadingAnalytics ? '...' : `$${analytics?.budget_spent.toLocaleString()}`}
-              </div>
-              <div className="mt-2 w-full bg-background/5 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="bg-accent h-full rounded-full" 
-                  style={{ width: `${Math.min(((analytics?.budget_spent || 0) / (activeCampaign?.budget_usd || 1)) * 100, 100)}%` }}
-                />
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="bg-background rounded-2xl p-6 border border-primary/10 shadow-sm flex flex-col justify-between h-full bg-accent/5">
-              <div className="flex items-center gap-2 text-primary/40 text-xs font-bold uppercase tracking-widest mb-4">
-                <TrendingUp size={16} className="text-accent" /> Estimated ROI
-              </div>
-              <div className="text-4xl font-serif text-accent font-bold">
-                {isLoadingAnalytics ? '...' : `+${analytics?.roi_percentage}%`}
-              </div>
-              <div className="mt-2 text-[10px] uppercase font-bold text-primary/40">
-                Based on avg. conversion value
+                {isLoadingAnalytics ? '...' : `$${analytics?.configured_budget_usd.toLocaleString()}`}
               </div>
             </motion.div>
           </div>
@@ -260,41 +252,10 @@ export const BetaSponsorDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Quality Scores */}
+            {/* Measurement disclosure */}
             <div className="bg-background rounded-2xl border border-primary/10 p-6 shadow-sm">
-              <h3 className="font-serif text-xl text-primary mb-6">Campaign Health</h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="font-bold text-primary">Reach Score</span>
-                    <span className="text-accent font-bold">{analytics?.reach_score || 0}/100</span>
-                  </div>
-                  <div className="w-full bg-background/5 rounded-full h-2">
-                    <div className="bg-background h-2 rounded-full" style={{ width: `${analytics?.reach_score || 0}%` }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="font-bold text-primary">ROI Score</span>
-                    <span className="text-accent font-bold">{analytics?.roi_score || 0}/100</span>
-                  </div>
-                  <div className="w-full bg-background/5 rounded-full h-2">
-                    <div className="bg-background h-2 rounded-full" style={{ width: `${analytics?.roi_score || 0}%` }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="font-bold text-primary">Credibility Impact</span>
-                    <span className="text-accent font-bold">+{analytics?.credibility_impact || 0}</span>
-                  </div>
-                  <p className="text-xs text-primary/50 mt-1">
-                    Editorial-measured increase in brand credibility based on content alignment.
-                  </p>
-                </div>
-              </div>
+              <h3 className="font-serif text-xl text-primary mb-4">How this is measured</h3>
+              <p className="text-sm leading-7 text-primary/65">{analytics?.methodology || 'Only recorded delivery events are shown.'}</p>
             </div>
           </div>
           

@@ -21,6 +21,8 @@ router.use('/country/*', rateLimit);
 router.use('/sector/*', requireApiKey);
 router.use('/sector/*', rateLimit);
 
+router.use('/campaigns', requireApiKey);
+router.use('/campaigns', rateLimit);
 router.use('/campaigns/*', requireApiKey);
 router.use('/campaigns/*', rateLimit);
 
@@ -350,7 +352,7 @@ router.get('/campaigns/:id', async (c) => {
   return c.json({
     campaign: {
       ...campaign,
-      ai_roi_projection: (campaign as Record<string, any>).ai_predicted_roi || "Calculating..."
+      delivery_methodology: 'Campaign impressions, clicks and article records are first-party observations. No ROI or impact projection is inferred from those delivery events.'
     },
     articles: articles.results || [],
   });
@@ -379,18 +381,13 @@ router.get('/audience/reach', async (c) => {
     `).first<{ total: number }>()
   ]);
 
-  // Calculate estimated reach (views * multiplier for social sharing)
   const baseViews = totalViews?.total || 0;
-  const estimatedReach = Math.round(baseViews * 2.4); // Industry standard multiplier
-  const reachInMillions = (estimatedReach / 1000000).toFixed(1);
 
   return c.json({
     total_views: baseViews,
-    estimated_reach: estimatedReach,
-    reach_display: `${reachInMillions}M`,
     total_articles: uniqueArticles?.total || 0,
     countries_reached: countryReach?.total || 0,
-    trend: 'up',
+    methodology: 'First-party article views only. No social multiplier, inferred reach or directional trend is applied.',
     updated_at: new Date().toISOString()
   });
 });

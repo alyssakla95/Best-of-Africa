@@ -63,8 +63,8 @@ const openApiSpec = {
         '/dashboards/continental/overview': {
             get: {
                 summary: 'Get the official continental economic overview',
-                description: 'Source-linked WDI continental totals, country medians, five-region comparisons, country rankings and multi-indicator sector performance. Editorial activity is excluded.',
-                responses: { 200: { description: 'Official economic, trade, FDI, population, regional and sector-performance records' } }
+                description: 'Source-linked WDI continental totals, country medians, five-region comparisons, country rankings and multi-indicator sector performance. A separate narrated_briefings collection supplies recent source-linked audio reporting without mixing editorial activity into the economic measures.',
+                responses: { 200: { description: 'Official economic, trade, FDI, population, regional and sector-performance records plus a separate narrated briefing collection' } }
             }
         },
         '/events': {

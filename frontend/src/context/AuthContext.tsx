@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH CONTEXT: Manages authentication and subscription state
@@ -50,13 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [state.token, state.user]);
 
-    // Listen for 401 unauthorized events from the API layer and log out globally
-    useEffect(() => {
-        const handler = () => logout();
-        window.addEventListener('boa:auth:unauthorized', handler);
-        return () => window.removeEventListener('boa:auth:unauthorized', handler);
-    }, []);
-
     const login = (token: string, user: AuthState['user']) => {
         setState({
             isAuthenticated: true,
@@ -66,14 +59,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     };
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setState({
             isAuthenticated: false,
             isSubscribed: false,
             user: null,
             token: null,
         });
-    };
+    }, []);
+
+    // Listen for 401 unauthorized events from the API layer and log out globally.
+    useEffect(() => {
+        window.addEventListener('boa:auth:unauthorized', logout);
+        return () => window.removeEventListener('boa:auth:unauthorized', logout);
+    }, [logout]);
 
     const checkSubscription = () => state.isSubscribed;
 

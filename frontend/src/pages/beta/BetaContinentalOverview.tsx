@@ -1,12 +1,14 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Activity, ArrowRight, ExternalLink, Globe2, Landmark, Scale, TrendingUp } from 'lucide-react';
+import { Activity, ArrowRight, ExternalLink, Globe2, Headphones, Landmark, Play, Scale, TrendingUp } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { IntelligenceTrustPanel } from '../../components/intelligence/IntelligenceTrustPanel';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
+import { useAudio } from '../../context/AudioContext';
+import { stripMarkdown } from '../../lib/utils';
 
 const compact = (value: number, digits = 1) => new Intl.NumberFormat('en', {
   notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: digits,
@@ -23,6 +25,7 @@ const period = (start: number, end: number) => start === end ? String(end) : `${
 
 export const BetaContinentalOverview: React.FC = () => {
   const { view: requestedView = 'overview' } = useParams<{ view?: string }>();
+  const { playTrack } = useAudio();
   const view = ['overview', 'regions', 'sectors'].includes(requestedView) ? requestedView : 'overview';
   const query = useQuery({
     queryKey: ['continental-economic-overview', 'economy-v1'],
@@ -38,6 +41,7 @@ export const BetaContinentalOverview: React.FC = () => {
   const indicators = Object.fromEntries(data.indicators.map(item => [item.indicator_code, item]));
   const headlineCodes = ['NY.GDP.MKTP.CD', 'SP.POP.TOTL', 'NY.GDP.MKTP.KD.ZG', 'BX.KLT.DINV.CD.WD'];
   const headlineIcons = [Landmark, Globe2, TrendingUp, Activity];
+  const narratedBriefings = Array.isArray(data.narrated_briefings) ? data.narrated_briefings : [];
 
   return <div className="min-h-screen bg-background pb-24 text-foreground">
     <SEO title="Continental Economic Overview | BOA-Story" description="Official continental and regional economic, trade, investment and sector-performance indicators across Africa’s 54 markets."/>
@@ -80,6 +84,60 @@ export const BetaContinentalOverview: React.FC = () => {
           </section>
 
           <DataReadingGuide subject="the continental overview" />
+
+          <section className="page-section rounded-2xl border border-border bg-white p-5 md:p-8" aria-labelledby="continental-audio-briefings">
+            <div className="flex max-w-4xl items-start gap-4">
+              <span className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy text-white"><Headphones size={20}/></span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[.16em] text-navy/60">Narrated reporting</p>
+                <h2 id="continental-audio-briefings" className="mt-2 font-serif text-3xl text-navy md:text-4xl">Listen to the evidence behind the wider picture</h2>
+                <p className="mt-3 readable-copy">These are narrated, source-linked editorial briefings. They provide current reporting context and remain separate from the official economic measures above.</p>
+              </div>
+            </div>
+            {narratedBriefings.length > 0 ? (
+              <ol className="mt-7 grid gap-3 lg:grid-cols-2">
+                {narratedBriefings.map((briefing, index) => (
+                  <li key={briefing.id} className="rounded-xl border border-border bg-background p-4 sm:p-5">
+                    <div className="flex items-start gap-4">
+                      <button
+                        type="button"
+                        onClick={() => playTrack({
+                          title: stripMarkdown(briefing.title),
+                          subtitle: [briefing.country_name, briefing.sector_name].filter(Boolean).join(' · '),
+                          audioUrl: briefing.audio_url,
+                          durationSeconds: briefing.audio_duration_seconds || undefined,
+                          slug: briefing.slug,
+                        }, narratedBriefings.map(item => ({
+                          title: stripMarkdown(item.title),
+                          subtitle: [item.country_name, item.sector_name].filter(Boolean).join(' · '),
+                          audioUrl: item.audio_url,
+                          durationSeconds: item.audio_duration_seconds || undefined,
+                          slug: item.slug,
+                        })))}
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-navy text-white transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+                        aria-label={`Play ${stripMarkdown(briefing.title)}`}
+                      >
+                        <Play size={18} fill="currentColor"/>
+                      </button>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[.12em] text-muted-foreground">Briefing {index + 1}{briefing.country_name ? ` · ${briefing.country_name}` : ''}</p>
+                        <h3 className="mt-1 font-serif text-xl leading-tight text-navy">{stripMarkdown(briefing.title)}</h3>
+                        {briefing.summary && <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{stripMarkdown(briefing.summary)}</p>}
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-navy/70">
+                          {briefing.audio_duration_seconds && <span>{Math.max(1, Math.round(briefing.audio_duration_seconds / 60))} min audio</span>}
+                          <Link to={`/posts/${briefing.slug}`} className="font-semibold underline decoration-navy/25 underline-offset-4">Open source-linked article</Link>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="mt-7 rounded-xl border border-dashed border-navy/20 bg-navy/[.025] p-5">
+                <p className="text-sm leading-7 text-navy/75">The economic record is complete above. This API response does not yet contain a narrated-briefing index, so no unrelated regional data has been substituted in its place.</p>
+              </div>
+            )}
+          </section>
 
           <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="continental-analysis-path">
             <div className="border-b border-border px-5 py-6 md:px-8">

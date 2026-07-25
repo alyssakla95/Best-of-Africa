@@ -796,7 +796,6 @@ router.get('/opportunities', async (c) => {
                     s.id as sector_id,
                     s.name as sector_name,
                     COUNT(a.id) as article_count,
-                    AVG(a.engagement_score) as avg_score,
                     MAX(a.published_at) as latest_reported_at
                 FROM articles a
                 JOIN countries c ON a.country_code = c.code
@@ -893,10 +892,8 @@ ${evidence}`;
                     diligence_questions: diligenceQuestions,
                     claim_ledger: claimLedger,
                     coverage_stories: Number(o.article_count || 0),
-                    audience_response: Math.round(o.avg_score || 0),
                     latest_reported_at: o.latest_reported_at,
-                    score: Math.round(o.avg_score || 0),
-                    methodology: 'Ranked by BOA-Story reporting volume and recency. Audience response is descriptive platform activity, not an opportunity score.'
+                    methodology: 'A reporting-led watchlist ordered by BOA-Story coverage volume and recency. It is not an opportunity score, market-performance ranking or investment recommendation.'
                 };
             };
 
@@ -919,7 +916,7 @@ async function buildImmediateOpportunities(env: Env) {
     const opportunities = await env.DB.prepare(`
         SELECT c.code AS country_code, c.name AS country_name,
                s.id AS sector_id, s.name AS sector_name,
-               COUNT(a.id) AS article_count, AVG(a.engagement_score) AS avg_score,
+               COUNT(a.id) AS article_count,
                MAX(a.published_at) AS latest_reported_at
         FROM articles a
         JOIN countries c ON a.country_code = c.code
@@ -965,10 +962,8 @@ async function buildImmediateOpportunities(env: Env) {
             ],
             claim_ledger: [`The intersection is prominent in the current BOA-Story reporting set; records [1-${Math.max(1, evidencePoints.length)}] support that coverage observation.`],
             coverage_stories: Number(opportunity.article_count || 0),
-            audience_response: Math.round(Number(opportunity.avg_score || 0)),
             latest_reported_at: opportunity.latest_reported_at,
-            score: Math.round(Number(opportunity.avg_score || 0)),
-            methodology: 'Ranked by BOA-Story reporting volume and recency. Audience response is descriptive platform activity, not an opportunity score.',
+            methodology: 'A reporting-led watchlist ordered by BOA-Story coverage volume and recency. It is not an opportunity score, market-performance ranking or investment recommendation.',
         };
     }));
 

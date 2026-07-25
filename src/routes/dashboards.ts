@@ -161,12 +161,37 @@ router.get('/:region', async (c) => {
 // GET /dashboards/continental/overview - Pan-African overview
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/continental/overview', async (c) => {
-    const sectorPerformance = await getSectorPerformanceCache(c.env);
+    const [sectorPerformance, narratedBriefingsResult] = await Promise.all([
+        getSectorPerformanceCache(c.env),
+        c.env.DB.prepare(`
+            SELECT
+                a.id,
+                a.slug,
+                a.title,
+                a.summary,
+                a.audio_url,
+                a.audio_duration_seconds,
+                a.published_at,
+                a.country_code,
+                c.name AS country_name,
+                s.name AS sector_name
+            FROM articles a
+            LEFT JOIN countries c ON c.code = a.country_code
+            LEFT JOIN sectors s ON s.id = a.sector_id
+            WHERE a.status = 'published'
+              AND a.audio_url IS NOT NULL
+              AND TRIM(a.audio_url) <> ''
+            ORDER BY datetime(a.published_at) DESC, a.id DESC
+            LIMIT 6
+        `).all(),
+    ]);
+
     return c.json({
         ...CONTINENTAL_WDI_SNAPSHOT,
         sector_performance: sectorPerformance?.data || [],
         sectors_measured: sectorPerformance?.sectors_measured || 0,
         sector_methodology: sectorPerformance?.methodology || '',
+        narrated_briefings: narratedBriefingsResult.results || [],
     });
 });
 

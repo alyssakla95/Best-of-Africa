@@ -81,6 +81,7 @@ router.get('/country/:code', async (c) => {
     // Get articles aligned with narratives
     const articles = await c.env.DB.prepare(`
         SELECT a.id, a.slug, a.title, a.target_audience, a.tone,
+               a.published_at, a.source_title, a.source_url,
                ns.narrative_theme
         FROM articles a
         LEFT JOIN narrative_strategies ns ON a.narrative_strategy_id = ns.id
@@ -97,21 +98,44 @@ router.get('/country/:code', async (c) => {
         GROUP BY s.id
     `).bind(code).all();
 
+    const coverageSummary = await c.env.DB.prepare(`
+        SELECT
+            COUNT(*) AS published_articles,
+            COUNT(DISTINCT sector_id) AS sectors_covered,
+            COUNT(DISTINCT NULLIF(TRIM(source_url), '')) AS distinct_sources,
+            COALESCE(MIN(published_at), '') AS earliest_record,
+            COALESCE(MAX(published_at), '') AS latest_record
+        FROM articles
+        WHERE country_code = ? AND status = 'published'
+    `).bind(code).first<{
+        published_articles: number;
+        sectors_covered: number;
+        distinct_sources: number;
+        earliest_record: string;
+        latest_record: string;
+    }>();
+
     const countryData = country as Record<string, any>;
+    const articleRows = (articles.results || []) as Record<string, any>[];
+    const sourceLedger = articleRows.slice(0, 6).map((article, index) =>
+        `${index + 1}. ${article.title}${article.published_at ? ` (${article.published_at})` : ''}${article.source_title ? ` — source: ${article.source_title}` : ''}${article.narrative_theme ? ` — frame: ${article.narrative_theme}` : ''}.`
+    ).join('\n\n') || `${countryData.name} currently has no published reporting record in this dataset. The active strategies and sector table below therefore define the evidence boundary rather than supporting a narrative conclusion.`;
 
     // Narrative Synthesis (The "Story So Far")
     const narrativeArcKey = CACHE_KEYS.narrativeSynthesis(code);
     const generateNarrativeArc = async () => {
-            if (!articles.results || articles.results.length === 0) return "No narrative data available yet.";
+            if (!articleRows.length) return sourceLedger;
 
-            const context = (articles.results as any[]).map(a => `- ${a.title} (Tone: ${a.tone})`).join('\n');
+            const context = articleRows.map(a =>
+                `- ${a.title} | published ${a.published_at || 'date not recorded'} | source ${a.source_title || a.source_url || 'not recorded'} | tone ${a.tone || 'not classified'}`
+            ).join('\n');
 
             try {
                 const prompt = `System: You are an independent student writer for BOA-Story. Keep your tone authentic, grounded, and human. Avoid corporate, intelligence, or institutional jargon.\nUser: ${context}`;
                 const aiResponse = await callConfiguredAI(c.env, { prompt: `${prompt}\n\nProvide a full synthesis with dated evidence, named narrative sponsors and affected stakeholders, documented framing mechanisms, competing narratives, country differences, distribution channels when supplied, counter-evidence, alternative explanations, source limitations, claim ledger and what requires verification. Do not infer unsupported sentiment or impact.`, max_tokens: 7000, temperature: 0.2, response_profile: 'deep-analysis' });
-                return aiResponse?.trim() || "Narrative synthesis unavailable.";
+                return aiResponse?.trim() || sourceLedger;
             } catch (e) {
-                return "Narrative synthesis unavailable.";
+                return sourceLedger;
             }
     };
     const narrativeArc = await getCachedValue<string>(c.env, narrativeArcKey);
@@ -124,7 +148,31 @@ router.get('/country/:code', async (c) => {
         `${index + 1}. ${article.title}${article.narrative_theme ? ` — ${article.narrative_theme}` : ''}${article.tone ? ` (${article.tone})` : ''}.`
     ).join('\n\n') || `${countryData.name} is represented by its active strategies, aligned reporting and sector coverage in this record.`;
 
-    const gapAnalysis = "Gap analysis module pending update.";
+    const sectorRows = (sectorCoverage.results || []) as Array<{ name: string; article_count: number | string }>;
+    const uncoveredSectors = sectorRows.filter(row => Number(row.article_count) === 0).map(row => row.name);
+    const thinSectors = sectorRows
+        .filter(row => Number(row.article_count) > 0 && Number(row.article_count) < 3)
+        .sort((a, b) => Number(a.article_count) - Number(b.article_count))
+        .map(row => `${row.name} (${Number(row.article_count)} published ${Number(row.article_count) === 1 ? 'record' : 'records'})`);
+    const publishedCount = Number(coverageSummary?.published_articles || 0);
+    const sourceCount = Number(coverageSummary?.distinct_sources || 0);
+    const activeStrategyCount = narratives.results?.length || 0;
+    const gapAnalysis = [
+        `Evidence base: ${publishedCount} published ${publishedCount === 1 ? 'article' : 'articles'} across ${Number(coverageSummary?.sectors_covered || 0)} sectors, citing ${sourceCount} distinct source ${sourceCount === 1 ? 'record' : 'records'}.`,
+        coverageSummary?.latest_record
+            ? `Publication window: ${coverageSummary.earliest_record || coverageSummary.latest_record} to ${coverageSummary.latest_record}.`
+            : 'Publication window: no published article has entered the country record.',
+        `Narrative strategy record: ${activeStrategyCount} active ${activeStrategyCount === 1 ? 'strategy' : 'strategies'}.`,
+        uncoveredSectors.length
+            ? `Uncovered sectors requiring primary evidence: ${uncoveredSectors.join(', ')}.`
+            : 'Every configured sector has at least one published record.',
+        thinSectors.length
+            ? `Thinly evidenced sectors: ${thinSectors.join(', ')}. These areas need additional independent sources before comparisons or causal claims are made.`
+            : 'No covered sector is represented by fewer than three published records.',
+        sourceCount < 3
+            ? 'Source-diversity warning: fewer than three distinct cited sources support the current record; conclusions should remain provisional.'
+            : `Source-diversity check: ${sourceCount} distinct cited sources are present, but each material claim still requires direct inspection of its linked evidence.`,
+    ].join('\n\n');
 
     return c.json({
         country: {
@@ -138,7 +186,7 @@ router.get('/country/:code', async (c) => {
         })),
         aligned_articles: articles.results || [],
         sector_coverage: sectorCoverage.results || [],
-        ai_gap_analysis: gapAnalysis // The Refinement
+        ai_gap_analysis: gapAnalysis
     });
 });
 

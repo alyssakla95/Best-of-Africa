@@ -81,6 +81,8 @@ const SkeletonCard = () => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const BetaCountryHub = () => {
+  const { scrollY } = useScroll();
+  const heroOffset = useTransform(scrollY, [0, 800], [0, 250]);
   const { code } = useParams<{ code: string }>();
   const { isMember } = useMember();
   const { t } = useLanguage();
@@ -155,8 +157,6 @@ export const BetaCountryHub = () => {
     ? country!.investment_highlights
     : [];
 
-  const { scrollY } = useScroll();
-
   return (
     <div className="pb-24 bg-background text-foreground">
       <SEO
@@ -169,7 +169,7 @@ export const BetaCountryHub = () => {
       <div className="app-hero relative border-b border-border bg-card px-4 py-12 sm:px-6 md:py-16">
         <motion.div 
           className="hidden"
-          style={{ y: useTransform(scrollY, [0, 800], [0, 250]) }}
+          style={{ y: heroOffset }}
         >
           <img
             src="/images/v2_country_hero.webp"

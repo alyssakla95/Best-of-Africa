@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { SEO } from '../components/SEO';
 import { 
@@ -43,17 +43,7 @@ export const AdminPage: React.FC = () => {
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [selectedArticle, setSelectedArticle] = useState<ArticleListItem | null>(null);
 
-    // Initial Check
-    useEffect(() => {
-        const storedToken = localStorage.getItem('boa_admin_token');
-        if (storedToken) {
-            setToken(storedToken);
-            setStatus('success');
-            fetchArticles();
-        }
-    }, []);
-
-    const fetchArticles = async () => {
+    const fetchArticles = useCallback(async () => {
         setIsFetchLoading(true);
         try {
             const res = await api.getAdminArticles();
@@ -68,7 +58,17 @@ export const AdminPage: React.FC = () => {
         } finally {
             setIsFetchLoading(false);
         }
-    };
+    }, []);
+
+    // Initial Check
+    useEffect(() => {
+        const storedToken = localStorage.getItem('boa_admin_token');
+        if (storedToken) {
+            setToken(storedToken);
+            setStatus('success');
+            void fetchArticles();
+        }
+    }, [fetchArticles]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

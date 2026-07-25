@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { createContext, useCallback, useContext, useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 export interface PlayableTrack {
@@ -49,8 +49,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastAudioUrlRef = useRef<string | null>(null);
+    const playlistRef = useRef<PlayableTrack[]>([]);
 
     const currentTrack = currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
+
+    useEffect(() => {
+        playlistRef.current = playlist;
+    }, [playlist]);
+
+    const nextTrack = useCallback(() => {
+        setCurrentIndex(previousIndex => {
+            if (previousIndex < playlistRef.current.length - 1) {
+                return previousIndex + 1;
+            }
+            setIsPlaying(false);
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+            return previousIndex;
+        });
+    }, []);
 
     useEffect(() => {
         if (!audioRef.current) {
@@ -64,9 +83,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 setDuration(audioRef.current?.duration || 0);
             });
             
-            audioRef.current.addEventListener('ended', () => {
-                nextTrack();
-            });
+            audioRef.current.addEventListener('ended', nextTrack);
             
             audioRef.current.addEventListener('play', () => setIsPlaying(true));
             audioRef.current.addEventListener('pause', () => setIsPlaying(false));
@@ -78,7 +95,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 audioRef.current.src = '';
             }
         };
-    }, []);
+    }, [nextTrack]);
 
     // Effect to handle track change
     useEffect(() => {
@@ -96,7 +113,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             audioRef.current.pause();
             audioRef.current.src = '';
         }
-    }, [currentIndex, playlist]); // Only trigger when track index or playlist changes
+    }, [currentTrack, playbackRate, volume]);
 
     const playTrack = (track: PlayableTrack, newPlaylist?: PlayableTrack[]) => {
         if (newPlaylist) {
@@ -111,13 +128,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
 
     const addToQueue = (track: PlayableTrack) => {
-        setPlaylist(prev => {
-            const next = [...prev, track];
-            if (currentIndex === -1) {
-                setCurrentIndex(0); // auto-start if nothing was playing
-            }
-            return next;
-        });
+        setPlaylist(prev => [...prev, track]);
+        if (currentIndex === -1) setCurrentIndex(0);
     };
 
     const removeFromQueue = (index: number) => {
@@ -140,18 +152,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             audioRef.current.play().catch(e => console.warn('Audio playback prevented:', e));
         } else {
             audioRef.current.pause();
-        }
-    };
-
-    const nextTrack = () => {
-        if (currentIndex < playlist.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-        } else {
-            setIsPlaying(false);
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            }
         }
     };
 

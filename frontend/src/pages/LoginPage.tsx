@@ -8,12 +8,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useMember } from '../context/MemberContext';
 import { SEO } from '../components/SEO';
 
 export const LoginPage: React.FC = () => {
     const { data: config } = useSystemConfig();
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login: loginAuth } = useAuth();
+    const { login: loginMember } = useMember();
     
     const [step, setStep] = useState<'EMAIL' | 'OTP' | 'SUCCESS'>('EMAIL');
     const [email, setEmail] = useState('');
@@ -29,16 +31,13 @@ export const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const res = await (api as any).verifyEmail(email);
-            if (res.success) {
+            const res = await api.verifyEmail(email);
+            if (res.ok) {
                 setStep('OTP');
                 setStatus('IDLE');
-            } else {
-                setError(res.message || 'Verification failed');
-                setStatus('ERROR');
             }
-        } catch (err: any) {
-            setError(err.message || 'Network error. Please try again.');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Network error. Please try again.');
             setStatus('ERROR');
         }
     };
@@ -54,35 +53,42 @@ export const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const res = await (api as any).verifyOtp(email, otp);
-            if (res.token) {
-                login(res.token, {
-                    email: res.user?.email || email,
-                    tier: res.user?.tier || 'free'
+            const res = await api.verifyOtp(email, otp);
+            if (res.ok && res.token) {
+                const expiresInDays = res.expires_at
+                    ? Math.max(0, Math.ceil((new Date(res.expires_at).getTime() - Date.now()) / 86_400_000))
+                    : null;
+                loginAuth(res.token, { email, tier: res.tier });
+                loginMember(res.token, {
+                    tier: res.tier,
+                    name: res.name || email,
+                    expires_in_days: expiresInDays,
                 });
-                
-                // Store detailed info for Settings page compatibility
-                localStorage.setItem('boa_client_info', JSON.stringify(res.user || { email }));
-                localStorage.setItem('boa_client_tier', res.user?.tier || 'free');
+
+                // Retain the compatibility fields used by the account settings page.
+                localStorage.setItem('boa_client_info', JSON.stringify({
+                    email,
+                    name: res.name,
+                    tier: res.tier,
+                    expires_at: res.expires_at,
+                }));
+                localStorage.setItem('boa_client_tier', res.tier);
 
                 setStep('SUCCESS');
                 
                 setTimeout(() => {
                     navigate('/feed');
                 }, 1500);
-            } else {
-                setError('Invalid code');
-                setStatus('ERROR');
             }
-        } catch (err: any) {
-            setError(err.message || 'Verification failed');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Verification failed');
             setStatus('ERROR');
         }
     };
 
     return (
         <>
-            <SEO title="Member Portal" description="Sign in to your Best of Africa membership with a one-click email login link." />
+            <SEO title="Member Portal" description="Sign in to your Best of Africa membership with a secure email verification code." />
             <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16 text-foreground">
                 {/* Background decorative elements, restrained navy radial glow */}
                 <div className="hidden" />
@@ -131,7 +137,7 @@ export const LoginPage: React.FC = () => {
                                             />
                                         </div>
                                         <p className="pt-1 text-xs text-white/45 leading-relaxed">
-                                            We'll email you a one-click login link. No password needed.
+                                            We&apos;ll email you a six-digit verification code. No password needed.
                                         </p>
                                     </div>
 
@@ -149,7 +155,7 @@ export const LoginPage: React.FC = () => {
                                         {status === 'LOADING' ? (
                                             <>Requesting Code...</>
                                         ) : (
-                                            <>Send Magic Link <ChevronRightIcon className="ml-2 h-4 w-4" /></>
+                                            <>Send Verification Code <ChevronRightIcon className="ml-2 h-4 w-4" /></>
                                         )}
                                     </Button>
                                 </form>

@@ -56,8 +56,8 @@ app.use('*', cors({
         const allowed = new Set(BASE_ALLOWED_ORIGINS);
         if (c.env.PUBLIC_SITE_URL) allowed.add(c.env.PUBLIC_SITE_URL.replace(/\/$/, ''));
         if (extra) extra.split(',').map((o: string) => o.trim()).filter(Boolean).forEach((o: string) => allowed.add(o));
-        if (allowed.has(origin) || origin.endsWith('.pages.dev')) return origin;
-        return c.env.PUBLIC_SITE_URL || 'https://best-of-africa.pages.dev';
+        if (allowed.has(origin)) return origin;
+        return null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-ID', 'X-Requested-With', 'X-Admin-Key'],
@@ -87,12 +87,17 @@ app.use('*', async (c, next) => {
     const referer = c.req.header('Referer');
     const xrw = c.req.header('X-Requested-With');
 
-    const ALLOWED_ORIGINS = [c.env.PUBLIC_SITE_URL || 'https://best-of-africa.pages.dev'];
+    const ALLOWED_ORIGINS = new Set(BASE_ALLOWED_ORIGINS);
+    if (c.env.PUBLIC_SITE_URL) ALLOWED_ORIGINS.add(c.env.PUBLIC_SITE_URL.replace(/\/$/, ''));
+    if (c.env.ADDITIONAL_ORIGINS) {
+        c.env.ADDITIONAL_ORIGINS.split(',').map(value => value.trim()).filter(Boolean)
+            .forEach(value => ALLOWED_ORIGINS.add(value));
+    }
 
-    if (origin && ALLOWED_ORIGINS.some(o => origin === o || origin.endsWith('.pages.dev'))) {
+    if (origin && ALLOWED_ORIGINS.has(origin)) {
         return next();
     }
-    if (!origin && referer && ALLOWED_ORIGINS.some(o => referer.startsWith(o))) {
+    if (!origin && referer && [...ALLOWED_ORIGINS].some(o => referer.startsWith(`${o}/`) || referer === o)) {
         return next();
     }
     if (xrw === 'XMLHttpRequest') {
@@ -122,6 +127,12 @@ app.get('/', (c) => {
 app.get('/health', (c) => {
     return c.json({ status: 'ok' });
 });
+
+// Operational probes are documented at the Worker root. Forward them to the
+// full system health router while retaining the versioned API aliases.
+for (const path of ['/health/deep', '/health/ready', '/health/live']) {
+    app.get(path, (c) => systemRouter.fetch(c.req.raw, c.env, c.executionCtx));
+}
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Media — serve uploaded assets (article hero images, etc.) from the R2 bucket.

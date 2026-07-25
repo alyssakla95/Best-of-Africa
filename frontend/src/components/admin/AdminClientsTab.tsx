@@ -16,7 +16,7 @@ export const AdminClientsTab: React.FC = () => {
         try {
             const res = await api.getAdminClients();
             setClients(res.data || []);
-        } catch (error) {
+        } catch {
             toast.error('Failed to load clients');
         } finally {
             setLoading(false);

@@ -344,7 +344,13 @@ router.post('/events/:id/register', validate('param', IdOrSlugParamSchema), vali
     }
 
     // Generate confirmation code
-    const confirmationCode = `BOA-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const confirmationBytes = crypto.getRandomValues(new Uint8Array(4));
+    const confirmationSuffix = Array.from(confirmationBytes)
+        .map(byte => byte.toString(36).padStart(2, '0'))
+        .join('')
+        .slice(0, 8)
+        .toUpperCase();
+    const confirmationCode = `BOA-${Date.now().toString(36).toUpperCase()}-${confirmationSuffix}`;
     const registrationId = crypto.randomUUID();
     const userId = c.get('clientId') || null;
 

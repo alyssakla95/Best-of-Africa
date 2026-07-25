@@ -567,12 +567,10 @@ function generateSlug(title: string): string {
 }
 
 function generateApiKey(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let key = 'boa_';
-    for (let i = 0; i < 32; i++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return key;
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return `boa_${btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')}`;
 }
 
 async function hashApiKey(key: string): Promise<string> {

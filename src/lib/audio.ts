@@ -5,6 +5,12 @@ import { putMedia } from './media';
 
 type TtsProvider = 'elevenlabs' | 'aura-2' | 'aura-1';
 
+function availableProviders(env: Env): TtsProvider[] {
+    return env.ELEVENLABS_API_KEY
+        ? ['elevenlabs', 'aura-2', 'aura-1']
+        : ['aura-2', 'aura-1'];
+}
+
 function base64ToBytes(value: string): Uint8Array {
     const binary = atob(value);
     const bytes = new Uint8Array(binary.length);
@@ -77,11 +83,12 @@ function combineMp3Segments(values: Array<ArrayBuffer | Uint8Array>): Uint8Array
     return combined;
 }
 
-async function synthesizeNarration(
+async function synthesizeWithProvider(
     env: Env,
     text: string,
+    provider: TtsProvider,
 ): Promise<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider } | null> {
-    if (env.ELEVENLABS_API_KEY) {
+    if (provider === 'elevenlabs' && env.ELEVENLABS_API_KEY) {
         const voiceId = env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
             method: 'POST',
@@ -91,7 +98,7 @@ async function synthesizeNarration(
                 'xi-api-key': env.ELEVENLABS_API_KEY,
             },
             body: JSON.stringify({
-                text: text.slice(0, 4000),
+                text: text.slice(0, 10_000),
                 model_id: 'eleven_multilingual_v2',
                 voice_settings: {
                     stability: 0.42,
@@ -107,33 +114,28 @@ async function synthesizeNarration(
         } else {
             console.warn('[TTS] ElevenLabs failed:', response.status, (await response.text()).slice(0, 160));
         }
+        return null;
     }
 
-    // Aura 2 is context-aware and materially more natural than Aura 1. Aura 1
-    // remains a reliable fallback; the dead, robotic MeloTTS model does not.
-    for (const model of [
-        { name: '@cf/deepgram/aura-2-en', provider: 'aura-2' as const },
-        { name: '@cf/deepgram/aura-1', provider: 'aura-1' as const },
-    ]) {
-        try {
-            const result = await (env.AI as Record<string, any>).run(
-                model.name,
-                {
-                    text: text.slice(0, 2000),
-                    speaker: 'athena',
-                    encoding: 'mp3',
-                    bit_rate: 48000,
-                },
-                // Deepgram partner models return binary audio. Asking Workers AI
-                // for the raw response avoids JSON coercion and preserves bytes.
-                { returnRawResponse: true },
-            );
-            const audio = await audioBytes(result);
-            if (audio && looksLikeMp3(audio)) return { audio, provider: model.provider };
-            console.warn(`[TTS] ${model.name} returned invalid or empty audio`);
-        } catch (error) {
-            console.warn(`[TTS] ${model.name} failed:`, String(error).slice(0, 160));
-        }
+    const modelName = provider === 'aura-2' ? '@cf/deepgram/aura-2-en' : '@cf/deepgram/aura-1';
+    try {
+        const result = await (env.AI as Record<string, any>).run(
+            modelName,
+            {
+                text: text.slice(0, 2000),
+                speaker: 'athena',
+                encoding: 'mp3',
+                bit_rate: 48000,
+            },
+            // Deepgram partner models return binary audio. Asking Workers AI
+            // for the raw response avoids JSON coercion and preserves bytes.
+            { returnRawResponse: true },
+        );
+        const audio = await audioBytes(result);
+        if (audio && looksLikeMp3(audio)) return { audio, provider };
+        console.warn(`[TTS] ${modelName} returned invalid or empty audio`);
+    } catch (error) {
+        console.warn(`[TTS] ${modelName} failed:`, String(error).slice(0, 160));
     }
     return null;
 }
@@ -141,9 +143,10 @@ async function synthesizeNarration(
 async function synthesizeNarrationResilient(
     env: Env,
     text: string,
+    provider: TtsProvider,
     depth = 0,
 ): Promise<Array<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider }> | null> {
-    const generated = await synthesizeNarration(env, text);
+    const generated = await synthesizeWithProvider(env, text, provider);
     if (generated) return [generated];
     // Some partner-TTS failures are input-window or punctuation interactions,
     // not provider outages. Retry the same complete prose in smaller pieces so
@@ -153,10 +156,42 @@ async function synthesizeNarrationResilient(
     let splitAt = text.lastIndexOf(' ', target);
     if (splitAt < Math.floor(text.length * 0.3)) splitAt = text.indexOf(' ', target);
     if (splitAt <= 0 || splitAt >= text.length - 1) return null;
-    const left = await synthesizeNarrationResilient(env, text.slice(0, splitAt).trim(), depth + 1);
+    const left = await synthesizeNarrationResilient(env, text.slice(0, splitAt).trim(), provider, depth + 1);
     if (!left) return null;
-    const right = await synthesizeNarrationResilient(env, text.slice(splitAt).trim(), depth + 1);
+    const right = await synthesizeNarrationResilient(env, text.slice(splitAt).trim(), provider, depth + 1);
     return right ? [...left, ...right] : null;
+}
+
+async function synthesizeCompleteNarration(
+    env: Env,
+    text: string,
+): Promise<{ audio: Uint8Array; provider: TtsProvider } | null> {
+    const chunks = splitNarrationText(text);
+    if (!chunks.length) return null;
+
+    // A provider is selected for the complete recording, not for each chunk.
+    // If it cannot render every chunk, discard that attempt and restart the
+    // complete narration with the next provider. This prevents mid-article
+    // voice changes and guarantees that only complete audio is published.
+    for (const provider of availableProviders(env)) {
+        const generatedSegments: Array<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider }> = [];
+        let complete = true;
+        for (const chunk of chunks) {
+            const generated = await synthesizeNarrationResilient(env, chunk, provider);
+            if (!generated) {
+                complete = false;
+                break;
+            }
+            generatedSegments.push(...generated);
+        }
+        if (complete && generatedSegments.length) {
+            return {
+                audio: combineMp3Segments(generatedSegments.map(segment => segment.audio)),
+                provider,
+            };
+        }
+    }
+    return null;
 }
 
 export async function generateAudioNarration(
@@ -167,16 +202,9 @@ export async function generateAudioNarration(
 ): Promise<{ audioUrl: string; durationSeconds: number } | null> {
     try {
         const narrationText = createNarrationScript(title, content);
-        const chunks = splitNarrationText(narrationText);
-        if (!chunks.length) return null;
-        const generatedSegments: Array<{ audio: ArrayBuffer | Uint8Array; provider: TtsProvider }> = [];
-        for (const chunk of chunks) {
-            const generated = await synthesizeNarrationResilient(env, chunk);
-            if (!generated) return null; // Never publish a deceptively partial narration.
-            generatedSegments.push(...generated);
-        }
-        const audio = combineMp3Segments(generatedSegments.map(segment => segment.audio));
-        const provider = generatedSegments[0].provider;
+        const generated = await synthesizeCompleteNarration(env, narrationText);
+        if (!generated) return null;
+        const { audio, provider } = generated;
 
         const audioKey = `audio/${articleId}.mp3`;
         const durationSeconds = Math.ceil((narrationText.split(/\s+/).length / 150) * 60);
@@ -257,7 +285,7 @@ ${evidence}`,
             response_profile: 'spoken-brief',
         });
         if (!transcript.trim()) return null;
-        const generated = await synthesizeNarration(env, transcript);
+        const generated = await synthesizeCompleteNarration(env, transcript);
         if (!generated) return null;
 
         const audioKey = `briefs/${countryCode}/${date}.mp3`;

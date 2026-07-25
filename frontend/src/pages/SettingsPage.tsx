@@ -142,7 +142,7 @@ export const SettingsPage: React.FC = () => {
             
             toast.success("Settings saved successfully.");
             setIsEditing(false);
-        } catch (e) {
+        } catch {
             toast.error("Failed to save settings.");
         } finally {
             setIsSaving(false);

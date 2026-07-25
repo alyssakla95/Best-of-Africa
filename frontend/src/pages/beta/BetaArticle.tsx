@@ -261,10 +261,14 @@ export const BetaArticle = () => {
   // the reader leaves — tab hide, route change, or unmount. This feeds
   // articles.avg_read_time_seconds, one of the three engagement inputs; until
   // this existed nothing in the app ever emitted an analytics event.
-  const readStartRef = useRef<number>(Date.now());
+  const readStartRef = useRef<number>(0);
   const maxProgressRef = useRef<number>(0);
   const readSentRef = useRef<boolean>(false);
-  if (readingProgress > maxProgressRef.current) maxProgressRef.current = readingProgress;
+  useEffect(() => {
+    if (readingProgress > maxProgressRef.current) {
+      maxProgressRef.current = readingProgress;
+    }
+  }, [readingProgress]);
   useEffect(() => {
     const articleId = data?.article?.id;
     if (!articleId) return;

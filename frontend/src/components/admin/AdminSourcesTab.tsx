@@ -16,7 +16,7 @@ export const AdminSourcesTab: React.FC = () => {
         try {
             const res = await api.getAdminSources();
             setSources(res.data || []);
-        } catch (error) {
+        } catch {
             toast.error('Failed to load sources');
         } finally {
             setLoading(false);

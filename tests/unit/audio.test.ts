@@ -107,6 +107,37 @@ describe('audio provider selection', () => {
         expect(result!.durationSeconds).toBeGreaterThan(60);
     });
 
+    it('restarts with one fallback provider instead of mixing voices between segments', async () => {
+        const calls: string[] = [];
+        let aura2Calls = 0;
+        let bound: unknown[] = [];
+        const statement = {
+            bind: (...values: unknown[]) => { bound = values; return statement; },
+            run: async () => ({ success: true }),
+        };
+        const env = createMockEnv({
+            AI: { run: async (model: string) => {
+                calls.push(model);
+                if (model.includes('aura-2')) {
+                    aura2Calls += 1;
+                    if (aura2Calls > 1) throw new Error('provider failed after first segment');
+                }
+                return mp3();
+            } } as unknown as Ai,
+            DB: { prepare: () => statement } as unknown as D1Database,
+        });
+        const content = Array.from(
+            { length: 120 },
+            (_, index) => `Sentence ${index + 1} keeps a single narrator across every complete section.`,
+        ).join(' ');
+
+        const result = await generateAudioNarration(env, 'article-consistent', 'Complete report', content);
+
+        expect(result).not.toBeNull();
+        expect(calls.filter(model => model.includes('aura-1')).length).toBeGreaterThan(2);
+        expect(bound[3]).toBe('aura-1');
+    });
+
     it('retries a difficult TTS passage in smaller complete segments', async () => {
         const calls: number[] = [];
         const statement = { bind: () => statement, run: async () => ({ success: true }) };

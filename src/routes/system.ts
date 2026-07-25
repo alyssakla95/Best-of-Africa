@@ -59,19 +59,20 @@ router.post('/contact', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/stats/audience', async (c) => {
     const stats = await c.env.DB.prepare(`
-        SELECT 
+        SELECT
             COUNT(DISTINCT id) as total_articles,
-            SUM(view_count) as total_views,
+            SUM(CASE WHEN published_at >= datetime('now', '-30 days') THEN COALESCE(view_count, 0) ELSE 0 END) as page_views_30d,
             COUNT(DISTINCT country_code) as countries_covered
         FROM articles
         WHERE status = 'published'
     `).first();
 
     return c.json({
-        monthly_readers: Math.round(((stats as Record<string, any>)?.total_views || 0) / 12),
-        audience_breakdown: [], // Requires real analytics integration
+        page_views_30d: Number((stats as Record<string, unknown>)?.page_views_30d || 0),
         countries_covered: (stats as Record<string, any>)?.countries_covered || 0,
-        total_articles: (stats as Record<string, any>)?.total_articles || 0
+        total_articles: (stats as Record<string, any>)?.total_articles || 0,
+        methodology: 'Page views are first-party article view events recorded during the latest 30 days. They are not divided or transformed into an estimate of unique monthly readers.',
+        updated_at: new Date().toISOString(),
     });
 });
 

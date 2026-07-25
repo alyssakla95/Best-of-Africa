@@ -260,7 +260,7 @@ export function AgentStatusPanel({ adminKey }: AgentStatusPanelProps) {
   });
 
   // SSE connection factory with exponential backoff reconnect (max 3 retries)
-  const connectSSE = useCallback(() => {
+  const connectSSE = useCallback(function connect() {
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
     const es = new EventSource(`${API_BASE}/agent/stream`);
     eventSourceRef.current = es;
@@ -280,7 +280,7 @@ export function AgentStatusPanel({ adminKey }: AgentStatusPanelProps) {
         const delay = Math.pow(2, sseRetryCount.current + 1) * 1000;
         sseRetryCount.current += 1;
         console.warn(`[AgentStatusPanel] SSE disconnected. Reconnecting in ${delay}ms (attempt ${sseRetryCount.current}/3)...`);
-        sseRetryTimer.current = setTimeout(connectSSE, delay);
+        sseRetryTimer.current = setTimeout(connect, delay);
       } else {
         console.warn('[AgentStatusPanel] SSE max retries reached. Relying on polling only.');
       }

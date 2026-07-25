@@ -5,7 +5,7 @@
 
 import { Hono } from 'hono';
 import type { Env, Variables } from '../types';
-import { createJWT } from '../lib/auth';
+import { createJWT, verifyJWT } from '../lib/auth';
 import { sendWelcomeEmail } from '../lib/email';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -341,13 +341,9 @@ router.get('/me', async (c) => {
     if (!authHeader?.startsWith('Bearer ')) {
         return c.json({ member: false }, 200);
     }
-    const token = authHeader.slice(7);
+    const payload = await verifyJWT(authHeader.slice(7), c.env.JWT_SECRET);
+    if (!payload) return c.json({ member: false, reason: 'invalid_or_expired' }, 200);
     try {
-        const [, payloadB64] = token.split('.');
-        const payload: { sub: string; exp: number } = JSON.parse(atob(payloadB64));
-        if (payload.exp < Math.floor(Date.now() / 1000)) {
-            return c.json({ member: false, reason: 'expired' }, 200);
-        }
         const client = await c.env.DB.prepare(
             'SELECT id, name, tier, expires_at FROM clients WHERE id = ? AND is_active = 1 AND type = \'member\''
         ).bind(payload.sub).first<{ id: string; name: string; tier: string; expires_at: string }>();
@@ -383,18 +379,9 @@ router.put('/profile', async (c) => {
         return c.json({ ok: false, error: 'Authentication required' }, 401);
     }
 
-    let clientId: string;
-    try {
-        const token = authHeader.slice(7);
-        const [, payloadB64, ] = token.split('.');
-        const payload: { sub: string; exp: number } = JSON.parse(atob(payloadB64));
-        if (payload.exp < Math.floor(Date.now() / 1000)) {
-            return c.json({ ok: false, error: 'Token expired' }, 401);
-        }
-        clientId = payload.sub;
-    } catch {
-        return c.json({ ok: false, error: 'Invalid token' }, 401);
-    }
+    const payload = await verifyJWT(authHeader.slice(7), c.env.JWT_SECRET);
+    if (!payload) return c.json({ ok: false, error: 'Invalid or expired token' }, 401);
+    const clientId = payload.sub;
 
     let body: { name?: string; organization?: string };
     try {

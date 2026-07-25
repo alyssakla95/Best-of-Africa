@@ -5,19 +5,69 @@
 
 import { Hono } from 'hono';
 import type { Env, Variables } from '../types';
-import { createJWT } from '../lib/auth';
+import { createJWT, verifyJWT } from '../lib/auth';
+import { throttle } from '../lib/ratelimit';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Hash password using SHA-256 (same method as API keys)
+// Password storage uses PBKDF2-SHA256. Existing SHA-256 rows are accepted once
+// and upgraded after a successful login so current accounts are not locked out.
 // ───────────────────────────────────────────────────────────────────────────────
+const PASSWORD_ITERATIONS = 210_000;
+
+function toBase64(bytes: Uint8Array): string {
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+}
+
+function fromBase64(value: string): Uint8Array {
+    return Uint8Array.from(atob(value), character => character.charCodeAt(0));
+}
+
+async function derivePassword(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
+    const material = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(password),
+        'PBKDF2',
+        false,
+        ['deriveBits'],
+    );
+    const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', hash: 'SHA-256', salt, iterations },
+        material,
+        256,
+    );
+    return new Uint8Array(bits);
+}
+
 async function hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const derived = await derivePassword(password, salt, PASSWORD_ITERATIONS);
+    return `pbkdf2-sha256$${PASSWORD_ITERATIONS}$${toBase64(salt)}$${toBase64(derived)}`;
+}
+
+async function verifyPassword(password: string, stored: string): Promise<{ valid: boolean; legacy: boolean }> {
+    if (stored.startsWith('pbkdf2-sha256$')) {
+        const [, iterationsText, saltText, hashText] = stored.split('$');
+        const iterations = Number(iterationsText);
+        if (!Number.isInteger(iterations) || iterations < 100_000 || !saltText || !hashText) {
+            return { valid: false, legacy: false };
+        }
+        const expected = fromBase64(hashText);
+        const actual = await derivePassword(password, fromBase64(saltText), iterations);
+        if (expected.length !== actual.length) return { valid: false, legacy: false };
+        let difference = 0;
+        for (let index = 0; index < expected.length; index += 1) difference |= expected[index] ^ actual[index];
+        return { valid: difference === 0, legacy: false };
+    }
+
+    // Legacy rows contain a 64-character hexadecimal SHA-256 digest.
+    if (!/^[a-f0-9]{64}$/i.test(stored)) return { valid: false, legacy: false };
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)));
+    const actual = Array.from(digest).map(byte => byte.toString(16).padStart(2, '0')).join('');
+    return { valid: actual === stored.toLowerCase(), legacy: true };
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -25,6 +75,8 @@ async function hashPassword(password: string): Promise<string> {
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/login', async (c) => {
     try {
+        const limited = await throttle(c, 'auth-login');
+        if (limited) return limited;
         const body = await c.req.json();
         const { client_id, secret } = body;
 
@@ -35,24 +87,25 @@ router.post('/login', async (c) => {
             }, 400);
         }
 
-        // Hash the provided secret
-        const secretHash = await hashPassword(secret);
-
-        // Look up client by email and password hash
+        // Fetch by normalized email, then verify the versioned password hash.
         const client = await c.env.DB.prepare(`
-            SELECT id, name, email, organization, tier, rate_limit_per_hour, is_active, expires_at
+            SELECT id, name, email, organization, tier, rate_limit_per_hour, is_active, expires_at,
+                   password_hash, api_key_hash
             FROM clients
-            WHERE email = ? AND api_key_hash = ?
-        `).bind(client_id, secretHash).first();
+            WHERE lower(email) = lower(?)
+        `).bind(client_id).first();
 
-        if (!client) {
+        const clientData = client as Record<string, any> | null;
+        const storedPassword = clientData?.password_hash || clientData?.api_key_hash || '';
+        const password = clientData
+            ? await verifyPassword(secret, String(storedPassword))
+            : { valid: false, legacy: false };
+        if (!clientData || !password.valid) {
             return c.json({
                 error: 'unauthorized',
                 message: 'Invalid credentials'
             }, 401);
         }
-
-        const clientData = client as Record<string, any>;
 
         // Check if client is active
         if (!clientData.is_active) {
@@ -68,6 +121,16 @@ router.post('/login', async (c) => {
                 error: 'forbidden',
                 message: 'Account has expired'
             }, 403);
+        }
+
+        if (!clientData.password_hash || password.legacy) {
+            await c.env.DB.prepare('UPDATE clients SET password_hash = ?, api_key_hash = ? WHERE id = ?')
+                .bind(
+                    await hashPassword(secret),
+                    `unprovisioned:${crypto.randomUUID()}`,
+                    clientData.id,
+                )
+                .run();
         }
 
         // Generate JWT (24 hour expiration by default)
@@ -106,6 +169,14 @@ router.post('/login', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/register', async (c) => {
     try {
+        const limited = await throttle(c, 'auth-register');
+        if (limited) return limited;
+        if (!c.env.ADMIN_API_KEY || c.req.header('X-Admin-Key') !== c.env.ADMIN_API_KEY) {
+            return c.json({
+                error: 'forbidden',
+                message: 'Client registration requires administrator authorization'
+            }, 403);
+        }
         const body = await c.req.json();
         const { email, password, name, organization } = body;
 
@@ -115,11 +186,17 @@ router.post('/register', async (c) => {
                 message: 'email, password, and name are required'
             }, 400);
         }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email)) || String(password).length < 12) {
+            return c.json({
+                error: 'bad_request',
+                message: 'A valid email and a password of at least 12 characters are required'
+            }, 400);
+        }
 
         // Check if email already exists
         const existing = await c.env.DB.prepare(
             'SELECT id FROM clients WHERE email = ?'
-        ).bind(email).first();
+        ).bind(String(email).toLowerCase().trim()).first();
 
         if (existing) {
             return c.json({
@@ -132,13 +209,23 @@ router.post('/register', async (c) => {
         const passwordHash = await hashPassword(password);
 
         // Generate client ID
-        const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const clientId = crypto.randomUUID();
 
         // Insert new client (basic tier by default)
         await c.env.DB.prepare(`
-            INSERT INTO clients (id, name, email, organization, type, api_key_hash, tier, rate_limit_per_hour, is_active)
-            VALUES (?, ?, ?, ?, 'partner', ?, 'basic', 100, 1)
-        `).bind(clientId, name, email, organization || null, passwordHash).run();
+            INSERT INTO clients (
+                id, name, email, organization, type, api_key_hash,
+                password_hash, tier, rate_limit_per_hour, is_active
+            )
+            VALUES (?, ?, ?, ?, 'partner', ?, ?, 'basic', 100, 1)
+        `).bind(
+            clientId,
+            String(name).trim(),
+            String(email).toLowerCase().trim(),
+            organization || null,
+            `unprovisioned:${crypto.randomUUID()}`,
+            passwordHash,
+        ).run();
 
         // Generate JWT for immediate login
         const token = await createJWT(clientId, c.env.JWT_SECRET, 86400);
@@ -178,13 +265,12 @@ router.get('/me', async (c) => {
         }, 401);
     }
 
-    const token = authHeader.slice(7);
+    const payload = await verifyJWT(authHeader.slice(7), c.env.JWT_SECRET);
+    if (!payload) {
+        return c.json({ error: 'unauthorized', message: 'Invalid token' }, 401);
+    }
 
     try {
-        // Decode JWT payload (verification happens in verifyJWT)
-        const [, payloadB64] = token.split('.');
-        const payload = JSON.parse(atob(payloadB64));
-
         // Get client info
         const client = await c.env.DB.prepare(`
             SELECT id, name, email, organization, tier, rate_limit_per_hour, created_at
@@ -225,12 +311,12 @@ router.post('/refresh', async (c) => {
         }, 401);
     }
 
-    const token = authHeader.slice(7);
+    const payload = await verifyJWT(authHeader.slice(7), c.env.JWT_SECRET);
+    if (!payload) {
+        return c.json({ error: 'unauthorized', message: 'Invalid token' }, 401);
+    }
 
     try {
-        const [, payloadB64] = token.split('.');
-        const payload = JSON.parse(atob(payloadB64));
-
         // Verify client still exists and is active
         const client = await c.env.DB.prepare(`
             SELECT id, tier FROM clients WHERE id = ? AND is_active = 1
@@ -274,18 +360,8 @@ router.post('/validate', async (c) => {
             return c.json({ valid: false, error: 'Token required' }, 400);
         }
 
-        // Decode JWT payload
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-            return c.json({ valid: false, error: 'Invalid token format' }, 400);
-        }
-
-        const payload = JSON.parse(atob(parts[1]));
-
-        // Check expiration
-        if (payload.exp && payload.exp < Date.now() / 1000) {
-            return c.json({ valid: false, error: 'Token expired' }, 401);
-        }
+        const payload = await verifyJWT(token, c.env.JWT_SECRET);
+        if (!payload) return c.json({ valid: false, error: 'Invalid or expired token' }, 401);
 
         // Verify client exists and is active
         const client = await c.env.DB.prepare(`
@@ -311,28 +387,45 @@ router.post('/validate', async (c) => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
-// POST /auth/reset-password - Request password reset (logs request for demo)
+// POST /auth/reset-password - Record a non-enumerating support request
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/reset-password', async (c) => {
-    const body = await c.req.json();
-    const { email } = body;
+    let body: { email?: string };
+    try {
+        body = await c.req.json();
+    } catch {
+        return c.json({ error: 'bad_request', message: 'Invalid JSON' }, 400);
+    }
+    const email = body.email?.toLowerCase().trim();
 
-    if (!email) {
-        return c.json({ error: 'bad_request', message: 'Email required' }, 400);
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return c.json({ error: 'bad_request', message: 'A valid email address is required' }, 400);
     }
 
-    // Check if client exists
+    const { throttle } = await import('../lib/ratelimit');
+    const limited = await throttle(c, 'password-reset');
+    if (limited) return limited;
+
     const client = await c.env.DB.prepare(
         'SELECT id, name FROM clients WHERE email = ?'
-    ).bind(email).first();
+    ).bind(email).first<{ id: string; name: string }>();
 
-    // Always return success to prevent email enumeration
-    // In production, this would send an email with reset link
-    console.log(`Password reset requested for: ${email}, exists: ${!!client}`);
+    if (client) {
+        await c.env.DB.prepare(`
+            INSERT INTO contact_submissions
+                (id, name, organization, email, inquiry_type, message, created_at)
+            VALUES (?, ?, '', ?, 'Password reset', ?, datetime('now'))
+        `).bind(
+            crypto.randomUUID(),
+            client.name || 'Account holder',
+            email,
+            'Secure password reset assistance requested through the authenticated client portal.',
+        ).run();
+    }
 
     return c.json({
         success: true,
-        message: 'If an account with that email exists, a reset link has been sent.'
+        message: 'If an account with that email exists, a secure reset request has been recorded for account support.'
     });
 });
 

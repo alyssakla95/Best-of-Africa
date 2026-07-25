@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseTranslationBatch } from '../../src/routes/translation';
-import { autoTranslateArticle, LANGUAGE_CONFIG, parseLongTranslationBatch } from '../../src/lib/translate';
+import { autoTranslateArticle, LANGUAGE_CONFIG, parseLongTranslationBatch, translateLongText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
 
 describe('publication-quality translation batches', () => {
@@ -52,5 +52,29 @@ describe('publication-quality translation batches', () => {
         expect(queued.every((message) => message.type === 'article_translation')).toBe(true);
         expect(queued.map((message) => message.language).sort()).toEqual(['ar', 'de', 'fr', 'hi', 'pt', 'zh']);
         expect(queued.every((message) => message.articleId === 'article-1')).toBe(true);
+    });
+
+    it('splits a malformed large translation batch and preserves every chunk', async () => {
+        let calls = 0;
+        const env = createMockEnv({
+            AI: {
+                run: async (_model: string, options: { messages: Array<{ content: string }> }) => {
+                    calls++;
+                    const inputs = JSON.parse(options.messages[1].content) as Array<{ text: string }>;
+                    if (inputs.length > 1) return { response: '{"translations":["partial"]}' };
+                    return { response: JSON.stringify({ translations: [inputs[0].text.replace('English', 'Français')] }) };
+                },
+            } as unknown as Ai,
+        });
+        const source = [
+            `English market evidence ${'supports a complete translated paragraph. '.repeat(45)}`,
+            `English trade evidence ${'supports another complete translated paragraph. '.repeat(45)}`,
+        ].join('\n\n');
+
+        const result = await translateLongText(env, source, 'fr');
+
+        expect(calls).toBeGreaterThan(2);
+        expect(result).toContain('Français market evidence');
+        expect(result).toContain('Français trade evidence');
     });
 });

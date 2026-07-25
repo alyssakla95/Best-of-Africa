@@ -290,7 +290,21 @@ export async function translateLongText(
     targetLang: SupportedLanguage
 ): Promise<string | null> {
     const chunks = chunkMarkdown(text);
-    const out = await llmTranslateBatch(env, chunks, targetLang);
+    const translateResiliently = async (values: string[]): Promise<string[] | null> => {
+        const translated = await llmTranslateBatch(env, values, targetLang);
+        if (translated) return translated;
+        // A structurally invalid large JSON response is a model formatting
+        // failure, not evidence that the translation itself is impossible.
+        // Split the same highest-quality model request until each response is
+        // small enough to validate. Infrastructure failures remain retryable.
+        if (translated === undefined || values.length <= 1) return null;
+        const middle = Math.ceil(values.length / 2);
+        const left = await translateResiliently(values.slice(0, middle));
+        if (!left) return null;
+        const right = await translateResiliently(values.slice(middle));
+        return right ? [...left, ...right] : null;
+    };
+    const out = await translateResiliently(chunks);
     if (!out || out.length !== chunks.length) return null;
     if (out.some((translation, index) => looksDegenerate(chunks[index], translation, targetLang))) return null;
     return out.join('\n\n');

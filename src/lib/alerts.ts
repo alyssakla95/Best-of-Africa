@@ -11,6 +11,7 @@ import { callConfiguredAI } from './ai';
 // ───────────────────────────────────────────────────────────────────────────────
 export interface ArticleAlert {
     type: 'new_article';
+    notification_id?: string;
     article: {
         id: string;
         slug: string;
@@ -225,6 +226,7 @@ export async function getUserNotifications(
 
     return (notifications.results || []).map((n: any) => ({
         type: 'new_article' as const,
+        notification_id: n.notification_id,
         article: {
             id: n.id,
             slug: n.slug,

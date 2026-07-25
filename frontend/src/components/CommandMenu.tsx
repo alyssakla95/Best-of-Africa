@@ -27,22 +27,15 @@ export const CommandMenu = () => {
         return () => document.removeEventListener('keydown', down);
     }, []);
 
-    // Reset selection when results change
-    useEffect(() => {
-        setSelectedIndex(0);
-    }, [results]);
-
     // Fetch Suggestions
     useEffect(() => {
-        if (!query || query.length < 2) {
-            setResults([]);
-            return;
-        }
+        if (!query || query.length < 2) return;
 
         const fetchSuggestions = async () => {
             setLoading(true);
             try {
                 const res = await api.autocomplete(query);
+                setSelectedIndex(0);
                 setResults(res.suggestions || []);
             } catch (error) {
                 console.error(error);
@@ -98,7 +91,12 @@ export const CommandMenu = () => {
                         className="flex h-12 w-full rouned-md bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-none focus-visible:ring-0 shadow-none text-foreground"
                         placeholder="Search stories, countries, topics..."
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        onChange={(e) => {
+                            const nextQuery = e.target.value;
+                            setQuery(nextQuery);
+                            setSelectedIndex(0);
+                            if (nextQuery.length < 2) setResults([]);
+                        }}
                         onKeyDown={handleKeyDown}
                     />
                     {loading && <UpdateIcon className="h-4 w-4 animate-spin opacity-50" />}

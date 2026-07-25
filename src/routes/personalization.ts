@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { Env, Variables, UserPreference } from '../types';
 import { getCached, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI, MODELS } from '../lib/ai';
@@ -11,11 +12,27 @@ import { callConfiguredAI, MODELS } from '../lib/ai';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+const PreferencesSchema = z.object({
+    countries_of_interest: z.array(z.string().trim().min(1).max(100)).max(54).optional(),
+    sectors_of_interest: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
+    regions_of_interest: z.array(z.string().trim().min(1).max(100)).max(10).optional(),
+    language_preference: z.enum(['en', 'fr', 'ar', 'pt', 'de', 'hi', 'zh']).optional(),
+    format_preference: z.enum(['full', 'summary', 'bullet', 'headline']).optional(),
+    reading_level: z.enum(['professional', 'general', 'expert']).optional(),
+    notification_preferences: z.object({
+        email: z.boolean(),
+        push: z.boolean(),
+        reports: z.boolean(),
+    }).optional(),
+});
+
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /personalization/preferences - Save user preferences
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/preferences', async (c) => {
-    const body = await c.req.json();
+    const parsed = PreferencesSchema.safeParse(await c.req.json().catch(() => ({})));
+    if (!parsed.success) return c.json({ error: 'invalid_preferences' }, 400);
+    const body = parsed.data;
     const sessionId = c.req.header('X-Session-ID') || crypto.randomUUID();
 
     // Check if preference exists
@@ -52,6 +69,10 @@ router.post('/preferences', async (c) => {
             updates.push('reading_level = ?');
             values.push(body.reading_level);
         }
+        if (body.notification_preferences) {
+            updates.push('notification_preferences = ?');
+            values.push(JSON.stringify(body.notification_preferences));
+        }
 
         updates.push("last_seen_at = datetime('now')");
         updates.push("updated_at = datetime('now')");
@@ -67,8 +88,9 @@ router.post('/preferences', async (c) => {
         await c.env.DB.prepare(`
             INSERT INTO user_preferences (
                 id, session_id, countries_of_interest, sectors_of_interest,
-                regions_of_interest, language_preference, format_preference, reading_level
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                regions_of_interest, language_preference, format_preference, reading_level,
+                notification_preferences
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
             id,
             sessionId,
@@ -77,7 +99,8 @@ router.post('/preferences', async (c) => {
             JSON.stringify(body.regions_of_interest || []),
             body.language_preference || 'en',
             body.format_preference || 'full',
-            body.reading_level || 'professional'
+            body.reading_level || 'professional',
+            JSON.stringify(body.notification_preferences || { email: true, push: false, reports: true })
         ).run();
 
         return c.json({ session_id: sessionId, created: true }, 201);
@@ -94,7 +117,8 @@ router.get('/preferences', async (c) => {
         return c.json({
             preferences: {
                 countries_of_interest: [], sectors_of_interest: [], regions_of_interest: [],
-                language_preference: 'en', format_preference: 'full', reading_level: 'professional', articles_read: []
+                language_preference: 'en', format_preference: 'full', reading_level: 'professional', articles_read: [],
+                notification_preferences: { email: true, push: false, reports: true }
             },
             preference_basis: 'default all-coverage feed because no reader session was supplied'
         });
@@ -108,7 +132,8 @@ router.get('/preferences', async (c) => {
         return c.json({
             preferences: {
                 countries_of_interest: [], sectors_of_interest: [], regions_of_interest: [],
-                language_preference: 'en', format_preference: 'full', reading_level: 'professional', articles_read: []
+                language_preference: 'en', format_preference: 'full', reading_level: 'professional', articles_read: [],
+                notification_preferences: { email: true, push: false, reports: true }
             },
             preference_basis: 'default all-coverage feed because this session has no saved selections'
         });
@@ -123,6 +148,9 @@ router.get('/preferences', async (c) => {
             regions_of_interest: prefsData.regions_of_interest ? JSON.parse(prefsData.regions_of_interest) : [],
             articles_read: prefsData.articles_read ? JSON.parse(prefsData.articles_read) : [],
             search_history: prefsData.search_history ? JSON.parse(prefsData.search_history) : [],
+            notification_preferences: prefsData.notification_preferences
+                ? JSON.parse(prefsData.notification_preferences)
+                : { email: true, push: false, reports: true },
         }
     });
 });

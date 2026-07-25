@@ -109,6 +109,9 @@ export interface CalendarEvent {
     registration_url?: string;
     registered_count?: number;
     ai_context_brief?: string;
+    date?: string;
+    event_type?: string;
+    is_exclusive?: boolean;
 }
 
 export interface ArticleListItem {

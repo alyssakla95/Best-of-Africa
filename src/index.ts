@@ -15,7 +15,7 @@ import {
     intelligenceRouter, adminRouter, dashboardsRouter, narrativesRouter,
     servicesRouter, marketIntelRouter, personalizationRouter, authRouter,
     eventsRouter, campaignsRouter, configRouter, devRouter,
-    bookmarksRouter, systemRouter, openapiRouter, agentWebhooksRouter, auditRouter, selfImproveRouter,
+    bookmarksRouter, systemRouter, openapiRouter, agentWebhooksRouter, auditRouter, selfImproveRouter, notificationsRouter,
     newsletterRouter, agentProvidersRouter, membersRouter, seoRouter, moonshotOAuthRouter, geminiOAuthRouter, translationRouter
 } from './routes';
 import worldCupRouter from './routes/worldcup';
@@ -227,6 +227,7 @@ api.route('/self-improve', selfImproveRouter);
 // Vision-aligned routes (narrative diplomacy & intelligence)
 api.route('/dashboards', dashboardsRouter);
 api.route('/narratives', narrativesRouter);
+api.route('/notifications', notificationsRouter);
 api.route('/services', servicesRouter);
 api.route('/market-intel', marketIntelRouter);
 api.route('/personalization', personalizationRouter);

@@ -11,6 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
 
+interface BookingRequestInput {
+    guest_name: string;
+    guest_email: string;
+    guest_organization?: string;
+    service_type: string;
+    requirements: string;
+}
+
 export const BetaConcierge: React.FC = () => {
     
     // Form State
@@ -23,7 +31,7 @@ export const BetaConcierge: React.FC = () => {
     const [isSuccess, setIsSuccess] = useState(false);
 
     const bookingMutation = useMutation({
-        mutationFn: (data: any) => api.submitBookingRequest(data),
+        mutationFn: (data: BookingRequestInput) => api.submitBookingRequest(data),
         onSuccess: () => {
             setIsSuccess(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });

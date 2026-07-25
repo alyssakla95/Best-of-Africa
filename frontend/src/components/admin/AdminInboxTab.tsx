@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import {
+    api,
+    type AdminBookingRequest,
+    type AdminContactSubmission,
+    type AdminEventRegistration,
+} from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,9 +13,9 @@ import { UpdateIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
 
 interface InboxData {
-    contact: any[];
-    bookings: any[];
-    registrations: any[];
+    contact: AdminContactSubmission[];
+    bookings: AdminBookingRequest[];
+    registrations: AdminEventRegistration[];
     newsletter_subscribers: number;
 }
 
@@ -18,6 +23,25 @@ const fmtDate = (d?: string) =>
     d ? new Date(d.replace(' ', 'T') + (d.includes('Z') ? '' : 'Z')).toLocaleString('en-GB', {
         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     }) : '—';
+
+const InboxSection = ({ title, description, empty, children }: {
+    title: string;
+    description: string;
+    empty: boolean;
+    children: React.ReactNode;
+}) => (
+    <Card className="border-border rounded-3xl overflow-hidden shadow-sm">
+        <CardHeader className="bg-muted/30 pb-4 border-b border-border/50">
+            <CardTitle className="text-lg font-serif font-bold">{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+            {empty
+                ? <p className="p-6 text-sm text-muted-foreground">Nothing yet.</p>
+                : children}
+        </CardContent>
+    </Card>
+);
 
 export const AdminInboxTab: React.FC = () => {
     const [data, setData] = useState<InboxData | null>(null);
@@ -35,22 +59,6 @@ export const AdminInboxTab: React.FC = () => {
     };
 
     useEffect(() => { loadData(); }, []);
-
-    const Section = ({ title, description, empty, children }: {
-        title: string; description: string; empty: boolean; children: React.ReactNode;
-    }) => (
-        <Card className="border-border rounded-3xl overflow-hidden shadow-sm">
-            <CardHeader className="bg-muted/30 pb-4 border-b border-border/50">
-                <CardTitle className="text-lg font-serif font-bold">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-                {empty
-                    ? <p className="p-6 text-sm text-muted-foreground">Nothing yet.</p>
-                    : children}
-            </CardContent>
-        </Card>
-    );
 
     return (
         <div className="space-y-6">
@@ -70,7 +78,7 @@ export const AdminInboxTab: React.FC = () => {
                 </Button>
             </div>
 
-            <Section
+            <InboxSection
                 title="Consultation Requests"
                 description="Concierge and booking submissions with the preliminary brief already sent."
                 empty={!data?.bookings?.length}
@@ -100,9 +108,9 @@ export const AdminInboxTab: React.FC = () => {
                         ))}
                     </TableBody>
                 </Table>
-            </Section>
+            </InboxSection>
 
-            <Section
+            <InboxSection
                 title="Contact Messages"
                 description="Submissions from the contact page."
                 empty={!data?.contact?.length}
@@ -130,9 +138,9 @@ export const AdminInboxTab: React.FC = () => {
                         ))}
                     </TableBody>
                 </Table>
-            </Section>
+            </InboxSection>
 
-            <Section
+            <InboxSection
                 title="Event Registrations"
                 description="Sign-ups for summits and forums."
                 empty={!data?.registrations?.length}
@@ -162,7 +170,7 @@ export const AdminInboxTab: React.FC = () => {
                         ))}
                     </TableBody>
                 </Table>
-            </Section>
+            </InboxSection>
         </div>
     );
 };

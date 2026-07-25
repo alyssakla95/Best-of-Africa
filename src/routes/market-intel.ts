@@ -429,62 +429,61 @@ router.get('/performance', async (c) => {
 // GET /market-intel/founder-log - -Written Weekly Project Update
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/founder-log', async (c) => {
-    return c.json(await getCached(
-        c.env,
-        'founder-log:weekly:depth-v6',
-        async () => {
-            // Fetch articles from the last 14 days
-            const recentArticles = await c.env.DB.prepare(`
-                SELECT a.title, c.name as country_name, s.name as sector_name 
-                FROM articles a
-                LEFT JOIN countries c ON a.country_code = c.code
-                LEFT JOIN sectors s ON a.sector_id = s.id
-                WHERE a.status = 'published' AND a.published_at > datetime('now', '-14 days')
-                ORDER BY a.published_at DESC
-                LIMIT 15
-            `).all();
+    type LedgerRow = {
+        title: string;
+        country_name: string | null;
+        sector_name: string | null;
+        source_name: string | null;
+        published_at: string;
+    };
+    const recent = await c.env.DB.prepare(`
+        SELECT a.title, c.name AS country_name, s.name AS sector_name,
+               COALESCE(a.publisher_name, a.source_name) AS source_name,
+               a.published_at
+        FROM articles a
+        LEFT JOIN countries c ON a.country_code = c.code
+        LEFT JOIN sectors s ON a.sector_id = s.id
+        WHERE a.status = 'published' AND a.published_at > datetime('now', '-14 days')
+        ORDER BY a.published_at DESC
+        LIMIT 50
+    `).all<LedgerRow>();
+    const rows = recent.results || [];
+    const period = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date());
+    const tally = (values: Array<string | null>) => Object.entries(
+        values.reduce<Record<string, number>>((counts, value) => {
+            if (value) counts[value] = (counts[value] || 0) + 1;
+            return counts;
+        }, {}),
+    ).sort((a, b) => b[1] - a[1]);
+    const countries = tally(rows.map(row => row.country_name));
+    const sectors = tally(rows.map(row => row.sector_name));
+    const sources = tally(rows.map(row => row.source_name));
+    const list = (items: Array<[string, number]>) =>
+        items.slice(0, 8).map(([name, count]) => `${name} (${count})`).join(', ') || 'No classified records in this period';
+    const recentTitles = rows.slice(0, 8).map(row => row.title).join('; ');
 
-            const articles = (recentArticles.results || []) as any[];
-            const contextStr = articles.map(a => `- ${a.title} (${a.country_name}, ${a.sector_name})`).join('\n');
-            const totalThisWeek = articles.length;
-
-            const prompt = `System: You are the independent, solo founder and lead researcher of "BOA-Story", a platform dedicated to covering African business, economies, and culture beyond mainstream narratives.
-You are writing a transparent, three-part "What I'm working on" update for your most dedicated supporters on Ko-fi.
-Keep the tone grounded, authentic, slightly tired but passionate, and completely human. No corporate jargon. No AI-isms like "Ah," or "In conclusion".
-
-User: Based on the fact that we published ${totalThisWeek} articles recently:
-${contextStr || "Just general research this week."}
-
-Write the update. Format it exactly as a JSON array of 3 objects, where each object has:
-- date: "Month Year" (e.g., "${new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date())}")
-- tag: a short 1-2 word tag (e.g., "Research Log", "Platform Update", "Founder Note")
-- title: A punchy, conversational title for the paragraph
-- body: A developed 500-700 word entry explaining the reporting work, specific countries or sectors covered, source discoveries, what was learned, what remains uncertain, editorial tradeoffs, and what happens next. Do not pretend that publication volume proves market impact.
-
-Return ONLY the raw JSON array.`;
-
-            try {
-                const text = await callConfiguredAI(c.env, { prompt, max_tokens: 3600, temperature: 0.35, response_profile: 'structured-analysis', structured_output: true });
-                const match = text.match(/\[.*\]/s);
-                if (match) {
-                    return JSON.parse(match[0]);
-                }
-            } catch (e) {
-                console.error("Founder log generation failed", e);
-            }
-
-            // Fallback if fails
-            return [
-                {
-                    date: new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date()),
-                    tag: 'Research Log',
-                    title: 'Deep in the data trenches.',
-                    body: 'We are currently aggregating the latest round of stories. The data pipeline is running, but good research takes time. Thanks for sticking around.'
-                }
-            ];
+    return c.json([
+        {
+            date: period,
+            tag: 'Publication ledger',
+            title: `${rows.length} source-reviewed records published in the latest 14-day window`,
+            body: rows.length
+                ? `This is a platform activity record, not a claim about market impact. The latest published records are: ${recentTitles}. Each item passed the source-grounded editorial audit before publication.`
+                : 'No article reached published status in the latest 14-day window. The ledger reports zero rather than substituting generated activity.',
         },
-        { ttl: 3600 * 24 } // Cache for 24 hours
-    ));
+        {
+            date: period,
+            tag: 'Coverage distribution',
+            title: 'Country and sector concentration',
+            body: `Country coverage: ${list(countries)}. Sector coverage: ${list(sectors)}. These counts identify where the reporting record is concentrated and where evidence remains comparatively thin; they are not economic performance scores.`,
+        },
+        {
+            date: period,
+            tag: 'Source ledger',
+            title: 'Publishers represented in the current evidence file',
+            body: `Source attribution across the latest published records: ${list(sources)}. Readers should use the linked source record and observation date on each article or dashboard metric when assessing recency, authority and limitations.`,
+        },
+    ]);
 });
 
 // ───────────────────────────────────────────────────────────────────────────────

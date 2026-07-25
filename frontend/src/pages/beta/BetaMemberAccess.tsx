@@ -10,7 +10,7 @@ import { useMember } from '../../context/MemberContext';
 export const BetaMemberAccess = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [phase, setPhase] = useState<'checking' | 'form' | 'otp' | 'success' | 'error' | 'expired'>('checking');
+  const [phase, setPhase] = useState<'form' | 'otp' | 'success' | 'error' | 'expired'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -18,21 +18,7 @@ export const BetaMemberAccess = () => {
   const otpInputRef = useRef<HTMLInputElement>(null);
 
   const { isMember, memberData, login, logout, isLoading } = useMember();
-
-  // Sync local phase with MemberContext state
-  useEffect(() => {
-    if (isLoading) {
-      setPhase('checking');
-    } else if (isMember) {
-      setPhase('success');
-    } else if (phase === 'success' || phase === 'checking') {
-      // If we were checking or succeeded and now we're not a member,
-      // it means the token was invalid, expired, or logged out.
-      // We don't have a specific 'expired' distinction from the context yet,
-      // so default to 'form'. The context clears the token on unauthorized.
-      setPhase('form');
-    }
-  }, [isLoading, isMember, phase]);
+  const visiblePhase = isLoading ? 'checking' : isMember ? 'success' : phase === 'success' ? 'form' : phase;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,10 +89,10 @@ export const BetaMemberAccess = () => {
 
   // Auto-focus OTP input when the OTP screen appears
   useEffect(() => {
-    if (phase === 'otp') {
+    if (visiblePhase === 'otp') {
       setTimeout(() => otpInputRef.current?.focus(), 50);
     }
-  }, [phase]);
+  }, [visiblePhase]);
 
   const handleResend = async () => {
     if (resendCooldown > 0) return;
@@ -135,7 +121,7 @@ export const BetaMemberAccess = () => {
   };
 
   // ── Checking state, validating existing token ─────────────────────────────
-  if (phase === 'checking') {
+  if (visiblePhase === 'checking') {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <SEO title="Member Access | BOA-Story" />
@@ -148,7 +134,7 @@ export const BetaMemberAccess = () => {
   }
 
   // ── Expired state ──────────────────────────────────────────────────────────
-  if (phase === 'expired') {
+  if (visiblePhase === 'expired') {
     return (
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <SEO title="Access Expired | BOA-Story" />
@@ -190,7 +176,7 @@ export const BetaMemberAccess = () => {
         description="Access your Founding Member benefits and premium stories."
       />
       
-      {phase === 'success' && memberData ? (
+      {visiblePhase === 'success' && memberData ? (
         // ── Success state (Dashboard) ──────────────────────────────────────
         <div className="flex-1">
             <BetaDashboard
@@ -232,7 +218,7 @@ export const BetaMemberAccess = () => {
           <div className="mx-auto flex min-h-[70vh] w-full min-w-0 max-w-[100vw] flex-col justify-center px-6 py-16 sm:max-w-xl sm:px-10">
             <div className="mx-auto w-full min-w-0 max-w-[calc(100vw-3rem)] sm:max-w-md">
 
-              {phase === 'otp' ? (
+              {visiblePhase === 'otp' ? (
                 // ── OTP Form State ─────────────────────────────────────────────────
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                   <div className="mb-12">

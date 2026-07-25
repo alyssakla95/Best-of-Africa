@@ -32,7 +32,7 @@ function CoverageBlock({ isMember }: { isMember: boolean }) {
   // Tally countries and sectors from real article data
   const countryCounts: Record<string, number> = {};
   const sectorCounts: Record<string, { id: string; count: number; name: string }> = {};
-  articles.forEach((a: any) => {
+  articles.forEach(a => {
     if (a.country_name) countryCounts[a.country_name] = (countryCounts[a.country_name] || 0) + 1;
     if (a.sector_name) {
       if (!sectorCounts[a.sector_name]) {
@@ -160,7 +160,7 @@ export const BetaMarketIntel = () => {
     <div className="pb-24">
       <SEO
         title="Supporter Feed | BOA-Story"
-        description="A behind-the-scenes look at what we're building, for Ko-fi backers."
+        description="A verifiable ledger of BOA-Story publishing, country coverage, sectors and attributed sources."
       />
       
 
@@ -172,10 +172,10 @@ export const BetaMarketIntel = () => {
             Supporter Feed
           </div>
           <h1 className="font-serif text-[40px] md:text-[56px] leading-tight mb-4">
-            Behind the<br />building.
+            Reporting activity,<br />on the record.
           </h1>
           <p className="text-foreground/50 text-lg max-w-xl leading-relaxed">
-            An honest, behind-the-scenes look at what's being researched, what's being published, and where the project is headed. For the people making it possible.
+            A transparent ledger of what was published, which markets and sectors were covered, and which attributed sources appear in the current evidence file.
           </p>
           <p className="mt-4 text-[11px] font-bold uppercase tracking-widest text-ink-blue">Open to all · No login required</p>
         </div>
@@ -206,7 +206,7 @@ export const BetaMarketIntel = () => {
         <section className="section-frame">
           <div className="flex items-center gap-3 mb-6">
             <BookOpen size={18} className="text-accent" />
-            <h2 className="font-serif text-2xl text-primary">What I'm working on</h2>
+            <h2 className="font-serif text-2xl text-primary">Reporting activity ledger</h2>
           </div>
 
           <div className="space-y-4">
@@ -218,7 +218,7 @@ export const BetaMarketIntel = () => {
                 <div className="h-4 bg-background/8 rounded w-5/6" />
               </div>
             ) : founderLog ? (
-              founderLog.map((update: any, i: number) => (
+              founderLog.map((update, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 10 }}

@@ -19,6 +19,10 @@ import { EditorialContent } from '../../components/EditorialContent';
 import { sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
+type CuratedArticle = ArticleListItem & {
+  ai_curation?: { relevance_note: string };
+};
+
 const StoryCardSkeleton = () => (
   <div className="bg-background rounded-xl border border-primary/8 h-[380px] animate-pulse">
     <div className="p-6">
@@ -142,13 +146,16 @@ export const BetaStories = () => {
 
   // Filtering is now server-side (the query keys off activeFilter), so the loaded
   // articles are already scoped to the selected sector.
-  const displayArticles = isSearchMode
+  const displayArticles: CuratedArticle[] = isSearchMode
     ? searchArticles
     : (feedMode === 'foryou' && curatedData?.data ? curatedData.data : articles);
     
   const showLoading = isSearchMode ? (isSearching || isCountrySearching) : (feedMode === 'foryou' ? isLoadingCurated : isLoading);
 
-  const needsPreferences = feedMode === 'foryou' && isErrorCurated && (curatedError as any)?.message?.includes('preferences');
+  const needsPreferences = feedMode === 'foryou'
+    && isErrorCurated
+    && curatedError instanceof Error
+    && curatedError.message.includes('preferences');
 
   return (
     <div className="selection:bg-accent selection:text-primary">
@@ -450,11 +457,11 @@ export const BetaStories = () => {
                       </h3>
 
                       {/* Curation Relevance Note */}
-                      {(article as any).ai_curation?.relevance_note ? (
+                      {article.ai_curation?.relevance_note ? (
                         <div className="bg-accent/5 border-l-2 border-accent pl-3 py-1 mb-3">
                           <p className="text-xs text-accent/90 font-medium italic">
                             <Sparkles size={10} className="inline mr-1" />
-                            {stripMarkdown((article as any).ai_curation.relevance_note)}
+                            {stripMarkdown(article.ai_curation.relevance_note)}
                           </p>
                         </div>
                       ) : (
@@ -506,7 +513,7 @@ export const BetaStories = () => {
         </motion.div>
 
         {/* Load More Button (Only outside search mode, if activeFilter is all, and there is more data) */}
-        {!showLoading && !isSearchMode && feedMode !== 'foryou' && (data as any)?.pagination && (data as any).pagination.page < (data as any).pagination.total_pages && (
+        {!showLoading && !isSearchMode && feedMode !== 'foryou' && data?.pagination && data.pagination.page < data.pagination.total_pages && (
           <div className="flex justify-center mb-20 text-center">
             <button
               onClick={() => setPage(p => p + 1)}

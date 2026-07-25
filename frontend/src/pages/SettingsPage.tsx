@@ -67,16 +67,16 @@ export const SettingsPage: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                const s = await (api as any).getSectors();
-                if (s?.data?.length) setSectorOptions(s.data.map((x: any) => ({ id: x.id, name: x.name })));
+                const s = await api.getSectors();
+                if (s.data.length) setSectorOptions(s.data.map(sector => ({ id: sector.id, name: sector.name })));
             } catch { /* keep fallback */ }
             try {
-                const c = await (api as any).getCountries();
-                if (c?.by_region) {
+                const c = await api.getCountries();
+                if (c.by_region) {
                     const names = Object.values(c.by_region)
-                        .flatMap((r: any) => (r.countries || []).map((x: any) => x.name))
+                        .flatMap(region => region.countries.map(country => country.name))
                         .filter(Boolean)
-                        .sort((a: string, b: string) => a.localeCompare(b));
+                        .sort((a, b) => a.localeCompare(b));
                     if (names.length) setCountryOptions(names);
                 }
             } catch { /* keep fallback */ }
@@ -86,14 +86,14 @@ export const SettingsPage: React.FC = () => {
     useEffect(() => {
         const fetchPrefs = async () => {
             try {
-                const res = await (api as any).getPreferences();
-                if (res?.data) {
+                const res = await api.getPreferences();
+                if (res.preferences) {
                     setPreferences({
-                        countries_of_interest: res.data.countries_of_interest || [],
-                        sectors_of_interest: res.data.sectors_of_interest || [],
+                        countries_of_interest: res.preferences.countries_of_interest || [],
+                        sectors_of_interest: res.preferences.sectors_of_interest || [],
                     });
-                    if (res.data.notification_preferences) {
-                        setNotifications(res.data.notification_preferences);
+                    if (res.preferences.notification_preferences) {
+                        setNotifications(res.preferences.notification_preferences);
                     }
                 }
             } catch (e) {
@@ -125,7 +125,7 @@ export const SettingsPage: React.FC = () => {
 
         setIsSaving(true);
         try {
-            await (api as any).savePreferences({
+            await api.savePreferences({
                 countries_of_interest: preferences.countries_of_interest,
                 sectors_of_interest: preferences.sectors_of_interest,
                 notification_preferences: notifications

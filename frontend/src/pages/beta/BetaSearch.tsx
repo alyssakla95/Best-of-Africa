@@ -7,6 +7,7 @@ import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { EditorialContent } from '../../components/EditorialContent';
 import { stripMarkdown } from '@/lib/utils';
+import type { Country, SearchResult } from '@/types';
 
 const FILTER_TABS = [
     { id: 'all', label: 'All Results', icon: LayersIcon },
@@ -14,12 +15,46 @@ const FILTER_TABS = [
     { id: 'countries', label: 'Countries', icon: GlobeIcon },
 ];
 
+interface SearchSuggestion {
+    type: 'article';
+    label: string;
+    slug: string;
+}
+
+interface SearchDisplayResult {
+    type: 'article' | 'country';
+    to: string;
+    title: string;
+    summary: string;
+    countryName?: string;
+    sectorName?: string;
+    relevanceNote?: string;
+}
+
+const articleDisplayResult = (result: SearchResult): SearchDisplayResult => ({
+    type: 'article',
+    to: `/posts/${result.article.slug}`,
+    title: result.article.title,
+    summary: result.article.summary,
+    countryName: result.article.country_name,
+    sectorName: result.article.sector_name,
+});
+
+const countryDisplayResult = (country: Country): SearchDisplayResult => ({
+    type: 'country',
+    to: `/countries/${country.code}`,
+    title: country.name,
+    summary: country.description,
+    countryName: country.region,
+    sectorName: country.capital ? `Capital: ${country.capital}` : undefined,
+});
+
 export const BetaSearch: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [inputValue, setInputValue] = useState(searchParams.get('q') || '');
     const [debouncedQ, setDebouncedQ] = useState(searchParams.get('q') || '');
     const [activeFilter, setActiveFilter] = useState('all');
-    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,17 +74,19 @@ export const BetaSearch: React.FC = () => {
             }
         }, 350);
         return () => clearTimeout(t);
-    }, [inputValue]);
+    }, [inputValue, setSearchParams]);
 
     // Live autocomplete suggestions
     useEffect(() => {
-        if (inputValue.length < 2) { setSuggestions([]); return; }
+        if (inputValue.length < 2) return;
         const t = setTimeout(async () => {
             try {
                 const res = await api.search(inputValue);
-                const items = [
-                    ...(res.results || []).slice(0, 3).map((r: any) => ({ type: 'article', label: stripMarkdown(r.article?.title || r.title), slug: r.article?.slug || r.slug })),
-                ];
+                const items: SearchSuggestion[] = (res.results || []).slice(0, 3).map(result => ({
+                    type: 'article',
+                    label: stripMarkdown(result.article.title),
+                    slug: result.article.slug,
+                }));
                 setSuggestions(items);
             } catch { setSuggestions([]); }
         }, 200);
@@ -59,18 +96,32 @@ export const BetaSearch: React.FC = () => {
     // Main search query
     const { data, isLoading, isError } = useQuery({
         queryKey: ['search', debouncedQ],
-        queryFn: () => api.search(debouncedQ),
+        queryFn: async () => {
+            const [searchResponse, countriesResponse] = await Promise.all([
+                api.search(debouncedQ),
+                api.getCountries(),
+            ]);
+            const normalized = debouncedQ.toLocaleLowerCase();
+            const countries = countriesResponse.data
+                .filter(country => `${country.name} ${country.region} ${country.capital} ${country.description}`.toLocaleLowerCase().includes(normalized))
+                .slice(0, 12)
+                .map(countryDisplayResult);
+            return {
+                aiAnswer: searchResponse.ai_answer || null,
+                results: [...countries, ...searchResponse.results.map(articleDisplayResult)],
+            };
+        },
         enabled: debouncedQ.length >= 2,
         staleTime: 2 * 60 * 1000,
     });
 
     const results = data?.results || [];
-    const analystAnswer = (data as any)?.ai_answer || null;
+    const analystAnswer = data?.aiAnswer || null;
 
     const filtered = activeFilter === 'countries'
-        ? results.filter((r: any) => r.type === 'country')
+        ? results.filter(result => result.type === 'country')
         : activeFilter === 'articles'
-        ? results.filter((r: any) => r.type !== 'country')
+        ? results.filter(result => result.type === 'article')
         : results;
 
     return (
@@ -99,7 +150,12 @@ export const BetaSearch: React.FC = () => {
                                     id="search-input"
                                     type="text"
                                     value={inputValue}
-                                    onChange={(e) => { setInputValue(e.target.value); setShowSuggestions(true); }}
+                                    onChange={(e) => {
+                                        const nextValue = e.target.value;
+                                        setInputValue(nextValue);
+                                        setShowSuggestions(true);
+                                        if (nextValue.length < 2) setSuggestions([]);
+                                    }}
                                     onFocus={() => setShowSuggestions(true)}
                                     placeholder="Search countries, sectors or companies"
                                     className="min-w-0 flex-1 bg-transparent text-foreground placeholder:text-foreground/40 text-base md:text-lg outline-none"
@@ -220,48 +276,40 @@ export const BetaSearch: React.FC = () => {
                                 <p className="text-[1.125rem] font-light">Try different keywords or a broader search term</p>
                             </div>
                         ) : (
-                            filtered.map((r: any, i: number) => {
-                                const article = r.article || r;
-                                const slug = article.slug || r.slug;
-                                const title = article.title || r.title;
-                                const summary = article.summary || r.summary || '';
-                                const countryName = article.country_name || r.country_name;
-                                const sectorName = article.sector_name || r.sector_name;
-                                const relevanceNote = r.relevance_note;
-
+                            filtered.map((result, i) => {
                                 return (
                                     <motion.div
-                                        key={slug || i}
+                                        key={`${result.type}:${result.to}`}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.05 }}
                                     >
                                         <Link
-                                            to={`/posts/${slug}`}
+                                            to={result.to}
                                         className="group block rounded-xl border border-foreground/10 bg-card p-5 transition-all hover:border-accent/40 hover:bg-foreground/5 sm:rounded-2xl sm:p-8"
                                         >
                                             <div className="flex items-start justify-between gap-6">
                                                 <div className="flex-1 min-w-0">
-                                                    {(countryName || sectorName) && (
+                                                    {(result.countryName || result.sectorName) && (
                                                         <div className="flex items-center gap-3 mb-4 text-[10px] font-bold uppercase tracking-widest text-accent">
-                                                            {countryName && <span>{countryName}</span>}
-                                                            {countryName && sectorName && <span className="text-foreground/30">•</span>}
-                                                            {sectorName && <span>{sectorName}</span>}
+                                                            {result.countryName && <span>{result.countryName}</span>}
+                                                            {result.countryName && result.sectorName && <span className="text-foreground/30">•</span>}
+                                                            {result.sectorName && <span>{result.sectorName}</span>}
                                                         </div>
                                                     )}
                                                     <h3 className="font-serif text-[1.75rem] leading-snug text-foreground mb-4 group-hover:text-accent transition-colors">
-                                                        {stripMarkdown(title)}
+                                                        {stripMarkdown(result.title)}
                                                     </h3>
-                                                    {summary && (
+                                                    {result.summary && (
                                                         <p className="text-[1.125rem] font-light text-foreground/50 line-clamp-2 leading-[1.8]">
-                                                            {stripMarkdown(summary)}
+                                                            {stripMarkdown(result.summary)}
                                                         </p>
                                                     )}
-                                                    {relevanceNote && (
+                                                    {result.relevanceNote && (
                                                         <div className="mt-6 flex items-center gap-3 bg-background/50 p-4 rounded-xl border border-accent/20">
                                                             <SparklesIcon className="text-accent w-4 h-4 shrink-0" />
                                                             <p className="text-[13px] text-foreground/80 font-light italic">
-                                                                {stripMarkdown(relevanceNote)}
+                                                                {stripMarkdown(result.relevanceNote)}
                                                             </p>
                                                         </div>
                                                     )}

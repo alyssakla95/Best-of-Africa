@@ -28,8 +28,8 @@ export const BetaLibrary: React.FC = () => {
         }
     });
 
-    const bookmarks = data?.data || [];
-    const visibleBookmarks = useMemo(() => bookmarks.filter((bookmark: any) =>
+    const bookmarks = useMemo(() => data?.data || [], [data?.data]);
+    const visibleBookmarks = useMemo(() => bookmarks.filter(bookmark =>
         !query || `${bookmark.title || ''} ${bookmark.summary || ''} ${bookmark.country_name || ''} ${bookmark.sector_name || ''}`.toLowerCase().includes(query.toLowerCase())
     ), [bookmarks, query]);
 
@@ -139,7 +139,7 @@ export const BetaLibrary: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {visibleBookmarks.map((bookmark: any) => (
+                        {visibleBookmarks.map(bookmark => (
                             <div key={bookmark.id} className="relative group">
                                 <ArticleCard article={{
                                     ...bookmark,

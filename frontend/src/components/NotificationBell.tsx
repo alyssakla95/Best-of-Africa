@@ -2,51 +2,36 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BellIcon, BellOffIcon, CheckIcon, ArrowRightIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../services/api';
+import { api, type ReaderNotification } from '../services/api';
 import { stripMarkdown } from '@/lib/utils';
-
-interface Notification {
-    id: string;
-    title: string;
-    message: string;
-    article_slug?: string;
-    created_at: string;
-    is_read: boolean;
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const NotificationBell: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unread, setUnread] = useState(0);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const queryClient = useQueryClient();
+    const { data } = useQuery({
+        queryKey: ['reader-notifications'],
+        queryFn: api.getNotifications,
+        refetchInterval: 60_000,
+        retry: 1,
+    });
+    const notifications = data?.data || [];
+    const unreadNotifications = notifications.filter(notification => !notification.is_read);
+    const unread = unreadNotifications.length;
 
-    const fetchNotifications = async () => {
-        try {
-            const res = await (api as any).getNotifications?.();
-            if (res?.data) {
-                setNotifications(res.data);
-                setUnread(res.data.filter((n: Notification) => !n.is_read).length);
-            }
-        } catch {
-            // Notifications may not be available yet, fail silently
-        }
+    const togglePanel = () => {
+        const nextOpen = !open;
+        setOpen(nextOpen);
+        if (!nextOpen || unreadNotifications.length === 0) return;
+
+        queryClient.setQueryData<{ data: ReaderNotification[] }>(
+            ['reader-notifications'],
+            current => ({ data: (current?.data || []).map(notification => ({ ...notification, is_read: true })) }),
+        );
+        void api.markNotificationsRead(unreadNotifications.map(notification => notification.id))
+            .catch(() => queryClient.invalidateQueries({ queryKey: ['reader-notifications'] }));
     };
-
-    // Poll every 60 seconds
-    useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60_000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Mark as read when panel opens
-    useEffect(() => {
-        if (open && unread > 0) {
-            setUnread(0);
-            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-            (api as any).markNotificationsRead?.().catch(() => {});
-        }
-    }, [open]);
 
     // Close on outside click
     useEffect(() => {
@@ -63,7 +48,7 @@ export const NotificationBell: React.FC = () => {
         <div className="relative" ref={popoverRef}>
             <button
                 id="notification-bell"
-                onClick={() => setOpen(o => !o)}
+                onClick={togglePanel}
                 className="relative p-2 rounded-full hover:bg-background/10 transition-colors text-primary/70 hover:text-primary"
                 aria-label="Notifications"
             >

@@ -24,7 +24,9 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [memberData, setMemberData] = useState<MemberData | null>(MEMBER_PREVIEW_MODE ? {
     tier: 'enterprise', name: 'Member Preview', expires_in_days: null,
   } : null);
-  const [isLoading, setIsLoading] = useState(!MEMBER_PREVIEW_MODE);
+  const [isLoading, setIsLoading] = useState(
+    !MEMBER_PREVIEW_MODE && Boolean(localStorage.getItem('boa_auth_token')),
+  );
 
   // Sync token to localStorage
   useEffect(() => {
@@ -32,24 +34,14 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       localStorage.setItem('boa_auth_token', token);
     } else {
       localStorage.removeItem('boa_auth_token');
-      setMemberData(null);
     }
   }, [token]);
 
   // Validate token with server on mount or token change
   useEffect(() => {
-    if (MEMBER_PREVIEW_MODE) {
-      setMemberData({ tier: 'enterprise', name: 'Member Preview', expires_in_days: null });
-      setIsLoading(false);
-      return;
-    }
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    if (MEMBER_PREVIEW_MODE || !token) return;
 
     let isMounted = true;
-    setIsLoading(true);
 
     request<{ member: boolean; tier?: string; name?: string; expires_in_days?: number | null; reason?: string }>(
       '/members/me',
@@ -61,12 +53,14 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setMemberData({ tier: res.tier, name: res.name, expires_in_days: res.expires_in_days ?? null });
         } else {
           // Token is invalid or expired
+          setMemberData(null);
           setToken(null);
         }
       })
       .catch(() => {
         if (isMounted) {
           // On network error or 401, clear token
+          setMemberData(null);
           setToken(null);
         }
       })
@@ -80,6 +74,8 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Listen for global 401 events from the API layer
   useEffect(() => {
     const handler = () => {
+      setMemberData(null);
+      setIsLoading(false);
       setToken(null);
     };
     window.addEventListener('boa:auth:unauthorized', handler);
@@ -87,11 +83,15 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const login = (newToken: string, data: MemberData) => {
+    localStorage.setItem('boa_auth_token', newToken);
     setMemberData(data);
     setToken(newToken);
   };
 
   const logout = () => {
+    localStorage.removeItem('boa_auth_token');
+    setMemberData(null);
+    setIsLoading(false);
     setToken(null);
   };
 

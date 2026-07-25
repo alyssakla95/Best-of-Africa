@@ -124,7 +124,7 @@ export const AdminPage: React.FC = () => {
     const triggerAudit = async () => {
         toast.promise(api.triggerAuditScan(), {
             loading: 'Scanning for stale content...',
-        success: (data) => `Audit complete: ${(data as any).audit_findings?.length || 0} items identified.`,
+            success: data => `Audit complete: ${data.scanned} records checked and ${data.tasks_created} refresh tasks created.`,
             error: 'Audit failed.'
         });
     };

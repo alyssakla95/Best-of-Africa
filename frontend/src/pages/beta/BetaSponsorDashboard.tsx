@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Target, Eye, MousePointerClick, DollarSign, BarChart3, PauseCircle, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { useMember } from '../../context/MemberContext';
@@ -243,7 +244,7 @@ export const BetaSponsorDashboard: React.FC = () => {
                       />
                       <RechartsTooltip
                         contentStyle={{ borderRadius: '12px', border: '1px solid rgba(15,31,61,0.35)', backgroundColor: '#0F1F3D', color: '#fff', boxShadow: '0 12px 32px rgba(15,31,61,0.35)', fontSize: 13 }}
-                        formatter={(value: any) => [value, 'Impressions']}
+                        formatter={(value: ValueType | undefined) => [value ?? 0, 'Impressions']}
                       />
                       <Area type="monotone" dataKey="impressions" stroke="#0F1F3D" strokeWidth={2} fillOpacity={1} fill="url(#colorImpressions)" activeDot={{ r: 5, fill: '#0F1F3D', stroke: '#fff', strokeWidth: 2 }} isAnimationActive={false} />
                     </AreaChart>

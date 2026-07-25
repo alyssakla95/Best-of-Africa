@@ -10,7 +10,7 @@ import { Layout } from './components/Layout';
 // dynamically imported module"). Instead of crashing into the error boundary, we
 // reload once to pull the fresh index.html + new chunk names. The sessionStorage
 // guard (cleared on any successful load) prevents reload loops for genuine errors.
-function lazyWithRetry<T extends React.ComponentType<any>>(
+function lazyWithRetry<T extends React.ComponentType>(
   factory: () => Promise<{ default: T }>
 ) {
   return React.lazy(async () => {
@@ -96,8 +96,8 @@ const DeferredChrome = () => {
   const [ready, setReady] = React.useState(false);
   React.useEffect(() => {
     const start = () => setReady(true);
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(start, { timeout: 3000 });
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(start, { timeout: 3000 });
     } else {
       setTimeout(start, 1500);
     }

@@ -11,6 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
 import { stripMarkdown } from '@/lib/utils';
+import type { CalendarEvent } from '@/types';
+
+interface EventRegistrationInput {
+    user_email: string;
+    user_name: string;
+    user_organization?: string;
+    ticket_type: string;
+}
 
 // Local fallback imagery rotated by index so events without a hero_image_url
 // don't all share one (previously external, washed-out) photo.
@@ -20,7 +28,7 @@ export const BetaEvents: React.FC = () => {
         queryFn: () => api.getCorporateEvents()
     });
 
-    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     
     // Form State
@@ -29,21 +37,27 @@ export const BetaEvents: React.FC = () => {
     const [organization, setOrganization] = useState('');
     const [ticketType, setTicketType] = useState('Standard');
     const [isSuccess, setIsSuccess] = useState(false);
+    const [confirmationCode, setConfirmationCode] = useState('');
 
     const registerMutation = useMutation({
-        mutationFn: (data: any) => api.registerForEvent(selectedEvent.id, data),
-        onSuccess: () => {
+        mutationFn: (data: EventRegistrationInput) => {
+            if (!selectedEvent) throw new Error('Select an event before registering');
+            return api.registerForEvent(selectedEvent.id, data);
+        },
+        onSuccess: response => {
+            setConfirmationCode(response.data.confirmation_code);
             setIsSuccess(true);
-            toast.success("Successfully registered for event!");
+            toast.success("Event registration recorded");
         },
         onError: () => {
             toast.error("Failed to register. Please try again.");
         }
     });
 
-    const handleRegisterClick = (event: any) => {
+    const handleRegisterClick = (event: CalendarEvent) => {
         setSelectedEvent(event);
         setIsSuccess(false);
+        setConfirmationCode('');
         setIsDialogOpen(true);
     };
 
@@ -109,7 +123,7 @@ export const BetaEvents: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid gap-12">
-                        {events.map((event: any, index: number) => (
+                        {events.map((event, index) => (
                             <motion.div 
                                 key={event.id} 
                                 initial={{ opacity: 0, y: 40 }}
@@ -121,9 +135,9 @@ export const BetaEvents: React.FC = () => {
                                 <div className="z-10 flex w-full flex-col justify-center p-5 sm:p-8 md:p-12">
                                     <div className="flex flex-wrap items-center gap-4 mb-6">
                                         <span className="text-[11px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full">
-                                            {event.event_type}
+                                            {event.event_type || event.category}
                                         </span>
-                                        {event.is_exclusive && (
+                                        {event.is_vip && (
                                             <span className="text-[11px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full flex items-center gap-2">
                                                 <UsersIcon size={14} /> Exclusive
                                             </span>
@@ -137,21 +151,21 @@ export const BetaEvents: React.FC = () => {
                                     <div className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-foreground/10 bg-foreground/5 p-4 min-[520px]:grid-cols-2 md:mb-10 md:gap-6 md:rounded-2xl md:p-6">
                                         <div className="flex items-center gap-3 text-[15px] font-light text-foreground/80">
                                             <CalendarIcon className="w-5 h-5 text-accent" />
-                                            {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            {new Date(event.date_start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                         </div>
                                         <div className="flex items-center gap-3 text-[15px] font-light text-foreground/80">
                                             <MapPinIcon className="w-5 h-5 text-accent" />
-                                            {event.is_virtual ? 'Virtual Event' : event.location || 'TBA'}
+                                            {event.location}
                                         </div>
                                     </div>
                                     
                                     <div className="mt-auto flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-foreground/10">
                                         <span className="text-[13px] font-bold uppercase tracking-widest text-foreground/60">
-                                            {event.status === 'Open' ? 'Registration Open' : event.status}
+                                            {event.status.replace(/_/g, ' ')}
                                         </span>
                                         <Button 
                                             onClick={() => handleRegisterClick(event)}
-                                            disabled={event.status !== 'Open' && event.status !== 'Upcoming'}
+                                            disabled={!['open', 'upcoming', 'registration_open'].includes(event.status.toLowerCase())}
                                             className="w-full sm:w-auto rounded-xl gap-3 bg-accent text-navy hover:bg-gold-italic px-8 py-6 font-bold uppercase tracking-widest text-[11px]"
                                         >
                                             Register Interest <ArrowRightIcon size={16} />
@@ -181,8 +195,12 @@ export const BetaEvents: React.FC = () => {
                             <CheckCircleIcon className="w-20 h-20 text-accent mb-6" />
                             <h3 className="text-[2rem] font-serif mb-4">You're on the list!</h3>
                             <p className="text-foreground/60 font-light leading-relaxed mb-8">
-                                Our team will be in touch shortly with your confirmation and attendance details.
+                                Your registration is stored. Keep this confirmation code for attendance enquiries.
                             </p>
+                            <div className="mb-8 w-full rounded-xl border border-border bg-background p-4">
+                                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Confirmation code</p>
+                                <code className="break-all text-lg font-bold text-foreground">{confirmationCode}</code>
+                            </div>
                             <Button 
                                 className="w-full rounded-xl px-8 py-6 bg-accent text-navy hover:brightness-110 font-bold uppercase tracking-widest text-[11px]"
                                 onClick={() => setIsDialogOpen(false)}

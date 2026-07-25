@@ -409,8 +409,24 @@ router.get('/clients', async (c) => {
     return c.json({ data: clients.results || [] });
 });
 
-router.post('/clients', async (c) => {
-    const body = await c.req.json();
+const CreateClientSchema = z.object({
+    name: z.string().trim().min(2).max(120),
+    email: z.string().trim().email().max(254),
+    organization: z.string().trim().max(200).optional(),
+    type: z.enum(['government', 'investor', 'partner', 'media', 'other']).default('other'),
+    tier: z.enum(['basic', 'premium', 'enterprise']).default('basic'),
+    rate_limit_per_hour: z.number().int().min(10).max(100_000).default(100),
+});
+
+router.post('/clients', validate('json', CreateClientSchema), async (c) => {
+    const body = (c.req as any).valid('json');
+    const existing = await c.env.DB.prepare(
+        'SELECT id FROM clients WHERE lower(email) = lower(?) LIMIT 1',
+    ).bind(body.email).first<{ id: string }>();
+    if (existing) {
+        return c.json({ error: 'client_exists', message: 'A client with this email already exists' }, 409);
+    }
+
     const id = crypto.randomUUID();
     const apiKey = generateApiKey();
     const apiKeyHash = await hashApiKey(apiKey);
@@ -423,10 +439,10 @@ router.post('/clients', async (c) => {
         body.name,
         body.email,
         body.organization || null,
-        body.type || null,
+        body.type,
         apiKeyHash,
-        body.tier || 'basic',
-        body.rate_limit_per_hour || 100
+        body.tier,
+        body.rate_limit_per_hour
     ).run();
 
     // Return API key only on creation (won't be retrievable later)

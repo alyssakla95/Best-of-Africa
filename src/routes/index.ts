@@ -12,6 +12,7 @@ export { eventsRouter } from './events';
 export { intelligenceRouter } from './intelligence';
 export { marketIntelRouter } from './market-intel';
 export { narrativesRouter } from './narratives';
+export { notificationsRouter } from './notifications';
 export { personalizationRouter } from './personalization';
 export { searchRouter } from './search';
 export { servicesRouter } from './services';

@@ -360,7 +360,7 @@ export const BetaArticle = () => {
     
     setIsReframing(true);
     try {
-      const res = await (api as any).reframeArticle(slug!, newLens);
+      const res = await api.reframeArticle(slug!, newLens);
       setReframedContent(prev => ({...prev, [newLens]: res.content}));
     } catch(e) {
       console.error(e);

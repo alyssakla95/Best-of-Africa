@@ -128,6 +128,106 @@ export interface NarrativeIndex {
     updated_at: string;
 }
 
+export interface AdminSource {
+    id: string;
+    name: string;
+    type: 'rss' | 'api' | 'scraper' | 'manual';
+    url: string;
+    country_code: string | null;
+    sector_id: string | null;
+    is_active: number | boolean;
+    last_fetched_at: string | null;
+    fetch_interval_minutes: number;
+    created_at: string;
+}
+
+export interface CreateAdminSourceInput {
+    name: string;
+    type: AdminSource['type'];
+    url: string;
+    country_code?: string;
+    sector_id?: string;
+    is_active?: boolean;
+    fetch_interval_minutes: number;
+}
+
+export interface AdminClient {
+    id: string;
+    name: string;
+    email: string;
+    organization: string | null;
+    type: 'government' | 'investor' | 'partner' | 'media' | 'other';
+    tier: 'basic' | 'premium' | 'enterprise';
+    is_active: number | boolean;
+    created_at: string;
+}
+
+export interface CreateAdminClientInput {
+    name: string;
+    email: string;
+    organization?: string;
+    type: AdminClient['type'];
+    tier: AdminClient['tier'];
+    rate_limit_per_hour: number;
+}
+
+export interface AdminContactSubmission {
+    id: string;
+    name: string;
+    organization: string | null;
+    email: string;
+    inquiry_type: string;
+    message: string;
+    created_at: string;
+}
+
+export interface AdminBookingRequest {
+    id: string;
+    guest_name: string;
+    guest_email: string;
+    guest_organization: string | null;
+    service_type: string;
+    requirements: string;
+    budget_range: string | null;
+    urgency: string | null;
+    status: string;
+    created_at: string;
+}
+
+export interface AdminEventRegistration {
+    id: string;
+    event_id: string;
+    event_title: string | null;
+    user_email: string;
+    user_name: string;
+    user_organization: string | null;
+    ticket_type: string;
+    status: string;
+    confirmation_code: string;
+    registered_at: string;
+}
+
+export type SavedBookmark = ArticleListItem & {
+    id: string;
+    article_id: string;
+};
+
+export interface ReaderNotification {
+    id: string;
+    title: string;
+    message: string;
+    article_slug?: string;
+    created_at: string;
+    is_read: boolean;
+}
+
+export interface ReportingLedgerEntry {
+    date: string;
+    tag: string;
+    title: string;
+    body: string;
+}
+
 export type SectorPerformanceDimension = {
     indicator_code: string; indicator_name: string; label: string; value: number; unit: string;
     comparison_value: number; comparison_unit: string; markets_rising_pct: number;
@@ -361,7 +461,7 @@ export const api = {
 
     // System & Personalization
     getCuratedFeed: () => request<{ data: (ArticleListItem & { ai_curation?: { relevance_note: string } })[]; personalized: boolean; ai_feed_summary?: string }>('/personalization/feed/ai-curated'),
-    getFounderLog: () => request<any[]>('/market-intel/founder-log'),
+    getFounderLog: () => request<ReportingLedgerEntry[]>('/market-intel/founder-log'),
     askAnalyst: (message: string) => request<{ response: string; sources: string[] }>('/intel/ai-chat', {
         method: 'POST',
         body: JSON.stringify({ message })
@@ -370,11 +470,16 @@ export const api = {
     // Personalization
     getRecommendations: () => request<{ data: ArticleListItem[]; based_on?: { countries: string[]; sectors: string[] } }>('/personalization/recommended'),
     getPreferences: () => request<{
-        countries_of_interest: string[];
-        sectors_of_interest: string[];
-        language_preference: string;
-        format_preference: string;
-        notification_preferences: { email: boolean; push: boolean; reports: boolean; };
+        preferences: {
+            countries_of_interest: string[];
+            sectors_of_interest: string[];
+            regions_of_interest: string[];
+            language_preference: string;
+            format_preference: string;
+            reading_level: string;
+            notification_preferences: { email: boolean; push: boolean; reports: boolean; };
+        };
+        preference_basis?: string;
     }>('/personalization/preferences'),
     savePreferences: (prefs: {
         countries_of_interest: string[];
@@ -385,6 +490,11 @@ export const api = {
     }) => request('/personalization/preferences', {
         method: 'POST',
         body: JSON.stringify(prefs),
+    }),
+    getNotifications: () => request<{ data: ReaderNotification[] }>('/notifications'),
+    markNotificationsRead: (ids?: string[]) => request<{ success: true; marked: number | 'all' }>('/notifications/read', {
+        method: 'POST',
+        body: JSON.stringify(ids?.length ? { ids } : {}),
     }),
 
     // Fire-and-forget analytics. keepalive lets the read-time beacon survive
@@ -512,7 +622,7 @@ export const api = {
 
     // Campaigns & Sponsorships
     getCampaigns: (status?: string) => request<{ data: Campaign[] }>(`/campaigns${status ? `?status=${status}` : ''}`),
-    getCampaign: (id: string) => request<{ data: Campaign & { articles: any[]; stats: any } }>(`/campaigns/${id}`),
+    getCampaign: (id: string) => request<{ data: Campaign & { articles: ArticleListItem[]; stats: Record<string, number | string | null> } }>(`/campaigns/${id}`),
     createCampaign: (data: Partial<Campaign>) => request<{ success: boolean; data: { id: string } }>('/campaigns', {
         method: 'POST',
         body: JSON.stringify(data)
@@ -536,7 +646,7 @@ export const api = {
         country: Country & { narrative_arc: string };
         active_strategies: NarrativeStrategy[];
         aligned_articles: ArticleListItem[];
-        sector_coverage: any[];
+        sector_coverage: { id: string; name: string; article_count: number }[];
         ai_gap_analysis: string;
     }>(`/narratives/country/${code}`),
     getNarrativeIndex: (code: string) => readerRequest<NarrativeIndex>(`/narratives/country/${code}/index`),
@@ -587,30 +697,30 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ content, comment })
     }),
-    triggerAuditScan: () => request('/audit/scan', {
+    triggerAuditScan: () => request<{ success: true; scanned: number; tasks_created: number }>('/audit/scan', {
         headers: { 'Authorization': `Bearer ${getAdminToken()}` }
     }),
     triggerAgentEvolution: () => request('/self-improve/evolve', {
         headers: { 'Authorization': `Bearer ${getAdminToken()}` }
     }),
     
-    getAdminSources: () => request<{ data: any[] }>('/admin/sources'),
-    createAdminSource: (data: any) => request<{ id: string }>('/admin/sources', { method: 'POST', body: JSON.stringify(data) }),
+    getAdminSources: () => request<{ data: AdminSource[] }>('/admin/sources'),
+    createAdminSource: (data: CreateAdminSourceInput) => request<{ id: string }>('/admin/sources', { method: 'POST', body: JSON.stringify(data) }),
     deleteAdminSource: (id: string) => request<{ success: boolean }>(`/admin/sources/${id}`, { method: 'DELETE' }),
     
-    getAdminClients: () => request<{ data: any[] }>('/admin/clients'),
-    createAdminClient: (data: any) => request<{ id: string; api_key: string }>('/admin/clients', { method: 'POST', body: JSON.stringify(data) }),
+    getAdminClients: () => request<{ data: AdminClient[] }>('/admin/clients'),
+    createAdminClient: (data: CreateAdminClientInput) => request<{ id: string; api_key: string }>('/admin/clients', { method: 'POST', body: JSON.stringify(data) }),
     
     getIntelligenceRecommendations: () => request<{ recommendations: string[] }>('/admin/intelligence/recommendations'),
     getAdminInbox: () => request<{
-        contact: any[];
-        bookings: any[];
-        registrations: any[];
+        contact: AdminContactSubmission[];
+        bookings: AdminBookingRequest[];
+        registrations: AdminEventRegistration[];
         newsletter_subscribers: number;
     }>('/admin/inbox'),
 
     // Personalization & Bookmarks
-    getBookmarks: () => request<{ data: any[] }>('/bookmarks'),
+    getBookmarks: () => request<{ data: SavedBookmark[] }>('/bookmarks'),
     addBookmark: (articleId: string) => request<{ success: boolean; id: string }>('/bookmarks', {
         method: 'POST',
         body: JSON.stringify({ article_id: articleId })
@@ -623,13 +733,42 @@ export const api = {
     }),
 
     // Corporate Services & Summits
-    getCorporateEvents: () => request<{ data: any[] }>('/services/events'),
-    getEvent: (id: string) => readerRequest<{ event: any }>(`/services/events/${id}`),
-    registerForEvent: (id: string, data: any) => request<{ success: boolean; registration_id: string }>(`/services/events/${id}/register`, {
+    getCorporateEvents: () => request<{ data: CalendarEvent[] }>('/services/events'),
+    getEvent: (id: string) => readerRequest<{ event: CalendarEvent }>(`/services/events/${id}`),
+    registerForEvent: (id: string, data: {
+        user_email: string;
+        user_name: string;
+        user_organization?: string;
+        ticket_type: string;
+    }) => request<{
+        success: true;
+        data: {
+            registration_id: string;
+            confirmation_code: string;
+            event_title: string;
+            event_date: string;
+            status: string;
+            message: string;
+        };
+    }>(`/services/events/${id}/register`, {
         method: 'POST',
         body: JSON.stringify(data)
     }),
-    submitBookingRequest: (data: any) => request<{ success: boolean; booking_id: string }>('/services/booking', {
+    submitBookingRequest: (data: {
+        guest_name: string;
+        guest_email: string;
+        guest_organization?: string;
+        service_type: string;
+        requirements: string;
+        destination_country?: string;
+        budget_range?: string;
+        urgency?: string;
+    }) => request<{
+        success: true;
+        id: string;
+        message: string;
+        preliminary_brief: string | null;
+    }>('/services/booking', {
         method: 'POST',
         body: JSON.stringify(data)
     }),

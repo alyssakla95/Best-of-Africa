@@ -39,7 +39,7 @@ const AFRICAN_COUNTRY_CODES: Record<string, string> = {
     'Gabon': '266', 'Gambia': '270', 'Guinea': '324', 'Guinea-Bissau': '624',
     'Lesotho': '426', 'Liberia': '430', 'Libya': '434', 'Madagascar': '450', 'Malawi': '454',
     'Mali': '466', 'Mauritania': '478', 'Niger': '562', 'Sao Tome and Principe': '678',
-    'SÃ£o TomÃ© and PrÃ­ncipe': '678', 'Seychelles': '690', 'Sierra Leone': '694',
+    'São Tomé and Príncipe': '678', 'Seychelles': '690', 'Sierra Leone': '694',
     'Somalia': '706', 'South Sudan': '728', 'Sudan': '729', 'Togo': '768',
 };
 

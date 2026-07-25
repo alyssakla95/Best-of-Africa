@@ -68,6 +68,29 @@ describe('country evidence integrity', () => {
         expect(fetchMock).toHaveBeenCalled();
     });
 
+    it('resolves accented country names to the correct UN Comtrade reporter', async () => {
+        const fetchMock = vi.fn(async (input: string | URL | Request) => {
+            const url = new URL(String(input));
+            return new Response(JSON.stringify({
+                data: [{ period: '2025', primaryValue: url.searchParams.get('flowCode') === 'X' ? 8 : 6 }],
+            }), { status: 200 });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const result = await getTradeBalance(
+            createMockEnv(),
+            'São Tomé and Príncipe',
+            2025,
+            { refresh: true },
+        );
+
+        expect(result).toMatchObject({ country: 'São Tomé and Príncipe', totalExports: 8, totalImports: 6 });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        for (const [input] of fetchMock.mock.calls) {
+            expect(new URL(String(input)).searchParams.get('reporterCode')).toBe('678');
+        }
+    });
+
     it('assembles a real IMF snapshot when World Bank and Comtrade are unavailable', async () => {
         vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
             const url = String(input);

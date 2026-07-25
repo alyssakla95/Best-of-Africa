@@ -129,8 +129,7 @@ export async function processOptimizationTask(
         }
     } catch (err) {
         console.error('[optimizer] processOptimizationTask failed for message type:', message.type, err);
-        // Do not rethrow — a failed queue message should not crash the consumer.
-        // Cloudflare Queues retries only when the consumer propagates failure.
+        // Propagate failure so Cloudflare Queues can apply its retry policy.
         throw err;
     }
 }

@@ -438,7 +438,7 @@ router.get('/founder-log', async (c) => {
     };
     const recent = await c.env.DB.prepare(`
         SELECT a.title, c.name AS country_name, s.name AS sector_name,
-               COALESCE(a.publisher_name, a.source_name) AS source_name,
+               COALESCE(NULLIF(TRIM(a.source_title), ''), a.source_url) AS source_name,
                a.published_at
         FROM articles a
         LEFT JOIN countries c ON a.country_code = c.code

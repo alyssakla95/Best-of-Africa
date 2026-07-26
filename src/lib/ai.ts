@@ -32,9 +32,9 @@ export const MODELS = {
 // Stored on the article row so we can evaluate prompt quality over time.
 // v1.2 — Removed investment/tourism/intelligence framing. All prompts now use student writer
 // persona aligned with the Ko-fi brief: grounded, human, narrative correction.
-export const ARTICLE_PROMPT_VERSION = 'v1.6-depth-enforced';
-export const AI_RESPONSE_VERSION = 'depth-v5-structured-repair';
-export const MIN_PUBLISHABLE_ARTICLE_WORDS = 900;
+export const ARTICLE_PROMPT_VERSION = 'v1.7-source-closed';
+export const AI_RESPONSE_VERSION = 'depth-v6-source-closed';
+export const MIN_PUBLISHABLE_ARTICLE_WORDS = 600;
 export const MIN_PUBLISHABLE_INVESTOR_BRIEF_WORDS = 200;
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -60,9 +60,9 @@ export type AIResponseProfile = 'editorial-article' | 'evidence-brief' | 'deep-a
 
 const RESPONSE_PROFILES: Record<AIResponseProfile, { minimumWords: number; minimumTokens: number; instructions: string }> = {
     'editorial-article': {
-        minimumWords: 900,
+        minimumWords: 600,
         minimumTokens: 7000,
-        instructions: `Write a complete 900-2,600 word reported narrative whose length is earned by the supplied evidence. Develop the people, place, chronology, documented mechanisms, competing perspectives, material consequences and unresolved questions using only the supplied source material. Include every relevant name, institution, location, date, quotation and figure supplied. Explain technical or policy context in plain language, distinguish allegation from established fact, show what changed and what did not, and preserve the required output schema. Use calibrated uncertainty for projections, disputed claims and incomplete evidence. End the reporting body with what remains unresolved. Never add generic filler, invented scene-setting or unsupported context to reach length.`,
+        instructions: `Write a complete 600-2,000 word reported narrative whose length is earned by the supplied evidence. Treat the supplied source record as a closed factual universe. Develop only the people, place, chronology, documented mechanisms, competing perspectives and material consequences that the record directly supports. Include relevant names, institutions, locations, dates, quotations and figures supplied. Never add remembered background, unnamed witnesses, composite people, illustrative anecdotes, hypothetical quotations, inferred dates, invented scene-setting, or claims that information was not disclosed unless the record explicitly says so. Put unresolved verification matters in question form rather than asserting that evidence does not exist. Explain supported technical or policy context in plain language, distinguish allegation from established fact, and preserve the required output schema. Never pad thin evidence to reach length.`,
     },
     'evidence-brief': {
         minimumWords: 2200,
@@ -287,7 +287,7 @@ export async function generateArticle(
     tags: string[];
 }> {
     const prompt = buildArticlePrompt(sourceTitle, sourceContent, countryName, sectorName);
-    const text = await callConfiguredAI(env, { prompt, max_tokens: 7000, temperature: 0.5, response_profile: 'editorial-article' });
+    const text = await callConfiguredAI(env, { prompt, max_tokens: 7000, temperature: 0.15, response_profile: 'editorial-article' });
     const article = parseArticleResponse(text);
     const depth = evaluateArticleDepth(article.content, article.investor_brief);
     if (depth.articleWords < MIN_PUBLISHABLE_ARTICLE_WORDS) {
@@ -324,7 +324,7 @@ export async function repairArticleFromAudit(
     ).join('\n');
     const prompt = `You are revising a BOA-Story draft that failed factual publication review.
 
-The SOURCE RECORD below is the closed factual universe. Do not use memory, general knowledge, plausible examples or invented scene-setting. Every person, organisation, quotation, date, number, location, event and causal statement in the revision must be directly supported by the source record. Remove every unsupported detail identified by the audit. Never create a composite person, illustrative company, hypothetical quote or unnamed expert.
+The SOURCE RECORD below is the closed factual universe. Do not use memory, general knowledge, plausible examples or invented scene-setting. Every person, organisation, quotation, date, number, location, event and causal statement in the revision must be directly supported by the source record. Remove every unsupported detail identified by the audit. Never create a composite person, illustrative company, hypothetical quote or unnamed expert. Do not claim that a number, audit, outcome or disclosure does not exist merely because it is absent from the source. Convert necessary follow-up matters into explicit questions.
 
 If the source cannot support a broad conclusion, state the exact evidence limit in plain language. Conditional implications must be explicitly labelled as questions for verification, not reported facts.
 
@@ -354,7 +354,7 @@ TITLE: [source-grounded headline, maximum 80 characters]
 SUBTITLE: [source-grounded context, maximum 120 characters]
 
 CONTENT:
-[Complete reported article with descriptive section headings. No unsupported background.]
+[Complete 600-2,000 word reported article with descriptive section headings. No unsupported background or padding.]
 
 SUMMARY: [3-5 source-grounded sentences]
 
@@ -779,7 +779,7 @@ function buildArticlePrompt(
 ): string {
     return `You are an independent writer for BOA-Story, a small, self-funded narrative correction project. Your mission is to surface real, grounded stories about African lives, cities, creators, and everyday opportunity — explicitly against the dominant framing of Africa as a place of crisis, charity, and disaster.
 
-Transform this source news into a grounded, human-focused story:
+Transform this source news into a grounded, human-focused story. The supplied source content is the closed factual universe for the article:
 
 Source Title: ${sourceTitle}
 Source Content: ${sourceContent.slice(0, 18000)}
@@ -790,6 +790,9 @@ Requirements:
 - Write in an authentic, personal voice. Guardian-style prose: clear, precise, engaging.
 - Surface the real human story behind the news: the people, the city, the everyday energy.
 - Explain the source's documented context and implications without importing unsupported facts.
+- Every factual sentence must be traceable to the supplied source content. Do not use memory or general knowledge.
+- Never invent or imply an unnamed witness, worker, resident, customer, expert, quotation, anecdote, scene, date, capacity, financial result or causal link.
+- Do not say that evidence, funding, audits, outcomes or disclosures do not exist merely because the source does not mention them. State follow-up needs as questions.
 - Do NOT frame this as an investment pitch or tourism guide.
 - Use calibrated uncertainty whenever evidence is incomplete, disputed, projected or conditional. Never turn a possibility into a fact.
 - Do NOT use corporate, NGO, or financial intelligence jargon.
@@ -804,7 +807,7 @@ Requirements:
   "pave the way", "melting pot", "treasure trove", "game-changer", "microcosm",
   "the fabric of", "lasting legacy", "speaks volumes", "in essence". Prefer
   concrete nouns and verbs over these.
-- Honest, grounded tone. Write 900-2,600 words under 4-10 descriptive subheadings
+- Honest, grounded tone. Write 600-2,000 words under 3-8 descriptive subheadings
   (### in markdown), choosing length only from the amount of supplied evidence.
   Do not pad a thin record. Identify material facts that remain unverified.
 

@@ -66,9 +66,29 @@ describe('AI response depth contract', () => {
     it('blocks shallow Worker drafts at the publication boundary', () => {
         expect(evaluateArticleDepth('short article', 'short brief')).toEqual({ articleWords: 2, briefWords: 2, publishable: false });
         expect(evaluateArticleDepth(
-            Array.from({ length: 900 }, () => 'article').join(' '),
+            Array.from({ length: 600 }, () => 'article').join(' '),
             Array.from({ length: 200 }, () => 'brief').join(' '),
         ).publishable).toBe(true);
+    });
+
+    it('keeps the article profile source-closed instead of forcing fabricated depth', async () => {
+        const response = [
+            'TITLE: Source-grounded report',
+            'SUBTITLE: Documented changes and remaining questions',
+            'CONTENT:',
+            Array.from({ length: 610 }, () => 'reported').join(' '),
+            'SUMMARY: The supplied record documents the change.',
+            `INVESTOR_BRIEF: ${Array.from({ length: 210 }, () => 'evidence').join(' ')}`,
+            'TAGS: reporting, evidence, Africa',
+        ].join('\n');
+        const run = vi.fn().mockResolvedValue({ response });
+        const env = createMockEnv({ AI: { run } as any });
+
+        await generateArticle(env, 'Source title', 'Substantive source record', 'Ghana', 'Technology');
+
+        expect(run.mock.calls[0][1].temperature).toBe(0.15);
+        expect(run.mock.calls[0][1].prompt).toContain('closed factual universe');
+        expect(run.mock.calls[0][1].prompt).toContain('Never invent or imply an unnamed witness');
     });
 
     it('refuses to auto-publish a narrative gap without source evidence', async () => {

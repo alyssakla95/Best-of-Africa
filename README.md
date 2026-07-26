@@ -1,8 +1,8 @@
 # BOA-Story
 
-BOA-Story is a deployed African editorial and market-intelligence platform. Its primary B2B pilot is built for organizations worldwide comparing African markets before an expansion, investment, or partnership decision. The wider product combines source-attributed reporting, country research, official economic indicators, continental dashboards, narrated briefings, multilingual reading, events, search, personalization, and member services in one reader-facing application.
+BOA-Story is a deployed African reporting and market-intelligence platform for readers and organizations worldwide. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, events, search, personalization, and member services in one responsive application.
 
-The platform is not a market-data terminal and does not treat reporting volume, sentiment, or generated scores as economic performance. Market and country views distinguish:
+The platform is not a live trading terminal and does not treat reporting volume, sentiment, or synthetic scores as economic performance. Market and country views distinguish:
 
 - official or attributed evidence;
 - the date and coverage of that evidence;
@@ -13,7 +13,7 @@ The platform is not a market-data terminal and does not treat reporting volume, 
 
 The current product state is:
 
-> **Production-deployed, enterprise-capable B2B pilot product**
+> **Production-deployed intelligence platform with a measurable design-partner pilot workflow**
 
 The initial commercial proposition is deliberately narrow:
 
@@ -24,11 +24,11 @@ The initial commercial proposition is deliberately narrow:
 | Pilot boundary | Four weeks, one target sector, up to three candidate countries and one named internal decision |
 | Deliverables | Evidence dossier, country comparison, executive decision brief, claim/source ledger, diligence register and closeout review |
 | Economic hypothesis | Reduce time spent reconciling fragmented public evidence and make unresolved risks visible before specialist diligence or capital commitment |
-| Validation state | The hypothesis is ready for measured design-partner pilots; verified customer, revenue, retention and outcome claims are not currently published |
+| Validation approach | Each pilot records the existing research baseline, delivery cycle, evidence traceability and unresolved diligence work |
 
-The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) separates implemented controls from certifications, contracts and assurances the company has not yet earned.
+The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
 
-BOA-Story does not claim to be a comprehensive terminal, a substitute for legal, tax, regulatory or in-country commercial diligence, or a proven enterprise vendor. Fixed pilot scope and fees are proposed after discovery while the commercial model is validated.
+BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. Fixed pilot scope and fees are proposed after discovery.
 
 ## Live deployment
 
@@ -43,16 +43,16 @@ These URLs describe the currently verified Alyssa Cloudflare deployment. The rep
 
 ### Verified state
 
-Last checked on 25 July 2026:
+Last checked on 26 July 2026:
 
 - the frontend and API were reachable;
-- D1, Workers AI, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
-- the database contained 304 articles;
-- the current worker-output inventory reported 14 published articles, 14 audio files, and 84 quality-approved translations across six non-English languages;
-- the seven-day coverage pulse contained 14 stories across 3 countries;
+- D1, content processing, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
+- the database contained 305 article records;
+- the current worker-output inventory reported 17 published articles, 17 audio files, and 102 quality-approved translations across six non-English languages;
+- the seven-day coverage pulse contained 17 stories across 4 countries;
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 210 passing tests.
+- the complete test suite contained 212 passing tests.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 
@@ -66,6 +66,7 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 - Continental Overview with regional comparisons, official indicator context, narrated briefings, evidence tables, limitations, and supporting records.
 - Search across articles and countries, autocomplete, filters, and a command menu.
 - Events, consultation requests, travel information, a personal library, reader settings, notifications, and personalized feeds.
+- A global Enterprise pilot page and Trust Center for decision workflow, data handling, operational controls, and procurement review.
 - Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables.
 
 ### Languages
@@ -85,15 +86,16 @@ Published article translations are stored for the six non-English languages and 
 ### Editorial and intelligence controls
 
 - Ingested material is quarantined until a separate source-grounded editorial audit approves it.
-- New articles must meet minimum depth requirements and preserve supplied names, dates, figures, chronology, contrary evidence, and source limitations.
-- Reader-facing synthesis uses Cloudflare Workers AI `@cf/openai/gpt-oss-120b`.
-- Lower-cost specialist work, such as classification, uses a separate multilingual model.
-- Model output is checked for incomplete structure, insufficient depth, unsupported content, and internal process-language leakage.
+- New articles treat each supplied source record as a closed factual universe and must preserve supported names, dates, figures, chronology, contrary evidence, and source limitations.
+- Articles must contain 600–2,000 evidence-supported words and a professional brief of at least 200 words; unsupported padding does not satisfy the depth gate.
+- Publication requires an independent, source-grounded audit score of at least 80% with no unresolved findings.
+- Failed drafts remain quarantined and can be repaired and independently re-audited without bypassing publication controls.
+- Reader and administrator screens use neutral editorial and product terminology rather than exposing provider, model, prompt, or drafting-process language.
 - Market-performance views use official series and explicitly label proxy indicators and incompatible comparisons.
 - New and recovered images are restricted to attributable source photography. Generative image production is disabled, and the scheduled remediation path replaces incomplete legacy image records when a suitable source image is available.
-- Audio uses ElevenLabs when configured and Cloudflare Workers AI speech as the built-in fallback.
+- Audio uses a configured narration service with a Cloudflare-native fallback.
 
-AI assists the production workflow, but generated text is not published merely because generation succeeded. The publication gate is evidence-based and records audit, remediation, translation, audio, and worker telemetry in D1.
+Prepared text is never published merely because preparation succeeded. Audit, remediation, translation, narration, and worker telemetry are recorded in D1.
 
 ### Administration and platform services
 
@@ -128,8 +130,8 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Cache and sessions | Cloudflare KV |
 | Media | R2 when available; KV-backed media storage as the portable fallback |
 | Search | D1 full-text search plus Cloudflare Vectorize semantic retrieval |
-| Generation | Cloudflare Workers AI, with optional operator-configured providers |
-| Async work | Cloudflare Queues for generation, translation, and optimization |
+| Editorial processing | Cloudflare-native preparation, source-grounded audit, repair, translation, narration, and retrieval services |
+| Async work | Cloudflare Queues for preparation, translation, and optimization |
 | Scheduling | One-minute Cloudflare cron with bounded internal schedules |
 | Metrics | Analytics Engine and persisted `agent_metrics` telemetry |
 | Live state | Durable Object `LiveCounter` |
@@ -139,9 +141,9 @@ This is deliberate review configuration, not the final subscription policy. Rest
 
 The deployed Worker is self-sufficient. No laptop or external agent must remain online.
 
-1. The master cron checks sources every minute.
-2. Ingested records create generation work in Cloudflare Queues.
-3. Queue consumers generate drafts; stranded work is recovered internally.
+1. The master cron checks eligible sources every minute.
+2. New source records create preparation work in Cloudflare Queues.
+3. Queue consumers prepare drafts; stranded work is recovered internally.
 4. A separate editorial audit verifies source grounding and publication requirements.
 5. Only approved articles are published.
 6. Audio, six article translations, source-image recovery, sector classification, search indexing, and other archive backfills run as bounded, self-terminating jobs.
@@ -149,9 +151,11 @@ The deployed Worker is self-sufficient. No laptop or external agent must remain 
 
 Each scheduled step is isolated so one provider failure does not stop unrelated maintenance work.
 
+The one-minute schedule is a processing cadence, not a promise to publish one article per minute. Publication occurs only when a new source is eligible and the resulting article passes every evidence and quality gate.
+
 ### Optional ZeroClaw accelerator
 
-`zeroclaw/` contains an optional external runtime that can claim generation tasks sooner than the Worker's internal stale-task recovery. It is not required for production operation. A deployment behaves correctly when ZeroClaw is absent or offline.
+`zeroclaw/` contains an optional external runtime that can claim preparation tasks sooner than the Worker's internal stale-task recovery. It is not required for production operation. A deployment behaves correctly when ZeroClaw is absent or offline.
 
 The external runtime is deployment-specific and requires an admin key plus its own provider authentication. See `AGENTS.md` and `.zeroclaw/` for the operator workflow.
 
@@ -161,8 +165,8 @@ The external runtime is deployment-specific and requires an admin key plus its o
 frontend/                 React reader and admin application
 src/index.ts              Worker entry point, routing, cron and queue dispatch
 src/routes/               Public, member, admin and system API routes
-src/lib/                  Editorial, AI, evidence, media and platform services
-src/workers/              Ingestion, generation, optimization, reporting and backfills
+src/lib/                  Editorial, evidence, media and platform services
+src/workers/              Ingestion, preparation, optimization, reporting and backfills
 migrations/               Ordered D1 schema and data migrations
 tests/unit/               Unit and contract tests
 tests/integration/        API and cross-layer regression tests
@@ -217,7 +221,7 @@ Default local addresses are normally:
 - Worker: `http://localhost:8787`
 - API base: `http://localhost:8787/api/v1`
 
-Provider keys such as `NEWS_API_KEY`, `ELEVENLABS_API_KEY`, or third-party model credentials are optional. Their corresponding integrations degrade or fall back when the keys are absent.
+Optional source, narration, and email credentials activate their corresponding integrations. Missing optional credentials use documented fallbacks or report the integration as unavailable.
 
 ## Validation
 
@@ -245,7 +249,7 @@ Preview the resources without changing Cloudflare:
 npm run cloudflare:plan -- --prefix my-boa
 ```
 
-Provision D1, KV, media storage, Vectorize, Queues, Pages, Analytics, Workers AI, and the Durable Object, then deploy:
+Provision D1, KV, media storage, Vectorize, Queues, Pages, Analytics, content processing, and the Durable Object, then deploy:
 
 ```bash
 npm run cloudflare:setup -- --prefix my-boa --deploy
@@ -279,7 +283,7 @@ Portable setup creates strong local deployment values for:
 
 They are stored in ignored `.cloudflare/secrets.env` and passed to Wrangler during deployment. Do not commit or print this file.
 
-Optional production secrets include:
+Optional production secrets currently used by deployable integrations include:
 
 ```bash
 npx wrangler secret put NEWS_API_KEY
@@ -287,10 +291,6 @@ npx wrangler secret put ELEVENLABS_API_KEY
 npx wrangler secret put ELEVENLABS_VOICE_ID
 npx wrangler secret put EMAIL_FROM
 npx wrangler secret put RESEND_API_KEY
-npx wrangler secret put OPENAI_API_KEY
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put GOOGLE_AI_API_KEY
-npx wrangler secret put OPENROUTER_API_KEY
 ```
 
 Transactional email requires both a verified sender/domain and a supported delivery binding or provider. Setting an API key without a verified `EMAIL_FROM` address is intentionally treated as unavailable.
@@ -308,7 +308,16 @@ GET /api/v1/agent/status
 GET /api/v1/docs
 ```
 
-`/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, email delivery, Vectorize, Workers AI circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent.
+Primary reader-facing intelligence contracts:
+
+```text
+GET  /api/v1/market-intel/coverage-pulse
+GET  /api/v1/dashboards/continental/overview
+GET  /api/v1/personalization/feed/curated
+POST /api/v1/intel/analyst
+```
+
+`/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, email delivery, semantic retrieval, content-processing circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent.
 
 Worker logs can be streamed with:
 
@@ -323,7 +332,7 @@ npm run tail
 - Member preview and server-side paywall bypass are intentionally enabled for stakeholder review.
 - Subscription prices and commercial entitlements are product configuration, not evidence about platform health.
 - Live coverage counts change as the autonomous pipeline publishes, translates, and refreshes records.
-- External sources and model providers can rate-limit or fail; the scheduler isolates failures and retries bounded queue work, but it cannot guarantee third-party availability.
+- External sources and processing services can rate-limit or fail; the scheduler isolates failures and retries bounded queue work, but it cannot guarantee third-party availability.
 
 ## Security notes
 
@@ -332,7 +341,7 @@ npm run tail
 - State-changing browser requests are origin/CSRF checked.
 - Session-scoped preferences, bookmarks, and notifications require a valid session identifier.
 - Production error responses do not expose internal exception details.
-- Deployment secrets and generated Cloudflare binding files are ignored by Git.
+- Deployment secrets and account-specific Cloudflare binding files are ignored by Git.
 
 ## License
 

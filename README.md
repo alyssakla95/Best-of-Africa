@@ -74,7 +74,7 @@ Last checked on 26 July 2026:
 - the production bundle was served with immutable asset caching;
 - the complete test suite contained 222 passing tests.
 
-The verified release was repository commit `2a51d00` and Worker version `b1dba478-41b3-4d36-ae3a-ee634bcb385a`.
+The verified Alyssa-account release was repository commit `8826d83` and Worker version `d25cbd56-020e-49df-840f-8d46631b0190`.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 

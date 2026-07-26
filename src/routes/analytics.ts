@@ -4,60 +4,164 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { Env, Variables, AnalyticsEvent } from '../types';
 import { trackEvent } from '../lib/analytics';
-import { requireAuth } from '../lib/auth';
+import { requireAdmin, requireAuth } from '../lib/auth';
+import { validate } from '../lib/validation';
+import { throttle } from '../lib/ratelimit';
 import { getCached, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+export const ReaderAnalyticsEventSchema = z.object({
+    type: z.enum(['page_view', 'briefing_open', 'article_read', 'article_share', 'audio_start', 'audio_complete', 'search', 'click']),
+    article_id: z.string().uuid().optional(),
+    resource_id: z.string().trim().min(1).max(200).optional(),
+    path: z.string().trim().startsWith('/').max(300).optional(),
+    search_query: z.string().trim().max(300).optional(),
+    duration_seconds: z.number().finite().min(0).max(3600).optional(),
+    scroll_depth: z.number().finite().min(0).max(100).optional(),
+});
+
+async function sha256(value: string): Promise<string> {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function readerIdentity(c: {
+    req: { header(name: string): string | undefined };
+}) {
+    const sessionId = c.req.header('X-Session-ID');
+    if (!sessionId || sessionId.length < 8 || sessionId.length > 200) return null;
+    const ipAddress = (c.req.header('CF-Connecting-IP') || 'unknown').slice(0, 64);
+    const userAgent = (c.req.header('User-Agent') || 'unknown').trim().toLowerCase().slice(0, 1000);
+    return {
+        sessionHash: await sha256(sessionId),
+        ipAddress,
+        userAgentFingerprint: await sha256(userAgent),
+    };
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /analytics/events - Track user events (public)
 // ───────────────────────────────────────────────────────────────────────────────
-router.post('/events', async (c) => {
-    try {
-        const event = await c.req.json<AnalyticsEvent>();
-
-        // Validate event type
-        const validTypes = ['page_view', 'article_read', 'article_share', 'search', 'click'];
-        if (!validTypes.includes(event.type)) {
-            return c.json({ error: 'bad_request', message: 'Invalid event type' }, 400);
-        }
-
-        // Track asynchronously
-        c.executionCtx.waitUntil(trackEvent(c.env, event));
-
-        return c.json({ success: true });
-    } catch {
-        return c.json({ error: 'bad_request', message: 'Invalid JSON body' }, 400);
-    }
+router.post('/events', validate('json', ReaderAnalyticsEventSchema), async (c) => {
+    const limited = await throttle(c, 'reader-event');
+    if (limited) return limited;
+    const identity = await readerIdentity(c);
+    if (!identity) return c.json({ error: 'session_required', message: 'A valid reader session is required' }, 400);
+    const event = (c.req as any).valid('json') as AnalyticsEvent;
+    c.executionCtx.waitUntil(trackEvent(c.env, event, identity));
+    return c.json({ success: true });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /analytics/events/batch - Batch event tracking
 // ───────────────────────────────────────────────────────────────────────────────
-router.post('/events/batch', async (c) => {
-    try {
-        const { events } = await c.req.json<{ events: AnalyticsEvent[] }>();
+router.post('/events/batch', validate('json', z.object({
+    events: z.array(ReaderAnalyticsEventSchema).min(1).max(100),
+})), async (c) => {
+    const limited = await throttle(c, 'reader-event-batch');
+    if (limited) return limited;
+    const identity = await readerIdentity(c);
+    if (!identity) return c.json({ error: 'session_required', message: 'A valid reader session is required' }, 400);
+    const { events } = (c.req as any).valid('json') as { events: AnalyticsEvent[] };
+    c.executionCtx.waitUntil(Promise.all(events.map(event => trackEvent(c.env, event, identity))));
+    return c.json({ success: true, count: events.length });
+});
 
-        if (!Array.isArray(events) || events.length === 0) {
-            return c.json({ error: 'bad_request', message: 'Events array required' }, 400);
-        }
+router.get('/audience', requireAdmin, async (c) => {
+    const [activity, returning, trend, subscribers, saved] = await Promise.all([
+        c.env.DB.prepare(`
+            SELECT
+                COUNT(DISTINCT CASE WHEN created_at >= datetime('now', '-30 days') THEN session_hash END) AS monthly_active_readers,
+                COUNT(DISTINCT CASE WHEN created_at >= datetime('now', '-7 days') THEN session_hash END) AS weekly_active_readers,
+                SUM(CASE WHEN event_type = 'page_view' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS page_views_30d,
+                SUM(CASE WHEN event_type = 'briefing_open' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS briefing_opens_30d,
+                SUM(CASE WHEN event_type = 'article_read' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS article_reads_30d,
+                SUM(CASE WHEN event_type = 'article_read' AND progress_pct >= 75 AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS high_progress_reads_30d,
+                SUM(CASE WHEN event_type = 'audio_start' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS audio_starts_30d,
+                SUM(CASE WHEN event_type = 'audio_complete' AND created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS audio_completions_30d
+            FROM reader_engagement_events
+        `).first<Record<string, number>>(),
+        c.env.DB.prepare(`
+            SELECT COUNT(*) AS returning_readers_30d
+            FROM (
+                SELECT session_hash
+                FROM reader_engagement_events
+                WHERE created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+                HAVING COUNT(DISTINCT date(created_at)) >= 2
+            )
+        `).first<{ returning_readers_30d: number }>(),
+        c.env.DB.prepare(`
+            SELECT date(created_at) AS date,
+                   COUNT(DISTINCT session_hash) AS active_readers,
+                   SUM(CASE WHEN event_type = 'briefing_open' THEN 1 ELSE 0 END) AS briefing_opens,
+                   SUM(CASE WHEN event_type = 'article_read' THEN 1 ELSE 0 END) AS article_reads,
+                   SUM(CASE WHEN event_type = 'audio_complete' THEN 1 ELSE 0 END) AS audio_completions
+            FROM reader_engagement_events
+            WHERE created_at >= datetime('now', '-30 days')
+            GROUP BY date(created_at)
+            ORDER BY date ASC
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT
+                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS added_30d
+            FROM digest_subscriptions
+        `).first<{ active: number; added_30d: number }>(),
+        c.env.DB.prepare(`
+            SELECT COUNT(*) AS saves_30d, COUNT(DISTINCT session_id) AS saving_readers_30d
+            FROM bookmarks WHERE created_at >= datetime('now', '-30 days')
+        `).first<{ saves_30d: number; saving_readers_30d: number }>(),
+    ]);
 
-        if (events.length > 100) {
-            return c.json({ error: 'bad_request', message: 'Max 100 events per batch' }, 400);
-        }
+    const metric = (key: string) => Number(activity?.[key] || 0);
+    const monthly = metric('monthly_active_readers');
+    const reads = metric('article_reads_30d');
+    const audioStarts = metric('audio_starts_30d');
+    const returningReaders = Number(returning?.returning_readers_30d || 0);
 
-        // Track all events asynchronously
-        c.executionCtx.waitUntil(
-            Promise.all(events.map(event => trackEvent(c.env, event)))
-        );
-
-        return c.json({ success: true, count: events.length });
-    } catch {
-        return c.json({ error: 'bad_request', message: 'Invalid JSON body' }, 400);
-    }
+    return c.json({
+        period: '30d',
+        updated_at: new Date().toISOString(),
+        audience: {
+            monthly_active_readers: monthly,
+            weekly_active_readers: metric('weekly_active_readers'),
+            returning_readers_30d: returningReaders,
+            returning_reader_rate_pct: monthly ? Math.round(returningReaders / monthly * 1000) / 10 : 0,
+            page_views_30d: metric('page_views_30d'),
+        },
+        habits: {
+            briefing_opens_30d: metric('briefing_opens_30d'),
+            article_reads_30d: reads,
+            high_progress_reads_30d: metric('high_progress_reads_30d'),
+            high_progress_rate_pct: reads ? Math.round(metric('high_progress_reads_30d') / reads * 1000) / 10 : 0,
+            audio_starts_30d: audioStarts,
+            audio_completions_30d: metric('audio_completions_30d'),
+            audio_completion_rate_pct: audioStarts ? Math.round(metric('audio_completions_30d') / audioStarts * 1000) / 10 : 0,
+            saves_30d: Number(saved?.saves_30d || 0),
+            saving_readers_30d: Number(saved?.saving_readers_30d || 0),
+        },
+        distribution: {
+            active_newsletter_subscribers: Number(subscribers?.active || 0),
+            newsletter_subscribers_added_30d: Number(subscribers?.added_30d || 0),
+            email_open_rate_pct: null,
+            email_open_rate_note: 'Not measurable until verified email delivery and open tracking are active.',
+        },
+        daily: trend.results || [],
+        definitions: {
+            active_reader: 'Distinct hashed session with at least one recorded first-party event in the period.',
+            returning_reader: 'Distinct hashed session recorded on at least two separate UTC dates in 30 days.',
+            high_progress_read: 'Article read event with at least 75% maximum observed scroll depth.',
+            audio_completion: 'Narration playback that reached the media ended event.',
+            retention: 'Raw IP addresses and one-way user-agent fingerprints are retained with events for no more than 90 days.',
+        },
+    });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -83,50 +187,45 @@ router.get('/live/:metric', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 // GET /analytics/insight - "Morning Report" (Why are numbers moving?)
 // ───────────────────────────────────────────────────────────────────────────────
-router.get('/insight', requireAuth, async (c) => {
+router.get('/insight', requireAdmin, async (c) => {
     // 1. Get Traffic Overview (Last 24h)
     const [traffic, topArticles] = await Promise.all([
         c.env.DB.prepare(`
-            SELECT SUM(view_count) as views, COUNT(DISTINCT session_id) as visitors 
-            FROM analytics_events 
-            WHERE type = 'page_view' AND created_at > datetime('now', '-24 hours')
+            SELECT COUNT(*) as views, COUNT(DISTINCT session_hash) as visitors
+            FROM reader_engagement_events
+            WHERE event_type = 'page_view' AND created_at > datetime('now', '-24 hours')
         `).first(),
 
         c.env.DB.prepare(`
-            SELECT a.title, a.summary, SUM(e.view_count) as views
+            SELECT a.title, a.summary, COUNT(*) as views
             FROM articles a
-            JOIN analytics_events e ON e.resource_id = a.id
+            JOIN reader_engagement_events e ON e.resource_id = a.id
             WHERE e.created_at > datetime('now', '-24 hours')
+              AND e.event_type IN ('article_read', 'page_view')
             GROUP BY a.id
             ORDER BY views DESC
             LIMIT 8
         `).all()
     ]);
 
-    // 2. Generate Explanation
-    let insight = "No evidence-based audience briefing is currently available.";
-    const topContext = (topArticles.results as any[]).map((article, index) =>
-        `[${index + 1}] ${article.title}\nObserved page views: ${article.views || 0}\nArticle summary: ${(article.summary || '').slice(0, 900)}`
-    ).join('\n---\n');
-
-    try {
-        const prompt = `System: You are BOA-Story's audience analyst. Explain only the observed 24-hour platform activity. Do not claim causation from page-view counts, do not call traffic stable without a comparison period, and clearly separate observations from hypotheses.\nUser: Total observed views: ${(traffic as Record<string, any>).views || 0}. Distinct visitors: ${(traffic as Record<string, any>).visitors || 0}.\n\nTop records:\n${topContext || 'No article-level traffic records.'}`;
-        const response = await callConfiguredAI(c.env, { prompt, max_tokens: 5000, temperature: 0.2, response_profile: 'decision-brief' });
-        insight = response?.trim() || insight;
-    } catch (e) { /* Ignore */ }
+    const observedViews = Number((traffic as Record<string, unknown>)?.views || 0);
+    const observedVisitors = Number((traffic as Record<string, unknown>)?.visitors || 0);
+    const insight = observedViews
+        ? `${observedViews} page views from ${observedVisitors} distinct hashed reader sessions were recorded in the last 24 hours. This is observed product activity, not evidence of acquisition source, causation, retention or revenue.`
+        : 'No first-party page views were recorded in the last 24 hours.';
 
     return c.json({
         period: '24h',
         traffic: traffic,
         top_drivers: topArticles.results,
-        ai_narrative: insight
+        audience_summary: insight,
     });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
 // GET /analytics/dashboard - Admin dashboard metrics (CACHED)
 // ───────────────────────────────────────────────────────────────────────────────
-router.get('/dashboard', requireAuth, async (c) => {
+router.get('/dashboard', requireAdmin, async (c) => {
     const { period = '7d' } = c.req.query();
 
     // Cache dashboard data for 2 minutes - doesn't need real-time updates

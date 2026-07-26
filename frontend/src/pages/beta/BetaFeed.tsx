@@ -112,6 +112,10 @@ const ArticleRow: React.FC<{ article: ArticleListItem; index: number; isHighligh
 export const BetaFeed: React.FC = () => {
     const { isMember } = useMember();
 
+    React.useEffect(() => {
+        api.trackEvent({ type: 'briefing_open', path: '/feed' });
+    }, []);
+
     const { data: featuredData, isLoading: isLoadingFeatured } = useQuery({
         queryKey: ['feed-featured'],
         queryFn: api.getFeaturedArticles,
@@ -146,8 +150,8 @@ export const BetaFeed: React.FC = () => {
     return (
         <div className="min-h-screen bg-background pb-24">
             <SEO
-                title="Daily Briefing | BOA-Story"
-                description="Your curated daily Africa intelligence briefing, the continent's most important stories, every morning."
+                title="Your Africa Briefing | BOA-Story"
+                description="A focused briefing of currently published, source-attributed reporting from across Africa."
             />
 
             {/* Masthead — newspaper treatment: centered nameplate between a
@@ -155,20 +159,20 @@ export const BetaFeed: React.FC = () => {
             <div className="app-hero bg-background px-4 pb-10 pt-14 text-foreground sm:px-6 md:pb-14 md:pt-20">
                 <div className="max-w-3xl mx-auto text-center">
                     <h1 className="font-serif text-[2.5rem] sm:text-5xl md:text-6xl font-black leading-[1.05] tracking-tight mb-5">
-                        The Africa Intelligence Brief
+                        Your Africa Briefing
                     </h1>
                     <div className="border-t-[3px] border-b border-foreground/80 py-2 mb-1">
                         <div className="flex items-center justify-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/70">
-                            <span className="flex items-center gap-1.5 text-accent-ink"><Zap className="w-3 h-3" /> Daily Briefing</span>
+                            <span className="flex items-center gap-1.5 text-accent-ink"><Zap className="w-3 h-3" /> Current briefing</span>
                             <span className="text-foreground/25">·</span>
                             <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> {today}</span>
                             <span className="hidden sm:inline text-foreground/25">·</span>
-                            <span className="hidden sm:inline">54 Nations</span>
+                            <span className="hidden sm:inline">Source-attributed coverage</span>
                         </div>
                     </div>
                     <div className="border-b border-foreground/20 mb-6" />
                     <p className="text-foreground/70 text-lg max-w-xl mx-auto">
-                        The continent's most important business stories, curated each morning for decision-makers.
+                        Return here for a concise view of the latest verified reporting, then follow the evidence into the countries and sectors relevant to you.
                     </p>
                 </div>
             </div>
@@ -250,12 +254,12 @@ export const BetaFeed: React.FC = () => {
                 {!isMember && (
                     <div className="mt-14 p-8 bg-background text-foreground rounded-2xl text-center">
                         <Sparkles className="w-10 h-10 text-accent mx-auto mb-4" />
-                        <h3 className="font-serif text-2xl font-bold mb-3 text-foreground">Proprietary Briefing</h3>
+                        <h3 className="font-serif text-2xl font-bold mb-3 text-foreground">Make the briefing yours</h3>
                         <p className="text-foreground/70 mb-8 max-w-xl mx-auto leading-relaxed">
-                            Founding Members receive an editor-curated briefing tailored to their exact markets and sectors, every single day.
+                            Choose the countries and sectors you follow to assemble a more relevant briefing from the reporting currently available.
                         </p>
-                        <Link to="/membership" className="inline-block bg-accent text-primary font-bold px-8 py-3 rounded-full hover:brightness-110 transition-all">
-                            Become a Founding Member
+                        <Link to="/settings" className="inline-block bg-accent text-primary font-bold px-8 py-3 rounded-full hover:brightness-110 transition-all">
+                            Set your briefing preferences
                         </Link>
                     </div>
                 )}

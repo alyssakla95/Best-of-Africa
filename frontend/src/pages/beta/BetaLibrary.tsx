@@ -134,7 +134,7 @@ export const BetaLibrary: React.FC = () => {
                             to="/feed" 
                             className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy shadow transition-colors hover:bg-gold-italic"
                         >
-                            Explore Daily Briefing
+                            Explore Africa Briefing
                         </Link>
                     </div>
                 ) : (

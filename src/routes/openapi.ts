@@ -113,6 +113,27 @@ const openApiSpec = {
                 },
             },
         },
+        '/analytics/events': {
+            post: {
+                summary: 'Record a bounded first-party reader event',
+                description: 'Accepts page, briefing, reading, sharing, audio, search and click events from a valid reader session. The service adds the connecting IP address and a one-way user-agent fingerprint; events are retained for no more than 90 days.',
+                responses: {
+                    200: { description: 'Event accepted for recording' },
+                    400: { description: 'Invalid event or reader session' },
+                    429: { description: 'Event rate limit exceeded' },
+                },
+            },
+        },
+        '/analytics/audience': {
+            get: {
+                summary: 'Get observed reader habit and retention metrics',
+                description: 'Administrator-only 30-day audience evidence with explicit definitions and zero-safe empty states. No estimated traffic, conversion, revenue or subscriber outcomes are returned.',
+                responses: {
+                    200: { description: 'Recorded active-reader, return, briefing, reading, audio, bookmark and newsletter metrics' },
+                    401: { description: 'Administrator authentication required' },
+                },
+            },
+        },
         '/dashboards': {
             get: {
                 summary: 'Get all regional dashboards',

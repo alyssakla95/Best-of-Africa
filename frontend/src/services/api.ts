@@ -232,6 +232,43 @@ export interface AdminPilotRequest extends Omit<PilotRequestInput, 'no_sensitive
     updated_at: string;
 }
 
+export interface AudienceMetrics {
+    period: '30d';
+    updated_at: string;
+    audience: {
+        monthly_active_readers: number;
+        weekly_active_readers: number;
+        returning_readers_30d: number;
+        returning_reader_rate_pct: number;
+        page_views_30d: number;
+    };
+    habits: {
+        briefing_opens_30d: number;
+        article_reads_30d: number;
+        high_progress_reads_30d: number;
+        high_progress_rate_pct: number;
+        audio_starts_30d: number;
+        audio_completions_30d: number;
+        audio_completion_rate_pct: number;
+        saves_30d: number;
+        saving_readers_30d: number;
+    };
+    distribution: {
+        active_newsletter_subscribers: number;
+        newsletter_subscribers_added_30d: number;
+        email_open_rate_pct: number | null;
+        email_open_rate_note: string;
+    };
+    daily: Array<{
+        date: string;
+        active_readers: number;
+        briefing_opens: number;
+        article_reads: number;
+        audio_completions: number;
+    }>;
+    definitions: Record<string, string>;
+}
+
 export type SavedBookmark = ArticleListItem & {
     id: string;
     article_id: string;
@@ -526,8 +563,10 @@ export const api = {
     // page unload / route change; failures are silently ignored — analytics
     // must never affect the reading experience.
     trackEvent: (event: {
-        type: 'page_view' | 'article_read' | 'article_share' | 'search' | 'click';
+        type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click';
         article_id?: string;
+        resource_id?: string;
+        path?: string;
         duration_seconds?: number;
         scroll_depth?: number;
         search_query?: string;
@@ -545,6 +584,9 @@ export const api = {
     verifyEmail: (email: string) => request<{ ok: true; status: 'pending_otp' }>('/members/verify-email', {
         method: 'POST',
         body: JSON.stringify({ email })
+    }),
+    getAudienceMetrics: () => request<AudienceMetrics>('/analytics/audience', {
+        headers: { 'X-Admin-Key': getAdminToken() || '' },
     }),
     verifyOtp: (email: string, code: string) => request<{
         ok: true;

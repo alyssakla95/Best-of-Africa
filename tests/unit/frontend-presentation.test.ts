@@ -53,4 +53,25 @@ describe('reader-facing presentation text', () => {
         expect(trust).toContain('Source and editorial quality');
         expect(systemPanel).toContain('Article preparation');
     });
+
+    it('adds a truthful reader habit without reducing the enterprise position', () => {
+        const landing = readFileSync('frontend/src/pages/beta/BetaLanding.tsx', 'utf8');
+        const briefing = readFileSync('frontend/src/pages/beta/BetaFeed.tsx', 'utf8');
+
+        expect(landing).toContain('Intelligence for decisions across Africa.');
+        expect(landing).toContain('Explore the market-entry pilot');
+        expect(landing).toContain('For organizations worldwide deciding which African market deserves deeper entry diligence');
+        expect(landing).toContain('For diaspora and globally connected readers');
+        expect(landing).toContain('Open Africa Briefing');
+        expect(briefing).toContain('Your Africa Briefing');
+        expect(briefing).not.toMatch(/every morning|every single day|54 Nations|Daily Briefing/);
+    });
+
+    it('discloses stored audience identifiers and bounded retention', () => {
+        const privacy = readFileSync('frontend/src/pages/PrivacyPage.tsx', 'utf8');
+        expect(privacy).toContain('connecting IP address');
+        expect(privacy).toContain('one-way SHA-256 fingerprint');
+        expect(privacy).toContain('retained for no more than 90 days');
+        expect(privacy).toContain('raw user-agent string is not stored');
+    });
 });

@@ -8,7 +8,17 @@ import type { Env, AnalyticsEvent } from '../types';
 // ───────────────────────────────────────────────────────────────────────────────
 // Track Event to Analytics Engine
 // ───────────────────────────────────────────────────────────────────────────────
-export async function trackEvent(env: Env, event: AnalyticsEvent): Promise<void> {
+export interface ReaderEventIdentity {
+    sessionHash: string;
+    ipAddress: string;
+    userAgentFingerprint: string;
+}
+
+export async function trackEvent(
+    env: Env,
+    event: AnalyticsEvent,
+    identity?: ReaderEventIdentity,
+): Promise<void> {
     try {
         // Write to Analytics Engine (built-in Cloudflare analytics)
         env.ANALYTICS.writeDataPoint({
@@ -18,8 +28,8 @@ export async function trackEvent(env: Env, event: AnalyticsEvent): Promise<void>
                 event.country_code || '',
                 event.sector_id || '',
                 event.search_query || '',
-                event.referrer || '',
-                event.user_agent || '',
+                event.path || '',
+                identity?.userAgentFingerprint || '',
             ],
             doubles: [
                 event.duration_seconds || 0,
@@ -30,6 +40,27 @@ export async function trackEvent(env: Env, event: AnalyticsEvent): Promise<void>
                 event.type, // Index 1: event type for fast filtering
             ],
         });
+
+        if (identity) {
+            const duration = Math.max(0, Math.min(3600, Math.round(Number(event.duration_seconds) || 0)));
+            const progress = Math.max(0, Math.min(100, Math.round(Number(event.scroll_depth) || 0)));
+            await env.DB.prepare(`
+                INSERT INTO reader_engagement_events (
+                    id, event_type, session_hash, ip_address, user_agent_fingerprint,
+                    resource_id, path, duration_seconds, progress_pct, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            `).bind(
+                crypto.randomUUID(),
+                event.type,
+                identity.sessionHash,
+                identity.ipAddress,
+                identity.userAgentFingerprint,
+                event.resource_id || event.article_id || null,
+                event.path || null,
+                duration,
+                progress,
+            ).run();
+        }
 
         // Also update live counter via Durable Object
         if (event.type === 'page_view' || event.type === 'article_read') {

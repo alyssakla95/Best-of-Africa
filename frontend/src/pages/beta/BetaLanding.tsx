@@ -90,6 +90,26 @@ export const BetaLanding = () => {
         </div>
       </section>
 
+      <section className="border-b border-border bg-white">
+        <div className="page-container grid gap-8 py-10 md:grid-cols-[1fr_auto] md:items-center md:py-12">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">For diaspora and globally connected readers</p>
+            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">One Africa briefing. Your countries and sectors.</h2>
+            <p className="mt-4 text-base leading-8 text-navy/70">
+              Follow current, source-attributed reporting without reconciling fragmented sources yourself. Start with the concise briefing, then move into country records and official market evidence when you need more depth.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 md:min-w-[22rem]">
+            <Link to="/feed" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">
+              Open Africa Briefing <ArrowRight size={16} />
+            </Link>
+            <Link to="/settings" className="inline-flex min-h-12 items-center justify-center rounded-md border border-navy px-5 py-3 text-sm font-semibold text-navy">
+              Choose interests
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="page-container py-14 md:py-20">
         <div className="flex items-end justify-between gap-6 mb-8 border-b border-border pb-5">
           <div>
@@ -133,7 +153,7 @@ export const BetaLanding = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 border border-border rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
             {[
-              { Icon: Newspaper, title: 'Reporting', copy: 'Original stories and concise daily briefings.', to: '/posts' },
+              { Icon: Newspaper, title: 'Reporting', copy: 'Source-attributed stories and a concise current briefing.', to: '/posts' },
               { Icon: Map, title: 'Country hubs', copy: 'Coverage, sectors and context for all 54 nations.', to: '/countries' },
               { Icon: TrendingUp, title: 'Intelligence', copy: 'Real coverage momentum and market signals.', to: '/intelligence' },
               { Icon: Headphones, title: 'Listen', copy: 'Clear, consistent audio briefings for listening on the move.', to: '/posts' },

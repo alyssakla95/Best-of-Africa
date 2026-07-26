@@ -481,6 +481,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         metricStatements.push(env.DB.prepare(
             "DELETE FROM agent_metrics WHERE run_at < datetime('now', '-7 days')"
         ));
+        metricStatements.push(env.DB.prepare(
+            "DELETE FROM reader_engagement_events WHERE created_at < datetime('now', '-90 days')"
+        ));
     }
 
     // Flush the tick's telemetry in one batch. Telemetry must never crash the

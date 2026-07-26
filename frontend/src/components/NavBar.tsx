@@ -65,7 +65,7 @@ export const NavBar: React.FC = () => {
             links: [
                 { href: "/", label: t("nav.home", "Home") },
                 { href: "/posts", label: t("nav.stories", "Stories") },
-                { href: "/feed", label: t("nav.briefing", "Daily Briefing") },
+                { href: "/feed", label: t("nav.briefing", "Africa Briefing") },
                 { href: "/countries", label: t("nav.countries", "Countries") },
                 { href: "/gallery", label: t("nav.gallery", "Gallery") },
                 { href: "/supporter-feed", label: t("nav.supporter", "Supporter Feed") },

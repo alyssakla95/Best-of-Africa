@@ -34,6 +34,21 @@ BOA-Story does not replace legal, tax, regulatory or in-country commercial dilig
 
 The repository and live deployment demonstrate implemented software, operating controls, public data contracts, and a functioning pilot-intake workflow. They do not by themselves demonstrate paying customers, completed pilot outcomes, repeatable revenue, formal certification, insurance coverage, or independent product testing. Those claims should only be added when supported by verifiable external evidence.
 
+### Reader position and validation
+
+The enterprise decision proposition remains the primary commercial workflow. Alongside it, the initial reader pathway is designed for African diaspora and globally connected professionals who want to follow African business, economic, and policy developments without reconciling fragmented sources themselves.
+
+The recurring reader habit is the **Africa Briefing**:
+
+- a concise entry point assembled from currently published, source-attributed reporting;
+- country and sector preferences for a more relevant reading sequence;
+- direct paths into country records, Market Intelligence, and the Continental Overview;
+- audio playback, saved articles, notifications, and the weekly email briefing where configured.
+
+The product records first-party evidence needed to evaluate this pathway: monthly and weekly active readers, sessions active on multiple dates, briefing opens, article reads reaching at least 75% observed scroll depth, audio starts and completions, bookmarks, and newsletter subscriptions. These are operator-only measurements, not public social proof. Audience collection begins when migration `0053_reader_engagement.sql` is deployed and is not backfilled.
+
+The reader product remains in pre-audience-validation state. No subscriber conversion, churn, willingness-to-pay, acquisition-cost, or consumer-revenue claim is made without observed external evidence.
+
 ## Live deployment
 
 | Surface | URL |
@@ -57,7 +72,7 @@ Last checked on 26 July 2026:
 - the seven-day coverage pulse contained 17 stories across 4 countries;
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 216 passing tests.
+- the complete test suite contained 222 passing tests.
 
 The verified release was repository commit `2a51d00` and Worker version `b1dba478-41b3-4d36-ae3a-ee634bcb385a`.
 
@@ -73,6 +88,7 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 - Continental Overview with regional comparisons, official indicator context, narrated briefings, evidence tables, limitations, and supporting records.
 - Search across articles and countries, autocomplete, filters, and a command menu.
 - Events, consultation requests, travel information, a personal library, reader settings, notifications, and personalized feeds.
+- A distinct Africa Briefing pathway for diaspora and globally connected readers without reducing the Enterprise, Market Intelligence, or Continental Overview position.
 - A global Enterprise pilot page, structured application and protected qualification workflow, plus a Trust Center for data handling, operational controls, and procurement review.
 - Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables.
 
@@ -110,6 +126,7 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 - Source management and deletion.
 - Client provisioning with hashed credentials and one-time API-key display.
 - Editorial inbox, structured pilot qualification and private review notes, audit controls, analytics, and worker health.
+- Operator-only audience reporting with explicit metric definitions, zero-safe empty states, and no substituted estimates.
 - Member authentication, preferences, notifications, bookmarks, campaign authorization, events, newsletters, and reporting APIs.
 - OpenAPI/Swagger documentation under `/api/v1/docs`.
 - Lightweight, readiness, liveness, and deep-health endpoints.
@@ -141,6 +158,7 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Async work | Cloudflare Queues for preparation, translation, and optimization |
 | Scheduling | One-minute Cloudflare cron with bounded internal schedules |
 | Metrics | Analytics Engine and persisted `agent_metrics` telemetry |
+| Reader evidence | D1 engagement events plus Analytics Engine delivery, using hashed sessions, stored IP addresses, and one-way user-agent fingerprints |
 | Live state | Durable Object `LiveCounter` |
 | Frontend hosting | Cloudflare Pages |
 
@@ -334,6 +352,16 @@ PATCH /api/v1/admin/pilot-requests/:id
 
 The application endpoint is public, origin checked, rate limited, and schema validated. Inbox and qualification-status operations require administrator authentication. The application accepts no confidential or sensitive information and does not promise pilot acceptance or an outcome.
 
+Reader measurement contracts:
+
+```text
+POST /api/v1/analytics/events
+POST /api/v1/analytics/events/batch
+GET  /api/v1/analytics/audience
+```
+
+Event submission requires a valid reader session and is origin checked, rate limited, and schema validated. Audience reporting requires administrator authentication. Each event stores the connecting IP address and a one-way SHA-256 fingerprint of the normalized user-agent; the raw user-agent string is not stored in D1. Events and their identifiers are deleted after 90 days.
+
 `/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, email delivery, semantic retrieval, content-processing circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent.
 
 Worker logs can be streamed with:
@@ -349,6 +377,7 @@ npm run tail
 - Member preview and server-side paywall bypass are intentionally enabled for stakeholder review.
 - Subscription prices and commercial entitlements are product configuration, not evidence about platform health.
 - Live coverage counts change as the autonomous pipeline publishes, translates, and refreshes records.
+- Consumer retention, acquisition, conversion, churn, and revenue are not treated as proven until the new first-party measurement record contains sufficient observed activity.
 - External sources and processing services can rate-limit or fail; the scheduler isolates failures and retries bounded queue work, but it cannot guarantee third-party availability.
 
 ## Security notes
@@ -357,6 +386,7 @@ npm run tail
 - Client secrets and API keys are hashed at rest; newly provisioned raw keys are returned once.
 - State-changing browser requests are origin/CSRF checked.
 - Session-scoped preferences, bookmarks, and notifications require a valid session identifier.
+- Reader engagement events store IP addresses, hashed session identifiers, and one-way user-agent fingerprints for up to 90 days as disclosed in the Privacy Policy.
 - Production error responses do not expose internal exception details.
 - Deployment secrets and account-specific Cloudflare binding files are ignored by Git.
 

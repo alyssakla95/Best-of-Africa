@@ -650,7 +650,7 @@ export const BetaArticle = () => {
                     {t('article.keep_reading', 'Keep reading the full story')}
                   </h3>
                   <p className="text-white/70 mb-7 max-w-sm mx-auto leading-relaxed">
-                    {t('article.paywall_desc', 'Back independent African coverage and unlock every story in full — daily briefs across all 54 countries.')}
+                    {t('article.paywall_desc', 'Back independent African coverage and unlock full stories, audio and personalized reading tools.')}
                   </p>
                   <ul className="text-left space-y-2.5 mb-7 max-w-xs mx-auto text-[15px] text-white/85">
                     {[t('article.bullet_full', 'Every story & report, in full'), t('article.bullet_bts', 'Behind-the-scenes founder updates'), t('article.bullet_vote', 'Founding members vote on what we cover next')].map(b => (

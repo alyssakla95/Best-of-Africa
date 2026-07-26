@@ -295,15 +295,15 @@ export interface ArticleFilters {
 }
 
 export interface AnalyticsEvent {
-    type: 'page_view' | 'article_read' | 'article_share' | 'search' | 'click';
+    type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click';
     article_id?: string;
+    resource_id?: string;
+    path?: string;
     country_code?: string;
     sector_id?: string;
     search_query?: string;
     duration_seconds?: number;
     scroll_depth?: number;
-    referrer?: string;
-    user_agent?: string;
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

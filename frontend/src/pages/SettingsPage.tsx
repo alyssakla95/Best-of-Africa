@@ -258,7 +258,7 @@ export const SettingsPage: React.FC = () => {
                                 <div>
                                     <CardTitle className="text-lg font-bold text-foreground">Intelligence Parameters</CardTitle>
                                     <CardDescription>
-                                        Customize how our Intelligence Engine curates your daily briefing.
+                                        Choose the countries, sectors and formats used to assemble your current briefing.
                                     </CardDescription>
                                 </div>
                             </div>

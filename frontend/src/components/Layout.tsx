@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
 import { Breadcrumbs } from './Breadcrumbs';
@@ -7,6 +8,7 @@ import { MEMBER_PREVIEW_MODE } from '../config/flags';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { MobileNavigationDock } from './MobileNavigationDock';
 import { PageReadingGuide } from './PageReadingGuide';
+import { api } from '../services/api';
 
 
 
@@ -16,6 +18,15 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
+    const location = useLocation();
+
+    useEffect(() => {
+        api.trackEvent({
+            type: 'page_view',
+            path: `${location.pathname}${location.search}`,
+        });
+    }, [location.pathname, location.search]);
+
     return (
         <div className="flex min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-background text-foreground overflow-x-clip">
             <InterfaceTranslator />

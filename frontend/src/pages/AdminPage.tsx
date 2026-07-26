@@ -31,6 +31,7 @@ import { AdminIntelligenceTab } from '../components/admin/AdminIntelligenceTab';
 import { AdminSourcesTab } from '../components/admin/AdminSourcesTab';
 import { AdminClientsTab } from '../components/admin/AdminClientsTab';
 import { AdminInboxTab } from '../components/admin/AdminInboxTab';
+import { AdminAudienceTab } from '../components/admin/AdminAudienceTab';
 import type { ArticleListItem } from '../types';
 
 export const AdminPage: React.FC = () => {
@@ -157,6 +158,9 @@ export const AdminPage: React.FC = () => {
                             <TabsTrigger value="inbox" className="rounded-xl px-6 py-2 flex gap-2">
                                 <EnvelopeClosedIcon className="h-4 w-4" /> Inbox
                             </TabsTrigger>
+                            <TabsTrigger value="audience" className="rounded-xl px-6 py-2 flex gap-2">
+                                <EyeOpenIcon className="h-4 w-4" /> Audience
+                            </TabsTrigger>
                             <TabsTrigger value="audit" className="rounded-xl px-6 py-2 flex gap-2 text-accent">
                                 <MagnifyingGlassIcon className="h-4 w-4" /> Proactive Audit
                             </TabsTrigger>
@@ -179,6 +183,10 @@ export const AdminPage: React.FC = () => {
 
                         <TabsContent value="inbox">
                             <AdminInboxTab />
+                        </TabsContent>
+
+                        <TabsContent value="audience">
+                            <AdminAudienceTab />
                         </TabsContent>
 
                         <TabsContent value="moderation" className="space-y-6">

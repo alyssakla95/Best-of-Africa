@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { api } from '../services/api';
 
 export interface PlayableTrack {
     title: string;
@@ -50,8 +51,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastAudioUrlRef = useRef<string | null>(null);
     const playlistRef = useRef<PlayableTrack[]>([]);
+    const currentTrackRef = useRef<PlayableTrack | null>(null);
 
     const currentTrack = currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
+
+    useEffect(() => {
+        currentTrackRef.current = currentTrack;
+    }, [currentTrack]);
 
     useEffect(() => {
         playlistRef.current = playlist;
@@ -83,7 +89,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 setDuration(audioRef.current?.duration || 0);
             });
             
-            audioRef.current.addEventListener('ended', nextTrack);
+            const onEnded = () => {
+                const track = currentTrackRef.current;
+                if (track) {
+                    api.trackEvent({
+                        type: 'audio_complete',
+                        resource_id: track.slug,
+                        path: `/posts/${track.slug}`,
+                        duration_seconds: Math.round(audioRef.current?.duration || 0),
+                        scroll_depth: 100,
+                    });
+                }
+                nextTrack();
+            };
+            audioRef.current.addEventListener('ended', onEnded);
             
             audioRef.current.addEventListener('play', () => setIsPlaying(true));
             audioRef.current.addEventListener('pause', () => setIsPlaying(false));
@@ -107,6 +126,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 audioRef.current.playbackRate = playbackRate;
                 audioRef.current.volume = volume;
                 audioRef.current.play().catch(e => console.warn('Audio playback prevented:', e));
+                api.trackEvent({
+                    type: 'audio_start',
+                    resource_id: currentTrack.slug,
+                    path: `/posts/${currentTrack.slug}`,
+                });
             }
         } else if (!currentTrack && audioRef.current) {
             lastAudioUrlRef.current = null;

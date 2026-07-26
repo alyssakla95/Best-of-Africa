@@ -1,6 +1,6 @@
 # BOA-Story
 
-BOA-Story is a deployed African reporting and market-intelligence platform for readers and organizations worldwide. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, events, search, personalization, and member services in one responsive application.
+BOA-Story is a deployed African reporting and market-intelligence platform for readers and organizations worldwide. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, events, search, personalization, member services, and a structured enterprise-pilot workflow in one responsive application.
 
 The platform is not a live trading terminal and does not treat reporting volume, sentiment, or synthetic scores as economic performance. Market and country views distinguish:
 
@@ -30,6 +30,10 @@ The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the 
 
 BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. Fixed pilot scope and fees are proposed after discovery.
 
+### Evidence boundary
+
+The repository and live deployment demonstrate implemented software, operating controls, public data contracts, and a functioning pilot-intake workflow. They do not by themselves demonstrate paying customers, completed pilot outcomes, repeatable revenue, formal certification, insurance coverage, or independent product testing. Those claims should only be added when supported by verifiable external evidence.
+
 ## Live deployment
 
 | Surface | URL |
@@ -46,6 +50,7 @@ These URLs describe the currently verified Alyssa Cloudflare deployment. The rep
 Last checked on 26 July 2026:
 
 - the frontend and API were reachable;
+- the structured pilot application was reachable and its protected operator inbox was reading the migrated production table;
 - D1, content processing, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
 - the database contained 305 article records;
 - the current worker-output inventory reported 17 published articles, 17 audio files, and 102 quality-approved translations across six non-English languages;
@@ -53,6 +58,8 @@ Last checked on 26 July 2026:
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
 - the complete test suite contained 216 passing tests.
+
+The verified release was repository commit `2a51d00` and Worker version `b1dba478-41b3-4d36-ae3a-ee634bcb385a`.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 
@@ -87,7 +94,7 @@ Published article translations are stored for the six non-English languages and 
 
 - Ingested material is quarantined until a separate source-grounded editorial audit approves it.
 - New articles treat each supplied source record as a closed factual universe and must preserve supported names, dates, figures, chronology, contrary evidence, and source limitations.
-- Articles must contain 600–2,000 evidence-supported words and a professional brief of at least 200 words; unsupported padding does not satisfy the depth gate.
+- Articles must contain 600-2,000 evidence-supported words and a professional brief of at least 200 words; unsupported padding does not satisfy the depth gate.
 - Publication requires an independent, source-grounded audit score of at least 80% with no unresolved findings.
 - Failed drafts remain quarantined and can be repaired and independently re-audited without bypassing publication controls.
 - Reader and administrator screens use neutral editorial and product terminology rather than exposing provider, model, prompt, or drafting-process language.
@@ -102,7 +109,7 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 - Admin authentication and article review.
 - Source management and deletion.
 - Client provisioning with hashed credentials and one-time API-key display.
-- Editorial inbox, audit controls, analytics, and worker health.
+- Editorial inbox, structured pilot qualification and private review notes, audit controls, analytics, and worker health.
 - Member authentication, preferences, notifications, bookmarks, campaign authorization, events, newsletters, and reporting APIs.
 - OpenAPI/Swagger documentation under `/api/v1/docs`.
 - Lightweight, readiness, liveness, and deep-health endpoints.
@@ -225,7 +232,7 @@ Optional source, narration, and email credentials activate their corresponding i
 
 ## Validation
 
-Run the same substantive checks used by CI:
+Run the complete local release checks:
 
 ```bash
 npm run typecheck
@@ -235,7 +242,7 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-CI runs backend typechecking, all Vitest unit and integration tests, frontend typechecking, and the complete Vite production build on every push and pull request.
+The CI quality gate runs backend typechecking, all Vitest unit and integration tests, frontend typechecking, and the complete Vite production build on every push and pull request. Frontend linting is an additional local release check.
 
 ## Cloudflare deployment
 
@@ -316,6 +323,16 @@ GET  /api/v1/dashboards/continental/overview
 GET  /api/v1/personalization/feed/curated
 POST /api/v1/intel/analyst
 ```
+
+Pilot workflow contracts:
+
+```text
+POST  /api/v1/services/pilot-requests
+GET   /api/v1/admin/inbox
+PATCH /api/v1/admin/pilot-requests/:id
+```
+
+The application endpoint is public, origin checked, rate limited, and schema validated. Inbox and qualification-status operations require administrator authentication. The application accepts no confidential or sensitive information and does not promise pilot acceptance or an outcome.
 
 `/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, email delivery, semantic retrieval, content-processing circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent.
 

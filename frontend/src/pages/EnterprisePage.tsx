@@ -83,8 +83,8 @@ const sectionLinks = [
 export const EnterprisePage = () => (
   <div className="bg-white text-navy">
     <SEO
-      title="African Market-Entry Intelligence for Canadian Organizations"
-      description="A focused BOA-Story pilot for Canadian organizations comparing African markets, documenting risks and preparing evidence-backed entry decisions."
+      title="African Market-Entry Intelligence for Global Organizations"
+      description="A focused BOA-Story pilot for organizations comparing African markets, documenting risks and preparing evidence-backed entry decisions."
     />
 
     <section className="border-b border-white/15 bg-navy text-white">
@@ -97,7 +97,7 @@ export const EnterprisePage = () => (
             Make an African market-entry decision with evidence you can trace.
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-white/75 md:text-xl">
-            BOA-Story helps Canadian companies and their advisers compare candidate African markets,
+            BOA-Story helps companies, investors, institutions and their advisers compare candidate African markets,
             identify what is known, expose what is missing and prepare the next diligence decision
             before capital or operating commitments are made.
           </p>
@@ -119,7 +119,7 @@ export const EnterprisePage = () => (
 
         <aside className="rounded-3xl border border-white/20 bg-white/[0.08] p-6 md:p-8" aria-label="Primary buyer and decision">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Primary buyer</p>
-          <p className="mt-3 text-xl font-semibold text-white">Canadian corporate strategy, growth and market-entry teams</p>
+          <p className="mt-3 text-xl font-semibold text-white">Corporate strategy, investment, growth and market-entry teams worldwide</p>
           <div className="my-6 h-px bg-white/15" />
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Recurring decision</p>
           <p className="mt-3 leading-7 text-white/80">
@@ -160,7 +160,7 @@ export const EnterprisePage = () => (
             <h3 className="mt-5 text-xl font-bold text-navy">Good pilot fit</h3>
             <ul className="mt-5 space-y-4 text-sm leading-7 text-navy/70">
               {[
-                'A Canadian organization comparing two or three African markets.',
+                'An organization comparing two or three African markets for expansion, investment or partnership.',
                 'One named sector, decision owner and internal deadline.',
                 'A need to reconcile fragmented public evidence before specialist diligence.',
                 'A team willing to test usefulness against an existing research process.',

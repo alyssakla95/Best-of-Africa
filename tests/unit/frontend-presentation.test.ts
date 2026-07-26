@@ -26,7 +26,8 @@ describe('reader-facing presentation text', () => {
 
     it('keeps the enterprise proposition narrow and commercially honest', () => {
         const source = readFileSync('frontend/src/pages/EnterprisePage.tsx', 'utf8');
-        expect(source).toContain('Canadian corporate strategy, growth and market-entry teams');
+        expect(source).toContain('Corporate strategy, investment, growth and market-entry teams worldwide');
+        expect(source).not.toMatch(/Canadian organizations|Canadian companies/i);
         expect(source).toContain('Pilot-ready, not enterprise-proven.');
         expect(source).toContain('verified customer counts, revenue, renewal, time-saved or decision-outcome claims');
         expect(source).not.toMatch(/trusted by|industry-leading|guaranteed returns|we are enterprise-proven/i);

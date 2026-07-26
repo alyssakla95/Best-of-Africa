@@ -46,7 +46,7 @@ export const SEO: React.FC<SEOProps> = ({
         // Standard Meta
         updateMeta('description', description || '');
         updateMeta('theme-color', '#1a1a1a'); // Dark theme color
-        updateMeta('keywords', 'Africa market intelligence, African market entry, country intelligence, sector evidence, Canada Africa trade, due diligence, BOA-Story');
+        updateMeta('keywords', 'Africa market intelligence, African market entry, country intelligence, sector evidence, Africa trade, due diligence, BOA-Story');
 
         // Open Graph / Facebook
         updateMeta('og:type', type, 'property');

@@ -82,7 +82,7 @@ export const BetaLanding = () => {
 
       <section className="border-b border-border bg-card">
         <div className="page-container py-6">
-          <p className="mb-5 max-w-4xl font-serif text-xl text-navy">For Canadian organizations deciding which African market deserves deeper entry diligence—and which risks must be resolved first.</p>
+          <p className="mb-5 max-w-4xl font-serif text-xl text-navy">For organizations worldwide deciding which African market deserves deeper entry diligence—and which risks must be resolved first.</p>
           <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Built for consequential decisions</p>
           <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-navy">
             {['Corporate strategy', 'Growth teams', 'Export leaders', 'Trade advisers', 'Market-entry counsel', 'Investment committees'].map(label => <span key={label}>{label}</span>)}

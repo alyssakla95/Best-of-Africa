@@ -1,6 +1,6 @@
 # BOA-Story
 
-BOA-Story is a deployed African editorial and market-intelligence platform. Its primary B2B pilot is built for Canadian organizations comparing African markets before an expansion decision. The wider product combines source-attributed reporting, country research, official economic indicators, continental dashboards, narrated briefings, multilingual reading, events, search, personalization, and member services in one reader-facing application.
+BOA-Story is a deployed African editorial and market-intelligence platform. Its primary B2B pilot is built for organizations worldwide comparing African markets before an expansion, investment, or partnership decision. The wider product combines source-attributed reporting, country research, official economic indicators, continental dashboards, narrated briefings, multilingual reading, events, search, personalization, and member services in one reader-facing application.
 
 The platform is not a market-data terminal and does not treat reporting volume, sentiment, or generated scores as economic performance. Market and country views distinguish:
 
@@ -19,7 +19,7 @@ The initial commercial proposition is deliberately narrow:
 
 | Element | Current definition |
 | --- | --- |
-| Primary buyer | Canadian corporate strategy, growth and market-entry teams, working with their advisers |
+| Primary buyer | Corporate strategy, investment, growth and market-entry teams worldwide, working with their advisers |
 | Recurring decision | Which African country and sector conditions justify deeper entry diligence, and which risks must be resolved first? |
 | Pilot boundary | Four weeks, one target sector, up to three candidate countries and one named internal decision |
 | Deliverables | Evidence dossier, country comparison, executive decision brief, claim/source ledger, diligence register and closeout review |

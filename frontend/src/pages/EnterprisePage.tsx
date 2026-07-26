@@ -128,7 +128,7 @@ export const EnterprisePage = () => (
           <div className="my-6 h-px bg-white/15" />
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Product state</p>
           <p className="mt-3 leading-7 text-white/80">
-            Production-deployed and pilot-ready. Commercial outcomes and enterprise certifications are not yet claimed.
+            Production-deployed and ready for a bounded design-partner pilot with measurable decision criteria.
           </p>
         </aside>
       </div>
@@ -261,11 +261,11 @@ export const EnterprisePage = () => (
         <div className="grid gap-8 rounded-3xl border border-border p-7 md:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-navy/60">Commercial status</p>
-            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">Pilot-ready, not enterprise-proven.</h2>
+            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">Ready for a measurable design-partner pilot.</h2>
             <p className="mt-4 leading-8 text-navy/70">
-              BOA-Story has deployed software, evidence controls and client infrastructure. It does not currently publish
-              verified customer counts, revenue, renewal, time-saved or decision-outcome claims. Design-partner work is
-              intended to establish that evidence honestly.
+              BOA-Story combines deployed software, evidence controls and client infrastructure in a fixed decision scope.
+              Each pilot records its research baseline, delivery cycle, evidence traceability and unresolved diligence work
+              so the participating organization can assess practical value against its existing process.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">

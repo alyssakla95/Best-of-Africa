@@ -332,7 +332,7 @@ router.get('/recommended', async (c) => {
     return c.json({
         data: enrichedResults,
         personalized: true,
-        ai_feed_summary: `We've curated these stories focusing on ${countries.join(', ')} and ${sectors.join(', ')} based on your reading history.`,
+        feed_summary: `We've curated these stories focusing on ${countries.join(', ')} and ${sectors.join(', ')} based on your reading history.`,
         based_on: {
             countries: countries.slice(0, 3),
             sectors: sectors.slice(0, 3),
@@ -343,7 +343,7 @@ router.get('/recommended', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 // GET /personalization/feed/-curated - -curated briefing (The "Why it matters")
 // ───────────────────────────────────────────────────────────────────────────────
-router.get('/feed/ai-curated', async (c) => {
+router.get('/feed/curated', async (c) => {
     const sessionId = c.req.header('X-Session-ID');
 
     // Auth Check
@@ -364,7 +364,7 @@ router.get('/feed/ai-curated', async (c) => {
     // For now, simpler time-based cache is sufficient
     return c.json(await getCached(
         c.env,
-        `feed:ai-curated:depth-v6:${sessionId}`,
+        `feed:curated:depth-v7:${sessionId}`,
         async () => {
             // 1. Fetch Top 15 Candidates (SQL)
             const candidates = await c.env.DB.prepare(`
@@ -416,7 +416,7 @@ router.get('/feed/ai-curated', async (c) => {
                     if (original) {
                         finalFeed.push({
                             ...original,
-                            ai_curation: {
+                            curation: {
                                 relevance_note: sel.relevance_note,
                                 match_basis: 'selected by direct country or sector preference match and source-bounded editorial review'
                             }
@@ -436,7 +436,7 @@ router.get('/feed/ai-curated', async (c) => {
                 console.error('AI Curation Failed', e);
                 // Fallback to top 5 raw
                 return {
-                    data: candidates.results.slice(0, 5).map(c => ({ ...c, ai_curation: { relevance_note: 'This report directly matches at least one selected country or sector. Read its dated source record and article evidence before drawing a broader conclusion.', match_basis: 'deterministic country or sector preference match' } })),
+                    data: candidates.results.slice(0, 5).map(c => ({ ...c, curation: { relevance_note: 'This report directly matches at least one selected country or sector. Read its dated source record and article evidence before drawing a broader conclusion.', match_basis: 'deterministic country or sector preference match' } })),
                     meta: { mode: 'fallback' }
                 };
             }

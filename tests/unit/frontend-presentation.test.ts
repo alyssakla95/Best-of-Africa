@@ -28,8 +28,8 @@ describe('reader-facing presentation text', () => {
         const source = readFileSync('frontend/src/pages/EnterprisePage.tsx', 'utf8');
         expect(source).toContain('Corporate strategy, investment, growth and market-entry teams worldwide');
         expect(source).not.toMatch(/Canadian organizations|Canadian companies/i);
-        expect(source).toContain('Pilot-ready, not enterprise-proven.');
-        expect(source).toContain('verified customer counts, revenue, renewal, time-saved or decision-outcome claims');
+        expect(source).toContain('Ready for a measurable design-partner pilot.');
+        expect(source).toContain('research baseline, delivery cycle, evidence traceability and unresolved diligence work');
         expect(source).not.toMatch(/trusted by|industry-leading|guaranteed returns|we are enterprise-proven/i);
     });
 
@@ -41,5 +41,16 @@ describe('reader-facing presentation text', () => {
         expect(trust).toContain('No external attestation');
         expect(routes).toContain('path="/enterprise"');
         expect(routes).toContain('path="/trust"');
+    });
+
+    it('keeps implementation and provider language out of application presentation', () => {
+        const trust = readFileSync('frontend/src/pages/TrustCenterPage.tsx', 'utf8');
+        const enterprise = readFileSync('frontend/src/pages/EnterprisePage.tsx', 'utf8');
+        const systemPanel = readFileSync('frontend/src/components/beta/AgentStatusPanel.tsx', 'utf8');
+        const visibleSources = `${trust}\n${enterprise}\n${systemPanel}`;
+
+        expect(visibleSources).not.toMatch(/\bAI\b|artificial intelligence|OpenAI|Anthropic|Gemini|language model|information model|prompt|GPT-OSS/i);
+        expect(trust).toContain('Source and editorial quality');
+        expect(systemPanel).toContain('Article preparation');
     });
 });

@@ -20,7 +20,7 @@ import { sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
 type CuratedArticle = ArticleListItem & {
-  ai_curation?: { relevance_note: string };
+  curation?: { relevance_note: string };
 };
 
 const StoryCardSkeleton = () => (
@@ -286,9 +286,9 @@ export const BetaStories = () => {
         )}
 
         {/* Feed Summary */}
-        {feedMode === 'foryou' && curatedData?.ai_feed_summary && (
+        {feedMode === 'foryou' && curatedData?.feed_summary && (
           <div className="mb-8 p-4 bg-accent/10 border border-accent/20 rounded-xl text-center text-accent/90 text-sm font-medium italic">
-            {stripMarkdown(curatedData.ai_feed_summary)}
+            {stripMarkdown(curatedData.feed_summary)}
           </div>
         )}
 
@@ -314,12 +314,12 @@ export const BetaStories = () => {
         </div>
 
         {/* Editorial Summary Card */}
-        {isSearchMode && searchData?.ai_answer && (
+        {isSearchMode && searchData?.editorial_answer && (
           <div className="mb-8 bg-accent/8 border border-accent/25 rounded-xl p-5 flex gap-3">
             <Sparkles size={16} className="text-accent shrink-0 mt-0.5" />
             <div>
               <span className="text-[10px] font-bold tracking-widest text-accent uppercase block mb-1">{t('stories.summary', 'Summary')}</span>
-              <EditorialContent content={searchData.ai_answer} className="editorial-content-compact text-sm text-primary/80" />
+              <EditorialContent content={searchData.editorial_answer} className="editorial-content-compact text-sm text-primary/80" />
             </div>
           </div>
         )}
@@ -457,11 +457,11 @@ export const BetaStories = () => {
                       </h3>
 
                       {/* Curation Relevance Note */}
-                      {article.ai_curation?.relevance_note ? (
+                      {article.curation?.relevance_note ? (
                         <div className="bg-accent/5 border-l-2 border-accent pl-3 py-1 mb-3">
                           <p className="text-xs text-accent/90 font-medium italic">
                             <Sparkles size={10} className="inline mr-1" />
-                            {stripMarkdown(article.ai_curation.relevance_note)}
+                            {stripMarkdown(article.curation.relevance_note)}
                           </p>
                         </div>
                       ) : (

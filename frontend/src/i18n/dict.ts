@@ -1,7 +1,7 @@
 // ── UI translation dictionary ────────────────────────────────────────────────
 // Shared navigation/footer chrome (present on every page) + common labels.
 // Keys are stable; English is the source of truth and the fallback. Article
-// BODY content is not translated here (that requires the AI translation service).
+// Article bodies use the separate publication translation service.
 //
 // Add a key here, then reference it in a component via t('key', 'English fallback').
 

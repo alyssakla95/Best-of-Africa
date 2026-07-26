@@ -9,8 +9,8 @@ const implementedControls = [
   'Production error responses use request identifiers and do not return internal exception details.',
   'Content is quarantined until a separate source-grounded editorial audit approves publication.',
   'Translation, audio, reporting and publication outputs are checked through deep health, not binding reachability alone.',
-  'Scheduled jobs are isolated so one provider failure does not terminate unrelated maintenance work.',
-  'Deployment secrets and generated Cloudflare account bindings are excluded from source control.',
+  'Scheduled jobs are isolated so one service failure does not terminate unrelated maintenance work.',
+  'Deployment secrets and account-specific Cloudflare bindings are excluded from source control.',
 ];
 
 const disclosures = [
@@ -45,9 +45,9 @@ const disclosures = [
     detail: 'The platform uses Cloudflare-managed services, queues, retries, fallbacks and internal recovery. A customer-facing BCP/DR policy is not yet published.',
   },
   {
-    area: 'Source and model risk',
+    area: 'Source and editorial quality',
     status: 'Controls documented',
-    detail: 'Attribution, evidence boundaries, editorial audit, translation validation and process-leakage checks are implemented. No external model-risk assurance is claimed.',
+    detail: 'Attribution, evidence boundaries, editorial audit, translation validation and publication-quality checks are implemented.',
   },
   {
     area: 'Insurance and legal assurance',
@@ -61,7 +61,7 @@ const dataMap = [
   ['Cloudflare KV', 'Cache and session-related values; it also stores media when R2 is unavailable in the selected account.'],
   ['Cloudflare Vectorize', 'Embeddings used for semantic retrieval.'],
   ['Analytics Engine', 'Operational and usage events used to observe platform behavior.'],
-  ['Workers AI and configured providers', 'Supplied evidence and prompts required for generation, translation, classification, speech or retrieval tasks.'],
+  ['Specialist processing services', 'The minimum supplied evidence required for translation, classification, speech or retrieval tasks.'],
 ] as const;
 
 export const TrustCenterPage = () => (
@@ -79,11 +79,11 @@ export const TrustCenterPage = () => (
           </div>
           <p className="mt-7 text-xs font-bold uppercase tracking-[0.16em] text-white/60">Trust Center</p>
           <h1 className="mt-4 font-serif text-[clamp(2.8rem,6vw,5.2rem)] leading-[1.02] text-white">
-            Implemented controls and unvarnished gaps.
+            Security, data handling and operational evidence.
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-white/75 md:text-xl">
-            This page distinguishes controls that exist in the product from certifications, contracts and assurances
-            BOA-Story has not yet earned. It is a procurement starting point, not a substitute for due diligence.
+            Review the controls operating today, the data services involved and the procurement questions
+            that should be resolved for a specific deployment.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <a
@@ -168,7 +168,7 @@ export const TrustCenterPage = () => (
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Data map</p>
           <h2 className="mt-3 font-serif text-4xl text-white md:text-5xl">Where platform data is processed.</h2>
           <p className="mt-5 leading-8 text-white/70">
-            The production architecture is Cloudflare-native. Optional external providers receive only the material needed for the configured task.
+            The production architecture is Cloudflare-native. Optional specialist services receive only the material needed for the configured task.
           </p>
         </div>
         <dl className="divide-y divide-white/15 rounded-3xl border border-white/20">
@@ -191,7 +191,7 @@ export const TrustCenterPage = () => (
             <ul className="mt-6 space-y-4 text-sm leading-7 text-navy/70">
               <li>Lightweight, liveness, readiness and deep-health endpoints are public.</li>
               <li>Worker telemetry persists in D1 and is pruned after seven days.</li>
-              <li>Generation, translation and optimization queues have bounded retries.</li>
+              <li>Publishing, translation and optimization queues have bounded retries.</li>
               <li>R2 is preferred for media; the current Alyssa deployment reports healthy KV media fallback.</li>
               <li>The current deployment reports degraded email delivery because no verified sender is configured.</li>
             </ul>

@@ -338,7 +338,7 @@ export const api = {
     }>('/dashboards/continental/overview?contract=economy-v1'),
 
     // Search
-    search: (query: string) => request<{ results: SearchResult[]; suggestions: string[]; ai_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
+    search: (query: string) => request<{ results: SearchResult[]; suggestions: string[]; editorial_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
     autocomplete: (query: string) => request<{ suggestions: { text: string; type: string }[] }>(`/search/suggest?q=${encodeURIComponent(query)}`),
 
     // Intelligence
@@ -460,9 +460,9 @@ export const api = {
     }>(`/market-intel/sector/${id}/trends?contract=market-v3`),
 
     // System & Personalization
-    getCuratedFeed: () => request<{ data: (ArticleListItem & { ai_curation?: { relevance_note: string } })[]; personalized: boolean; ai_feed_summary?: string }>('/personalization/feed/ai-curated'),
+    getCuratedFeed: () => request<{ data: (ArticleListItem & { curation?: { relevance_note: string } })[]; personalized: boolean; feed_summary?: string }>('/personalization/feed/curated'),
     getFounderLog: () => request<ReportingLedgerEntry[]>('/market-intel/founder-log'),
-    askAnalyst: (message: string) => request<{ response: string; sources: string[] }>('/intel/ai-chat', {
+    askAnalyst: (message: string) => request<{ response: string; sources: string[] }>('/intel/analyst', {
         method: 'POST',
         body: JSON.stringify({ message })
     }),

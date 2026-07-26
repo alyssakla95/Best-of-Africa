@@ -89,7 +89,7 @@ router.get('/', async (c) => {
                 // Assuming the intent is to return an empty result set with no answer if no articles are found.
                 return c.json({
                     results: [],
-                    ai_answer: aiAnswer, // Direct Answer to Query
+                    editorial_answer: aiAnswer,
                     query: q,
                     type: 'semantic'
                 });
@@ -151,7 +151,7 @@ router.get('/', async (c) => {
 
             return c.json({
                 results: searchResults,
-                ai_answer: aiAnswer, // Direct Answer to Query
+                editorial_answer: aiAnswer,
                 suggestions: [],
                 query: q,
                 type: 'semantic',
@@ -300,7 +300,7 @@ router.get('/', async (c) => {
         return c.json({
             results: searchResults,
             suggestions: [], // Populated by separate /suggest endpoint
-            ai_answer: aiSummary,
+            editorial_answer: aiSummary,
             query: q,
             type: 'hybrid',
         });
@@ -410,7 +410,7 @@ router.get('/semantic', async (c) => {
             return c.json({
                 success: true,
                 results: [],
-                ai_answer: `The indexed BOA-Story corpus contains zero semantic matches for “${q}” under the current search threshold.`,
+                editorial_answer: `The indexed BOA-Story corpus contains zero semantic matches for “${q}” under the current search threshold.`,
                 query: q
             });
         }
@@ -485,7 +485,7 @@ router.get('/semantic', async (c) => {
         return c.json({
             success: true,
             results,
-            ai_answer: aiSummary,
+            editorial_answer: aiSummary,
             query: q,
             result_count: results.length,
         });

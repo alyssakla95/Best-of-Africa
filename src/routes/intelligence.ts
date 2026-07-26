@@ -30,7 +30,7 @@ router.use('/campaigns/*', rateLimit);
 router.use('/reframe', rateLimit);
 router.use('/reformat', rateLimit);
 router.use('/synthesize-unified', rateLimit);
-router.use('/ai-chat', rateLimit);
+router.use('/analyst', rateLimit);
 
 // ───────────────────────────────────────────────────────────────────────────────
 // GET /intel/country/:code/report - Deep country analysis (CACHED)
@@ -395,7 +395,7 @@ router.get('/audience/reach', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /intel/-chat - RAG-powered Consultant
 // ───────────────────────────────────────────────────────────────────────────────
-router.post('/ai-chat', validate('json', AiChatSchema), async (c) => {
+router.post('/analyst', validate('json', AiChatSchema), async (c) => {
   const { message } = (c.req as any).valid('json');
   if (!message) return c.json({ error: 'Message required' }, 400);
 

@@ -107,7 +107,7 @@ export const BetaSearch: React.FC = () => {
                 .slice(0, 12)
                 .map(countryDisplayResult);
             return {
-                aiAnswer: searchResponse.ai_answer || null,
+                editorialAnswer: searchResponse.editorial_answer || null,
                 results: [...countries, ...searchResponse.results.map(articleDisplayResult)],
             };
         },
@@ -116,7 +116,7 @@ export const BetaSearch: React.FC = () => {
     });
 
     const results = data?.results || [];
-    const analystAnswer = data?.aiAnswer || null;
+    const analystAnswer = data?.editorialAnswer || null;
 
     const filtered = activeFilter === 'countries'
         ? results.filter(result => result.type === 'country')

@@ -30,7 +30,7 @@ export const IntelligenceSidebar: React.FC<IntelligenceSidebarProps> = ({ open, 
 
         try {
             const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
-            const res = await fetch(`${API_BASE}/intel/ai-chat`, {
+            const res = await fetch(`${API_BASE}/intel/analyst`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ export const IntelligenceSidebar: React.FC<IntelligenceSidebarProps> = ({ open, 
                 }]);
             }
         } catch (err) {
-            console.error('AI chat error:', err);
+            console.error('Intelligence service error:', err);
             setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: "Connection error. The intelligence service may be temporarily unavailable."

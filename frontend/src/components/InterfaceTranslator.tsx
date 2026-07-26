@@ -33,7 +33,7 @@ export function InterfaceTranslator() {
     let cancelled = false;
     let timer = 0;
 
-    // Resolve maintained interface strings locally; only dynamic copy needs AI.
+    // Resolve maintained interface strings locally; dynamic copy uses the publication translation service.
     for (const [key, english] of Object.entries(TRANSLATIONS.en || {})) {
       const translated = TRANSLATIONS[language]?.[key];
       if (translated) cache.set(`${language}:${english}`, translated);

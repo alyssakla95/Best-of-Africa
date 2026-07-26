@@ -141,7 +141,7 @@ export const BetaFeed: React.FC = () => {
     const rest: ArticleListItem[] = latestArticles.filter(a => a.slug !== featuredSlug);
     
     const curated: ArticleListItem[] = curatedData?.data || [];
-    const editorialSummary = curatedData?.ai_feed_summary || '';
+    const editorialSummary = curatedData?.feed_summary || '';
 
     return (
         <div className="min-h-screen bg-background pb-24">

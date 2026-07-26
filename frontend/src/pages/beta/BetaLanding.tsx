@@ -52,11 +52,11 @@ export const BetaLanding = () => {
               Structured country intelligence, market coverage and decision-ready briefings for investors, companies, governments and institutions operating across the continent.
             </p>
             <div className="grid gap-3 sm:flex sm:flex-wrap">
-              <Link to="/intelligence" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-semibold text-navy transition-colors hover:bg-white/90">
-                Enter Intelligence <ArrowRight size={16} />
+              <Link to="/enterprise" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-semibold text-navy transition-colors hover:bg-white/90">
+                Explore the market-entry pilot <ArrowRight size={16} />
               </Link>
-              <Link to="/dashboards/overview" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
-                Open Continental Dashboard
+              <Link to="/intelligence" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
+                Enter Intelligence
               </Link>
             </div>
           </div>
@@ -82,10 +82,10 @@ export const BetaLanding = () => {
 
       <section className="border-b border-border bg-card">
         <div className="page-container py-6">
-          <p className="mb-5 max-w-4xl font-serif text-xl text-navy">Best of Africa is Africa's intelligence infrastructure for business, investment and economic decision-making.</p>
+          <p className="mb-5 max-w-4xl font-serif text-xl text-navy">For Canadian organizations deciding which African market deserves deeper entry diligence—and which risks must be resolved first.</p>
           <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Built for consequential decisions</p>
           <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-navy">
-            {['Institutional investors', 'Banks & DFIs', 'Corporate strategy', 'Governments', 'Private equity & VC', 'Researchers & advisers'].map(label => <span key={label}>{label}</span>)}
+            {['Corporate strategy', 'Growth teams', 'Export leaders', 'Trade advisers', 'Market-entry counsel', 'Investment committees'].map(label => <span key={label}>{label}</span>)}
           </div>
         </div>
       </section>

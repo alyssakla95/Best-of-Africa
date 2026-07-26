@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { stripMarkdown, stripProcessLeakage } from '../../frontend/src/lib/utils';
 
 describe('reader-facing presentation text', () => {
@@ -21,5 +22,23 @@ describe('reader-facing presentation text', () => {
         expect(stripMarkdown('**')).toBe('');
         expect(stripProcessLeakage('Analysis: internal framing\nPublished finding.')).toBe('internal framing\nPublished finding.');
         expect(stripProcessLeakage('<think>private reasoning</think>Published finding.')).toBe('Published finding.');
+    });
+
+    it('keeps the enterprise proposition narrow and commercially honest', () => {
+        const source = readFileSync('frontend/src/pages/EnterprisePage.tsx', 'utf8');
+        expect(source).toContain('Canadian corporate strategy, growth and market-entry teams');
+        expect(source).toContain('Pilot-ready, not enterprise-proven.');
+        expect(source).toContain('verified customer counts, revenue, renewal, time-saved or decision-outcome claims');
+        expect(source).not.toMatch(/trusted by|industry-leading|guaranteed returns|we are enterprise-proven/i);
+    });
+
+    it('publishes procurement gaps without inventing assurance', () => {
+        const trust = readFileSync('frontend/src/pages/TrustCenterPage.tsx', 'utf8');
+        const routes = readFileSync('frontend/src/App.tsx', 'utf8');
+        expect(trust).toContain('Not certified');
+        expect(trust).toContain('No public SLA');
+        expect(trust).toContain('No external attestation');
+        expect(routes).toContain('path="/enterprise"');
+        expect(routes).toContain('path="/trust"');
     });
 });

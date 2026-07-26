@@ -5,7 +5,7 @@ import { KO_FI_URL } from '../constants/beta';
 const groups = [
   { title: 'Read', links: [['Stories', '/posts'], ['Daily Briefing', '/feed'], ['Countries', '/countries'], ['Gallery', '/gallery']] },
   { title: 'Intelligence', links: [['Market Intelligence', '/intelligence'], ['Continental Overview', '/dashboards/overview'], ['Decision Workspace', '/library']] },
-  { title: 'Services', links: [['Events', '/events'], ['Consultation', '/request-consultation'], ['Business Travel', '/travel']] },
+  { title: 'Enterprise', links: [['Market-Entry Pilot', '/enterprise'], ['Trust Center', '/trust'], ['Consultation', '/request-consultation'], ['Events', '/events'], ['Business Travel', '/travel'], ['Contact', '/contact']] },
   { title: 'Account', links: [['Membership', '/membership'], ['Newsletter', '/newsletter'], ['Member Access', '/member-access'], ['Sign In', '/login']] },
 ] as const;
 
@@ -33,7 +33,7 @@ export const Footer: React.FC = () => (
       <div className="flex flex-col gap-5 pt-7 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
         <span>© {new Date().getFullYear()} Best of Africa. All rights reserved.</span>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link to="/about" className="hover:text-white">About</Link><Link to="/contact" className="hover:text-white">Contact</Link><Link to="/privacy" className="hover:text-white">Privacy</Link><Link to="/terms" className="hover:text-white">Terms</Link><Link to="/settings" className="hover:text-white">Settings</Link>
+          <Link to="/about" className="hover:text-white">About</Link><Link to="/enterprise" className="hover:text-white">Enterprise</Link><Link to="/trust" className="hover:text-white">Trust</Link><Link to="/contact" className="hover:text-white">Contact</Link><Link to="/privacy" className="hover:text-white">Privacy</Link><Link to="/terms" className="hover:text-white">Terms</Link><Link to="/settings" className="hover:text-white">Settings</Link>
         </div>
       </div>
     </div>

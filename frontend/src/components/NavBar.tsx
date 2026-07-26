@@ -82,9 +82,11 @@ export const NavBar: React.FC = () => {
         {
             heading: t("group.services", "Services"),
             links: [
+                { href: "/enterprise", label: "Market-Entry Pilot" },
                 { href: "/events", label: t("nav.events", "Summits & Events") },
                 { href: "/request-consultation", label: t("nav.concierge", "Concierge") },
                 { href: "/travel", label: t("nav.travel", "Business Travel") },
+                { href: "/trust", label: "Trust Center" },
             ],
         },
         {
@@ -133,7 +135,7 @@ export const NavBar: React.FC = () => {
                         { path: '/countries', label: t('nav.countries', 'Countries') },
                         { path: '/feed', label: t('nav.briefing_short', 'Briefing') },
                         { path: '/posts', label: t('nav.stories', 'Stories') },
-                        { path: '/membership', label: t('nav.membership', 'Membership') },
+                        { path: '/enterprise', label: 'Enterprise', priority: true },
                     ].map((item) => {
                         const isActive = isPathActive(item.path);
                         return (

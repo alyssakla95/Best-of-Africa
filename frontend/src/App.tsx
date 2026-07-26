@@ -69,6 +69,8 @@ const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage').then(m => (
 const PrivacyPage  = lazyWithRetry(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage    = lazyWithRetry(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
 const ContactPage  = lazyWithRetry(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const EnterprisePage = lazyWithRetry(() => import('./pages/EnterprisePage').then(m => ({ default: m.EnterprisePage })));
+const TrustCenterPage = lazyWithRetry(() => import('./pages/TrustCenterPage').then(m => ({ default: m.TrustCenterPage })));
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -173,6 +175,8 @@ const AnimatedRoutes = () => {
           {/* ── Corporate Services ──────────────────────────────────────── */}
           <Route path="/events"                 element={<PageTransition><BetaEvents /></PageTransition>} />
           <Route path="/request-consultation"   element={<PageTransition><BetaConcierge /></PageTransition>} />
+          <Route path="/enterprise"             element={<PageTransition><EnterprisePage /></PageTransition>} />
+          <Route path="/trust"                  element={<PageTransition><TrustCenterPage /></PageTransition>} />
           <Route path="/travel"                 element={<PageTransition><BetaTravel /></PageTransition>} />
           <Route path="/search"                 element={<PageTransition><BetaSearch /></PageTransition>} />
           <Route path="/feed"                   element={<PageTransition><BetaFeed /></PageTransition>} />

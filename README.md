@@ -1,6 +1,6 @@
 # BOA-Story
 
-BOA-Story is a deployed African editorial and market-intelligence platform. It combines source-attributed reporting, country research, official economic indicators, continental dashboards, narrated briefings, multilingual reading, events, search, personalization, and member services in one reader-facing application.
+BOA-Story is a deployed African editorial and market-intelligence platform. Its primary B2B pilot is built for Canadian organizations comparing African markets before an expansion decision. The wider product combines source-attributed reporting, country research, official economic indicators, continental dashboards, narrated briefings, multilingual reading, events, search, personalization, and member services in one reader-facing application.
 
 The platform is not a market-data terminal and does not treat reporting volume, sentiment, or generated scores as economic performance. Market and country views distinguish:
 
@@ -8,6 +8,27 @@ The platform is not a market-data terminal and does not treat reporting volume, 
 - the date and coverage of that evidence;
 - supported interpretation;
 - limitations, counter-signals, and questions requiring further diligence.
+
+## Commercial position
+
+The current product state is:
+
+> **Production-deployed, enterprise-capable B2B pilot product**
+
+The initial commercial proposition is deliberately narrow:
+
+| Element | Current definition |
+| --- | --- |
+| Primary buyer | Canadian corporate strategy, growth and market-entry teams, working with their advisers |
+| Recurring decision | Which African country and sector conditions justify deeper entry diligence, and which risks must be resolved first? |
+| Pilot boundary | Four weeks, one target sector, up to three candidate countries and one named internal decision |
+| Deliverables | Evidence dossier, country comparison, executive decision brief, claim/source ledger, diligence register and closeout review |
+| Economic hypothesis | Reduce time spent reconciling fragmented public evidence and make unresolved risks visible before specialist diligence or capital commitment |
+| Validation state | The hypothesis is ready for measured design-partner pilots; verified customer, revenue, retention and outcome claims are not currently published |
+
+The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) separates implemented controls from certifications, contracts and assurances the company has not yet earned.
+
+BOA-Story does not claim to be a comprehensive terminal, a substitute for legal, tax, regulatory or in-country commercial diligence, or a proven enterprise vendor. Fixed pilot scope and fees are proposed after discovery while the commercial model is validated.
 
 ## Live deployment
 
@@ -31,7 +52,7 @@ Last checked on 25 July 2026:
 - the seven-day coverage pulse contained 14 stories across 3 countries;
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 208 passing tests.
+- the complete test suite contained 210 passing tests.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 

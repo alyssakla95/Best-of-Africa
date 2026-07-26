@@ -39,6 +39,10 @@ router.get('/sitemap.xml', async (c) => {
         '',
         '/posts',
         '/countries',
+        '/intelligence',
+        '/dashboards/overview',
+        '/enterprise',
+        '/trust',
         '/about',
         '/member-access',
         '/newsletter'

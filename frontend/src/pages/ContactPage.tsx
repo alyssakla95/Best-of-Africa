@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { EnvelopeClosedIcon, ChatBubbleIcon, PaperPlaneIcon, UpdateIcon } from '@radix-ui/react-icons';
 import { toast } from "sonner"
@@ -14,13 +15,18 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
 
 export const ContactPage: React.FC = () => {
     const { data: config } = useSystemConfig();
+    const [searchParams] = useSearchParams();
+    const requestedInquiry = searchParams.get('inquiry');
+    const initialInquiry = requestedInquiry === 'Market Entry Pilot' || requestedInquiry === 'Security Review'
+        ? requestedInquiry
+        : 'Strategic Partnership';
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         organization: '',
         email: '',
-        inquiry_type: 'Strategic Partnership',
+        inquiry_type: initialInquiry,
         message: ''
     });
 
@@ -42,7 +48,7 @@ export const ContactPage: React.FC = () => {
             }
 
             setStatus('success');
-            setFormData({ name: '', organization: '', email: '', inquiry_type: 'Strategic Partnership', message: '' });
+            setFormData({ name: '', organization: '', email: '', inquiry_type: initialInquiry, message: '' });
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred');
             setStatus('error');
@@ -142,6 +148,8 @@ export const ContactPage: React.FC = () => {
                                             <SelectValue placeholder="Select Inquiry Type" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="Market Entry Pilot">Market Entry Pilot</SelectItem>
+                                            <SelectItem value="Security Review">Security / Procurement Review</SelectItem>
                                             <SelectItem value="Strategic Partnership">Strategic Partnership</SelectItem>
                                             <SelectItem value="Media / Press">Media / Press</SelectItem>
                                             <SelectItem value="Report Access">Report Access</SelectItem>

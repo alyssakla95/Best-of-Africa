@@ -456,7 +456,14 @@ router.post('/clients', validate('json', CreateClientSchema), async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 
 router.get('/inbox', async (c) => {
-    const [contact, bookings, registrations, subscribers] = await Promise.all([
+    const [pilots, contact, bookings, registrations, subscribers] = await Promise.all([
+        c.env.DB.prepare(`
+            SELECT id, contact_name, work_email, organization, role_title,
+                   organization_type, target_sector, candidate_countries,
+                   decision_question, decision_deadline, current_research_process,
+                   success_measure, status, qualification_notes, created_at, updated_at
+            FROM pilot_requests ORDER BY created_at DESC LIMIT 100
+        `).all(),
         c.env.DB.prepare(`
             SELECT id, name, organization, email, inquiry_type, message, created_at
             FROM contact_submissions ORDER BY created_at DESC LIMIT 100
@@ -479,12 +486,42 @@ router.get('/inbox', async (c) => {
     ]);
 
     return c.json({
+        pilots: (pilots.results || []).map((row: Record<string, unknown>) => ({
+            ...row,
+            candidate_countries: JSON.parse(String(row.candidate_countries || '[]')),
+        })),
         contact: contact.results || [],
         bookings: bookings.results || [],
         registrations: registrations.results || [],
         newsletter_subscribers: subscribers?.n || 0,
     });
 });
+
+const PilotStatusSchema = z.object({
+    status: z.enum(['new', 'reviewing', 'qualified', 'pilot_proposed', 'closed']),
+    qualification_notes: z.string().trim().max(2000).optional(),
+});
+
+router.patch(
+    '/pilot-requests/:id',
+    validate('param', z.object({ id: z.string().uuid() })),
+    validate('json', PilotStatusSchema),
+    async (c) => {
+        const { id } = (c.req as any).valid('param') as { id: string };
+        const body = (c.req as any).valid('json') as z.infer<typeof PilotStatusSchema>;
+        const result = await c.env.DB.prepare(`
+            UPDATE pilot_requests
+            SET status = ?, qualification_notes = ?, updated_at = datetime('now')
+            WHERE id = ?
+        `).bind(body.status, body.qualification_notes || null, id).run();
+
+        if (!result.meta.changes) {
+            return c.json({ error: 'not_found', message: 'Pilot request not found' }, 404);
+        }
+
+        return c.json({ success: true, id, status: body.status });
+    },
+);
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Intelligence & Strategy (-Driven)

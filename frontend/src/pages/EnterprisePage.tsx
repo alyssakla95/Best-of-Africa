@@ -103,7 +103,7 @@ export const EnterprisePage = () => (
           </p>
           <div className="mt-9 grid gap-3 sm:flex sm:flex-wrap">
             <Link
-              to="/contact?inquiry=Market%20Entry%20Pilot"
+              to="/enterprise/apply"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy transition-colors hover:bg-white/90"
             >
               Discuss a pilot <ArrowRight size={17} />
@@ -269,8 +269,8 @@ export const EnterprisePage = () => (
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <Link to="/contact?inquiry=Market%20Entry%20Pilot" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3 text-sm font-bold text-white hover:bg-navy/90">
-              Start a pilot conversation <ArrowRight size={16} />
+            <Link to="/enterprise/apply" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3 text-sm font-bold text-white hover:bg-navy/90">
+              Apply for a pilot <ArrowRight size={16} />
             </Link>
             <Link to="/trust" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-navy px-6 py-3 text-sm font-bold text-navy hover:bg-navy hover:text-white">
               Open Trust Center

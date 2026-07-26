@@ -14,6 +14,67 @@ import { sendRegistrationConfirmation } from '../lib/email';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+export const PilotRequestSchema = z.object({
+    contact_name: z.string().trim().min(2).max(100),
+    work_email: z.string().trim().email().max(254),
+    organization: z.string().trim().min(2).max(150),
+    role_title: z.string().trim().min(2).max(120),
+    organization_type: z.enum([
+        'corporate',
+        'exporter',
+        'adviser',
+        'investor',
+        'public-sector',
+        'nonprofit',
+        'other',
+    ]),
+    target_sector: z.string().trim().min(2).max(120),
+    candidate_countries: z.array(z.string().trim().min(2).max(100)).min(1).max(3),
+    decision_question: z.string().trim().min(20).max(2000),
+    decision_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    current_research_process: z.string().trim().min(20).max(2000),
+    success_measure: z.string().trim().min(20).max(1000),
+    no_sensitive_data_confirmed: z.literal(true),
+});
+
+router.post('/pilot-requests', validate('json', PilotRequestSchema), async (c) => {
+    const { throttle } = await import('../lib/ratelimit');
+    const limited = await throttle(c, 'pilot-request');
+    if (limited) return limited;
+
+    const body = (c.req as any).valid('json') as z.infer<typeof PilotRequestSchema>;
+    const id = crypto.randomUUID();
+
+    await c.env.DB.prepare(`
+        INSERT INTO pilot_requests (
+            id, contact_name, work_email, organization, role_title,
+            organization_type, target_sector, candidate_countries,
+            decision_question, decision_deadline, current_research_process,
+            success_measure, no_sensitive_data_confirmed
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `).bind(
+        id,
+        body.contact_name,
+        body.work_email,
+        body.organization,
+        body.role_title,
+        body.organization_type,
+        body.target_sector,
+        JSON.stringify(body.candidate_countries),
+        body.decision_question,
+        body.decision_deadline || null,
+        body.current_research_process,
+        body.success_measure,
+    ).run();
+
+    return c.json({
+        success: true,
+        id,
+        status: 'new',
+        message: 'Application recorded for operator review.',
+    }, 201);
+});
+
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /services/booking - Submit booking/concierge request
 // ───────────────────────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ The initial commercial proposition is deliberately narrow:
 | Economic hypothesis | Reduce time spent reconciling fragmented public evidence and make unresolved risks visible before specialist diligence or capital commitment |
 | Validation approach | Each pilot records the existing research baseline, delivery cycle, evidence traceability and unresolved diligence work |
 
-The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
+The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. A separate [structured application](https://alyssa-boa-web.pages.dev/enterprise/apply) records the applicant, sector, one to three candidate countries, decision question, deadline, current research process, and measurable success condition. Submissions enter a protected operator inbox with qualification status and private review notes; the form prohibits confidential or sensitive information. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
 
 BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. Fixed pilot scope and fees are proposed after discovery.
 
@@ -52,7 +52,7 @@ Last checked on 26 July 2026:
 - the seven-day coverage pulse contained 17 stories across 4 countries;
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 212 passing tests.
+- the complete test suite contained 216 passing tests.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 
@@ -66,7 +66,7 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 - Continental Overview with regional comparisons, official indicator context, narrated briefings, evidence tables, limitations, and supporting records.
 - Search across articles and countries, autocomplete, filters, and a command menu.
 - Events, consultation requests, travel information, a personal library, reader settings, notifications, and personalized feeds.
-- A global Enterprise pilot page and Trust Center for decision workflow, data handling, operational controls, and procurement review.
+- A global Enterprise pilot page, structured application and protected qualification workflow, plus a Trust Center for data handling, operational controls, and procurement review.
 - Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables.
 
 ### Languages

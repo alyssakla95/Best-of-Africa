@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
     api,
+    type AdminPilotRequest,
     type AdminBookingRequest,
     type AdminContactSubmission,
     type AdminEventRegistration,
+    type PilotRequestStatus,
 } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,11 +15,20 @@ import { UpdateIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
 
 interface InboxData {
+    pilots: AdminPilotRequest[];
     contact: AdminContactSubmission[];
     bookings: AdminBookingRequest[];
     registrations: AdminEventRegistration[];
     newsletter_subscribers: number;
 }
+
+const pilotStatusLabels: Record<PilotRequestStatus, string> = {
+    new: 'New',
+    reviewing: 'Reviewing',
+    qualified: 'Qualified',
+    pilot_proposed: 'Pilot proposed',
+    closed: 'Closed',
+};
 
 const fmtDate = (d?: string) =>
     d ? new Date(d.replace(' ', 'T') + (d.includes('Z') ? '' : 'Z')).toLocaleString('en-GB', {
@@ -35,7 +46,7 @@ const InboxSection = ({ title, description, empty, children }: {
             <CardTitle className="text-lg font-serif font-bold">{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="overflow-x-auto p-0">
             {empty
                 ? <p className="p-6 text-sm text-muted-foreground">Nothing yet.</p>
                 : children}
@@ -46,6 +57,7 @@ const InboxSection = ({ title, description, empty, children }: {
 export const AdminInboxTab: React.FC = () => {
     const [data, setData] = useState<InboxData | null>(null);
     const [loading, setLoading] = useState(false);
+    const [savingPilot, setSavingPilot] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -59,6 +71,28 @@ export const AdminInboxTab: React.FC = () => {
     };
 
     useEffect(() => { loadData(); }, []);
+
+    const changePilot = (id: string, changes: Partial<AdminPilotRequest>) => {
+        setData(current => current ? {
+            ...current,
+            pilots: current.pilots.map(pilot => pilot.id === id ? { ...pilot, ...changes } : pilot),
+        } : current);
+    };
+
+    const savePilot = async (pilot: AdminPilotRequest) => {
+        setSavingPilot(pilot.id);
+        try {
+            await api.updatePilotRequest(pilot.id, {
+                status: pilot.status,
+                qualification_notes: pilot.qualification_notes || undefined,
+            });
+            toast.success('Pilot review updated');
+        } catch {
+            toast.error('Failed to update pilot review');
+        } finally {
+            setSavingPilot(null);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -77,6 +111,71 @@ export const AdminInboxTab: React.FC = () => {
                     Refresh
                 </Button>
             </div>
+
+            <InboxSection
+                title="Market-Entry Pilot Applications"
+                description="Structured decision scopes, research baselines and success measures awaiting human qualification."
+                empty={!data?.pilots?.length}
+            >
+                <div className="grid gap-5 p-4 md:p-6 xl:grid-cols-2">
+                    {data?.pilots?.map(pilot => (
+                        <article key={pilot.id} className="min-w-0 rounded-2xl border border-border bg-white p-5">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">{fmtDate(pilot.created_at)}</p>
+                                    <h3 className="mt-2 break-words font-serif text-xl font-bold">{pilot.organization}</h3>
+                                    <p className="mt-1 break-words text-sm text-muted-foreground">
+                                        {pilot.contact_name}, {pilot.role_title} · {pilot.work_email}
+                                    </p>
+                                </div>
+                                <Badge variant={pilot.status === 'new' ? 'default' : 'secondary'}>{pilotStatusLabels[pilot.status]}</Badge>
+                            </div>
+
+                            <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+                                <div><dt className="font-bold">Sector</dt><dd className="mt-1 text-muted-foreground">{pilot.target_sector}</dd></div>
+                                <div><dt className="font-bold">Candidate markets</dt><dd className="mt-1 text-muted-foreground">{pilot.candidate_countries.join(', ')}</dd></div>
+                                <div><dt className="font-bold">Organization type</dt><dd className="mt-1 capitalize text-muted-foreground">{pilot.organization_type.replace('-', ' ')}</dd></div>
+                                <div><dt className="font-bold">Decision deadline</dt><dd className="mt-1 text-muted-foreground">{pilot.decision_deadline || 'Not specified'}</dd></div>
+                            </dl>
+
+                            <div className="mt-5 space-y-4 border-t border-border pt-5 text-sm">
+                                <ReviewText label="Decision question" value={pilot.decision_question} />
+                                <ReviewText label="Current research process" value={pilot.current_research_process} />
+                                <ReviewText label="Success measure" value={pilot.success_measure} />
+                            </div>
+
+                            <div className="mt-5 grid gap-4 border-t border-border pt-5">
+                                <div>
+                                    <label htmlFor={`pilot-status-${pilot.id}`} className="text-sm font-bold">Review status</label>
+                                    <select
+                                        id={`pilot-status-${pilot.id}`}
+                                        className="mt-2 min-h-11 w-full rounded-xl border border-input bg-white px-3 text-sm"
+                                        value={pilot.status}
+                                        onChange={event => changePilot(pilot.id, { status: event.target.value as PilotRequestStatus })}
+                                    >
+                                        {Object.entries(pilotStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor={`pilot-notes-${pilot.id}`} className="text-sm font-bold">Private qualification notes</label>
+                                    <textarea
+                                        id={`pilot-notes-${pilot.id}`}
+                                        rows={4}
+                                        maxLength={2000}
+                                        className="mt-2 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm"
+                                        placeholder="Record scope questions, fit assessment and follow-up work."
+                                        value={pilot.qualification_notes || ''}
+                                        onChange={event => changePilot(pilot.id, { qualification_notes: event.target.value })}
+                                    />
+                                </div>
+                                <Button onClick={() => savePilot(pilot)} disabled={savingPilot === pilot.id} className="min-h-11 w-full rounded-xl sm:w-auto">
+                                    {savingPilot === pilot.id ? 'Saving…' : 'Save review'}
+                                </Button>
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            </InboxSection>
 
             <InboxSection
                 title="Consultation Requests"
@@ -174,3 +273,10 @@ export const AdminInboxTab: React.FC = () => {
         </div>
     );
 };
+
+const ReviewText = ({ label, value }: { label: string; value: string }) => (
+    <div>
+        <p className="font-bold">{label}</p>
+        <p className="mt-1 whitespace-pre-wrap break-words leading-6 text-muted-foreground">{value}</p>
+    </div>
+);

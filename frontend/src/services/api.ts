@@ -207,6 +207,31 @@ export interface AdminEventRegistration {
     registered_at: string;
 }
 
+export type PilotRequestStatus = 'new' | 'reviewing' | 'qualified' | 'pilot_proposed' | 'closed';
+
+export interface PilotRequestInput {
+    contact_name: string;
+    work_email: string;
+    organization: string;
+    role_title: string;
+    organization_type: 'corporate' | 'exporter' | 'adviser' | 'investor' | 'public-sector' | 'nonprofit' | 'other';
+    target_sector: string;
+    candidate_countries: string[];
+    decision_question: string;
+    decision_deadline?: string;
+    current_research_process: string;
+    success_measure: string;
+    no_sensitive_data_confirmed: true;
+}
+
+export interface AdminPilotRequest extends Omit<PilotRequestInput, 'no_sensitive_data_confirmed'> {
+    id: string;
+    status: PilotRequestStatus;
+    qualification_notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
 export type SavedBookmark = ArticleListItem & {
     id: string;
     article_id: string;
@@ -713,11 +738,17 @@ export const api = {
     
     getIntelligenceRecommendations: () => request<{ recommendations: string[] }>('/admin/intelligence/recommendations'),
     getAdminInbox: () => request<{
+        pilots: AdminPilotRequest[];
         contact: AdminContactSubmission[];
         bookings: AdminBookingRequest[];
         registrations: AdminEventRegistration[];
         newsletter_subscribers: number;
     }>('/admin/inbox'),
+    updatePilotRequest: (id: string, data: { status: PilotRequestStatus; qualification_notes?: string }) =>
+        request<{ success: true; id: string; status: PilotRequestStatus }>(`/admin/pilot-requests/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
 
     // Personalization & Bookmarks
     getBookmarks: () => request<{ data: SavedBookmark[] }>('/bookmarks'),
@@ -733,6 +764,15 @@ export const api = {
     }),
 
     // Corporate Services & Summits
+    submitPilotRequest: (data: PilotRequestInput) => request<{
+        success: true;
+        id: string;
+        status: PilotRequestStatus;
+        message: string;
+    }>('/services/pilot-requests', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    }),
     getCorporateEvents: () => request<{ data: CalendarEvent[] }>('/services/events'),
     getEvent: (id: string) => readerRequest<{ event: CalendarEvent }>(`/services/events/${id}`),
     registerForEvent: (id: string, data: {

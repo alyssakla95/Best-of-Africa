@@ -77,6 +77,42 @@ const openApiSpec = {
                 responses: { 200: { description: 'Current events and calendar records' } }
             }
         },
+        '/services/pilot-requests': {
+            post: {
+                summary: 'Submit a structured market-entry pilot application',
+                description: 'Records a bounded decision scope, research baseline and success measure for human operator review. Confidential or sensitive information is prohibited.',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['contact_name', 'work_email', 'organization', 'role_title', 'organization_type', 'target_sector', 'candidate_countries', 'decision_question', 'current_research_process', 'success_measure', 'no_sensitive_data_confirmed'],
+                                properties: {
+                                    contact_name: { type: 'string', minLength: 2, maxLength: 100 },
+                                    work_email: { type: 'string', format: 'email' },
+                                    organization: { type: 'string', minLength: 2, maxLength: 150 },
+                                    role_title: { type: 'string', minLength: 2, maxLength: 120 },
+                                    organization_type: { type: 'string', enum: ['corporate', 'exporter', 'adviser', 'investor', 'public-sector', 'nonprofit', 'other'] },
+                                    target_sector: { type: 'string', minLength: 2, maxLength: 120 },
+                                    candidate_countries: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'string' } },
+                                    decision_question: { type: 'string', minLength: 20, maxLength: 2000 },
+                                    decision_deadline: { type: 'string', format: 'date' },
+                                    current_research_process: { type: 'string', minLength: 20, maxLength: 2000 },
+                                    success_measure: { type: 'string', minLength: 20, maxLength: 1000 },
+                                    no_sensitive_data_confirmed: { type: 'boolean', enum: [true] },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: { description: 'Application recorded with a reference ID and new status' },
+                    400: { description: 'Input failed validation or the information boundary was not confirmed' },
+                    429: { description: 'Submission rate limit exceeded' },
+                },
+            },
+        },
         '/dashboards': {
             get: {
                 summary: 'Get all regional dashboards',

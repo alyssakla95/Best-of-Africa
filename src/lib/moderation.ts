@@ -63,13 +63,13 @@ Check factual support, attribution, chronology, unsupported extrapolation, misle
   ]
 }
 
-Use status "approved" only with score at least 0.8 and an empty findings array.`;
+Return no more than six findings, ordered by severity. Keep each message under 300 characters and each suggestion under 240 characters. Use status "approved" only with score at least 0.8 and an empty findings array.`;
 
     try {
         const aiResponseRaw = await callConfiguredAI(env, {
             prompt: moderationPrompt,
-            max_tokens: 1800,
-            temperature: 0.1,
+            max_tokens: 4000,
+            temperature: 0,
             structured_output: true,
             response_format: {
                 type: 'json_schema',
@@ -80,6 +80,7 @@ Use status "approved" only with score at least 0.8 and an empty findings array.`
                         score: { type: 'number', minimum: 0, maximum: 1 },
                         findings: {
                             type: 'array',
+                            maxItems: 6,
                             items: {
                                 type: 'object',
                                 properties: {

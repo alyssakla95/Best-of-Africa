@@ -23,6 +23,8 @@ describe('generated article publication boundary', () => {
     it('uses bounded source-grounded remediation before a failed draft can publish', () => {
         const moderation = read('src/lib/moderation.ts');
         expect(moderation).toContain('repairArticleFromAudit');
+        expect(moderation).toContain('max_tokens: 4000');
+        expect(moderation).toContain('maxItems: 6');
         expect(moderation).toContain('(article.refinement_count || 0) < 2');
         expect(moderation).toContain("moderation_status = 'pending'");
         expect(moderation).toContain('last_audited_at = NULL');

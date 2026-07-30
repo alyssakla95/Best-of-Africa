@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Hono } from 'hono';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import ts from 'typescript';
 import { TRANSLATIONS } from '../../frontend/src/i18n/dict';
 import {
@@ -8,6 +8,7 @@ import {
     PORTUGUESE_INTERFACE_PHRASES,
     PORTUGUESE_LOCALE,
     PORTUGUESE_ORTHOGRAPHY,
+    translatePortugueseInterfaceText,
 } from '../../frontend/src/i18n/pt-PT-1945';
 import { translationRouter } from '../../src/routes/translation';
 import { translateText } from '../../src/lib/translate';
@@ -80,6 +81,39 @@ describe('coded Portuguese interface locale', () => {
             visit(source);
         }
         expect([...missing].sort()).toEqual([]);
+    });
+
+    it('covers direct copy across every reader-facing routed page', () => {
+        const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
+        const pageFiles = readdirSync('frontend/src/pages', { recursive: true })
+            .map(entry => String(entry).replaceAll('\\', '/'))
+            .filter(entry => entry.endsWith('.tsx'))
+            .filter(entry => !entry.endsWith('AdminPage.tsx'))
+            .map(entry => `frontend/src/pages/${entry}`);
+        const missingByFile: Record<string, string[]> = {};
+
+        for (const file of pageFiles) {
+            const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+            const missing = new Set<string>();
+            const record = (raw: string) => {
+                const value = raw.replace(/\s+/g, ' ').trim();
+                if (value.length > 1 && /[A-Za-z]{2}/.test(value)
+                    && (value.includes(' ') || /^[A-Z]/.test(value))
+                    && !/(?:^|\s)(?:bg|text|border|hover|focus):?-/.test(value)
+                    && !maintainedEnglish.has(value)
+                    && !translatePortugueseInterfaceText(value)) {
+                    missing.add(value);
+                }
+            };
+            const visit = (node: ts.Node) => {
+                if (ts.isJsxText(node)) record(node.text);
+                ts.forEachChild(node, visit);
+            };
+            visit(source);
+            if (missing.size) missingByFile[file.replace('frontend/src/pages/', '')] = [...missing].sort();
+        }
+
+        expect(missingByFile).toEqual({});
     });
 
     it('rejects Portuguese at the generated interface-copy boundary', async () => {

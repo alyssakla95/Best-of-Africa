@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { LanguageCode } from '../types';
 import { SUPPORTED_LANGUAGES as CONTENT_LANGUAGES } from '../types';
 import { TRANSLATIONS } from '../i18n/dict';
+import { applyPortuguese1945Orthography } from '../i18n/pt-PT-1945';
 import { useQueryClient } from '@tanstack/react-query';
 // Article and interface language are one reader preference. Selecting a locale
 // changes the application chrome and is also passed to article queries so the
@@ -39,7 +40,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
             // Update HTML dir attribute for global CSS support
             const dir = SUPPORTED_LANGUAGES.find(l => l.code === supported)?.dir || 'ltr';
             document.documentElement.dir = dir;
-            document.documentElement.lang = supported;
+            document.documentElement.lang = supported === 'pt' ? 'pt-PT' : supported;
+            if (supported === 'pt') document.documentElement.dataset.orthography = '1945';
+            else delete document.documentElement.dataset.orthography;
             // Reader endpoints derive their locale from this preference. Mark
             // active data stale so lists, reports and dashboards refresh into
             // the newly requested language instead of retaining an English
@@ -55,7 +58,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (typeof document !== 'undefined') {
             document.documentElement.dir = dir;
-            document.documentElement.lang = language;
+            document.documentElement.lang = language === 'pt' ? 'pt-PT' : language;
+            if (language === 'pt') document.documentElement.dataset.orthography = '1945';
+            else delete document.documentElement.dataset.orthography;
         }
     }, [language, dir]);
 
@@ -358,7 +363,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Translation helper. Resolution order: shared chrome dict (current lang) →
     // legacy inline dict (current lang) → shared chrome dict (English) → fallback → key.
     const t = (key: string, fallback?: string) => {
-        return (
+        const value = (
             TRANSLATIONS[language]?.[key] ??
             translations[language]?.[key] ??
             TRANSLATIONS.en?.[key] ??
@@ -366,6 +371,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
             fallback ??
             key
         );
+        return language === 'pt' ? applyPortuguese1945Orthography(value) : value;
     };
 
     return (

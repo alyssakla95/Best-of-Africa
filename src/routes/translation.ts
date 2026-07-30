@@ -3,9 +3,11 @@ import type { Env } from '../types';
 import { extractAIText, MODELS } from '../lib/ai';
 
 const router = new Hono<{ Bindings: Env }>();
-const TARGETS = new Set(['fr', 'pt', 'ar', 'de', 'hi', 'zh']);
+// Portuguese is a code-owned editorial locale. It is intentionally excluded
+// from this generated interface-copy endpoint.
+const TARGETS = new Set(['fr', 'ar', 'de', 'hi', 'zh']);
 const LANGUAGE_NAMES: Record<string, string> = {
-    fr: 'French', pt: 'Portuguese', ar: 'Modern Standard Arabic',
+    fr: 'French', ar: 'Modern Standard Arabic',
     de: 'German', hi: 'Hindi', zh: 'Simplified Chinese',
 };
 

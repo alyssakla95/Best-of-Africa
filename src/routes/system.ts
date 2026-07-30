@@ -217,19 +217,20 @@ router.get('/health/deep', async (c) => {
             SELECT
                 (SELECT COUNT(*) FROM articles WHERE status = 'published') AS published,
                 (SELECT COUNT(*) FROM articles WHERE status = 'published' AND audio_url IS NOT NULL AND audio_url != '') AS audio,
-                (SELECT COUNT(*) FROM article_translations WHERE quality = 1) AS translations,
+                (SELECT COUNT(*) FROM article_translations WHERE quality = 1 AND language <> 'pt') AS translations,
                 (SELECT COUNT(*) FROM generated_reports) AS reports
         `).first<{ published: number; audio: number; translations: number; reports: number }>();
         const published = Number(output?.published || 0);
         const audio = Number(output?.audio || 0);
         const translations = Number(output?.translations || 0);
         const reports = Number(output?.reports || 0);
-        const complete = published === 0 || (audio >= published && translations >= published * 6);
+        const expectedTranslations = published * 5;
+        const complete = published === 0 || (audio >= published && translations >= expectedTranslations);
         checks.push({
             name: 'worker_outputs',
             status: complete && reports > 0 ? 'healthy' : 'degraded',
             responseTimeMs: Date.now() - outputStart,
-            details: { published, audio, translations, expectedTranslations: published * 6, reports },
+            details: { published, audio, translations, expectedTranslations, reports },
         });
     } catch (error) {
         checks.push({

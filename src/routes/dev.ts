@@ -77,12 +77,12 @@ router.post('/test-translate', devAuthGuard, async (c) => {
     const row = await c.env.DB.prepare(`
         SELECT t.id tid, t.language, a.title, a.content
         FROM article_translations t JOIN articles a ON a.id = t.article_id
-        WHERE t.quality = 0 AND a.status='published'
+        WHERE t.quality = 0 AND t.language <> 'pt' AND a.status='published'
         ORDER BY a.published_at DESC LIMIT 1
     `).first() as Record<string, any> | null;
     if (!row) return c.json({ ok: false, reason: 'no rows' });
 
-    const langNames: Record<string, string> = { fr: 'French', ar: 'Modern Standard Arabic', pt: 'Portuguese' };
+    const langNames: Record<string, string> = { fr: 'French', ar: 'Modern Standard Arabic' };
     const chunk = (row.content || '').split(/\n\n+/).slice(0, 3).join('\n\n').slice(0, 1400);
     const prompt = `Translate the following news text into ${langNames[row.language] || row.language}. Preserve the markdown formatting exactly (headings, **bold**, lists). Output ONLY the translation, no preamble.\n\n${chunk}`;
     let raw: unknown = null; let err: string | null = null;

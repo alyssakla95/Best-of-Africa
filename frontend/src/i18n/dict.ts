@@ -6,6 +6,7 @@
 // Add a key here, then reference it in a component via t('key', 'English fallback').
 
 import { PAGE_TRANSLATIONS } from './pages';
+import { applyPortuguese1945Orthography } from './pt-PT-1945';
 
 export type UIDict = Record<string, string>;
 
@@ -1085,3 +1086,13 @@ for (const lang of Object.keys(TRANSLATIONS)) {
 for (const lang of Object.keys(PAGE_TRANSLATIONS)) {
   TRANSLATIONS[lang] = { ...PAGE_TRANSLATIONS[lang], ...(TRANSLATIONS[lang] || {}) };
 }
+
+// Portuguese is maintained as pt-PT using the orthography preceding the 1990
+// agreement. Normalising the complete merged table here also covers older
+// page namespaces without sending any interface copy to a remote service.
+TRANSLATIONS.pt = Object.fromEntries(
+  Object.entries(TRANSLATIONS.pt || {}).map(([key, value]) => [
+    key,
+    applyPortuguese1945Orthography(value),
+  ]),
+);

@@ -31,7 +31,7 @@ describe('publication-quality translation batches', () => {
         expect(Object.keys(LANGUAGE_CONFIG).sort()).toEqual(['ar', 'de', 'en', 'fr', 'hi', 'pt', 'zh']);
     });
 
-    it('queues complete full-article translations for every reader locale', async () => {
+    it('queues generated full-article translations only for generated locales', async () => {
         const queued: Array<Record<string, unknown>> = [];
         const env = createMockEnv({
             TRANSLATION_QUEUE: {
@@ -48,9 +48,9 @@ describe('publication-quality translation batches', () => {
             content: 'The complete article body.',
         });
 
-        expect(queued).toHaveLength(6);
+        expect(queued).toHaveLength(5);
         expect(queued.every((message) => message.type === 'article_translation')).toBe(true);
-        expect(queued.map((message) => message.language).sort()).toEqual(['ar', 'de', 'fr', 'hi', 'pt', 'zh']);
+        expect(queued.map((message) => message.language).sort()).toEqual(['ar', 'de', 'fr', 'hi', 'zh']);
         expect(queued.every((message) => message.articleId === 'article-1')).toBe(true);
     });
 

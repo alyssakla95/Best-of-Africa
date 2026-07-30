@@ -41,7 +41,9 @@ async function activeMemberId(env: Env, authHeader: string | undefined): Promise
 }
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
-const READER_LANGUAGES = new Set(['fr', 'ar', 'pt', 'de', 'hi', 'zh']);
+// Portuguese publication copy is maintained editorially in source code, not
+// taken from the generated article_translations table.
+const READER_LANGUAGES = new Set(['fr', 'ar', 'de', 'hi', 'zh']);
 const SOURCE_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
 const SOURCE_IMAGE_TYPES = new Set(['image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/webp']);
 
@@ -567,9 +569,9 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
     const reqLang = (c.req.query('lang') || 'en').toLowerCase();
     a.title_language = 'en';
     a.content_language = 'en';
-    if (['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(reqLang)) {
+    if (['fr', 'ar', 'de', 'hi', 'zh'].includes(reqLang)) {
         const { enqueueArticleTranslation, getTranslation } = await import('../lib/translate');
-        const targetLanguage = reqLang as 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh';
+        const targetLanguage = reqLang as 'fr' | 'ar' | 'de' | 'hi' | 'zh';
         const tr = await getTranslation(c.env, article.id, targetLanguage);
         // Shorts serve at any quality (even -1 rows keep usable m2m100 shorts —
         // -1 only means the BODY regeneration failed its gate).

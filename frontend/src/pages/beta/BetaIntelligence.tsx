@@ -7,7 +7,8 @@ import { api } from '../../services/api';
 import { IntelligenceTrustPanel } from '../../components/intelligence/IntelligenceTrustPanel';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 
-const compact = (value: number) => new Intl.NumberFormat('en', { notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
+const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
+const compact = (value: number) => new Intl.NumberFormat(activeLocale(), { notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
 const valueWithUnit = (value: number, unit: string) => unit === 'current US$' ? `$${compact(value)}` : `${compact(value)} ${unit}`;
 const changeWithUnit = (value: number, unit: string) => {
   const sign = value > 0 ? '+' : '';

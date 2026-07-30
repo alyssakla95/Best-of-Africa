@@ -512,7 +512,7 @@ async function queue(batch: MessageBatch, env: Env) {
             } else if (data.type === 'article_translation') {
                 const articleId = typeof data.articleId === 'string' ? data.articleId : '';
                 const language = typeof data.language === 'string' ? data.language : '';
-                if (!articleId || !['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language)) {
+                if (!articleId || !['fr', 'ar', 'de', 'hi', 'zh'].includes(language)) {
                     // Malformed messages are terminal: retrying cannot fix the shape.
                     console.error('Dropping malformed article translation message:', JSON.stringify(data).slice(0, 300));
                     message.ack();
@@ -522,7 +522,7 @@ async function queue(batch: MessageBatch, env: Env) {
                 await processArticleTranslationJob(env, {
                     type: 'article_translation',
                     articleId,
-                    language: language as 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh',
+                    language: language as 'fr' | 'ar' | 'de' | 'hi' | 'zh',
                 }, message.attempts);
             }
 

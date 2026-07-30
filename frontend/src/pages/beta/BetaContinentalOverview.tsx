@@ -10,7 +10,8 @@ import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { useAudio } from '../../context/AudioContext';
 import { stripMarkdown } from '../../lib/utils';
 
-const compact = (value: number, digits = 1) => new Intl.NumberFormat('en', {
+const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
+const compact = (value: number, digits = 1) => new Intl.NumberFormat(activeLocale(), {
   notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: digits,
 }).format(value);
 

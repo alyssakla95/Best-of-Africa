@@ -3,6 +3,11 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { request } from '../services/api';
 import { TRANSLATIONS } from '../i18n/dict';
+import {
+  applyPortuguese1945Orthography,
+  PORTUGUESE_INTERFACE_PHRASES,
+  translatePortugueseInterfaceText,
+} from '../i18n/pt-PT-1945';
 import { readPersistentCache, writePersistentCache } from '../lib/persistentQueryCache';
 
 type TranslationResponse = { translations: string[] };
@@ -37,6 +42,11 @@ export function InterfaceTranslator() {
     for (const [key, english] of Object.entries(TRANSLATIONS.en || {})) {
       const translated = TRANSLATIONS[language]?.[key];
       if (translated) cache.set(`${language}:${english}`, translated);
+    }
+    if (language === 'pt') {
+      for (const [english, portuguese] of Object.entries(PORTUGUESE_INTERFACE_PHRASES)) {
+        cache.set(`pt:${english}`, applyPortuguese1945Orthography(portuguese));
+      }
     }
 
     const restore = () => {
@@ -109,16 +119,27 @@ export function InterfaceTranslator() {
       setStatus('translating');
       const items = collect();
       const unique = [...new Set(items.map(item => item.value))];
+      if (language === 'pt') {
+        for (const text of unique) {
+          const translated = translatePortugueseInterfaceText(text);
+          if (translated) cache.set(`pt:${text}`, translated);
+        }
+      }
       await Promise.all(unique.map(async text => {
         const key = `${language}:${text}`;
         if (cache.has(key)) return;
+        // Never revive a previously generated Portuguese phrase from browser
+        // storage. This locale resolves exclusively from committed catalogues.
+        if (language === 'pt') return;
         const persisted = await readPersistentCache<string>(translationCacheKey(language, text), PERSISTENT_TRANSLATION_AGE_MS);
         if (persisted) cache.set(key, persisted);
       }));
       for (const batch of batchesFor(unique)) {
         if (cancelled) break;
         const missing = batch.filter(text => !cache.has(`${language}:${text}`));
-        if (missing.length) {
+        // Portuguese is a source-owned locale. Missing phrases remain visible
+        // to the coverage audit and are never sent to the generated-copy API.
+        if (missing.length && language !== 'pt') {
           try {
             const result = await request<TranslationResponse>('/translate/interface', {
               method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -188,7 +209,7 @@ export function InterfaceTranslator() {
     };
   }, [language, location.pathname]);
 
-  if (language === 'en' || status === 'source' || status === 'translated') return null;
+  if (language === 'en' || language === 'pt' || status === 'source' || status === 'translated') return null;
   return (
     <div
       role="status"

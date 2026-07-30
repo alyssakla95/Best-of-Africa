@@ -7,6 +7,8 @@ import type { Env } from '../types';
 
 // Supported target languages for African audiences
 export type SupportedLanguage = 'en' | 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh';
+export type GeneratedTranslationLanguage = Exclude<SupportedLanguage, 'pt'>;
+export type ReaderTranslationLanguage = Exclude<GeneratedTranslationLanguage, 'en'>;
 
 export const LANGUAGE_CONFIG: Record<SupportedLanguage, { name: string; regions: string[] }> = {
     en: { name: 'English', regions: ['Southern', 'East', 'West'] },
@@ -35,9 +37,12 @@ export const LANGUAGE_COUNTRIES: Record<SupportedLanguage, string[]> = {
 export async function translateText(
     env: Env,
     text: string,
-    targetLang: SupportedLanguage,
+    targetLang: GeneratedTranslationLanguage,
     sourceLang: SupportedLanguage = 'en'
 ): Promise<string> {
+    if ((targetLang as string) === 'pt') {
+        throw new Error('Portuguese is a source-owned editorial locale');
+    }
     if (sourceLang === targetLang) return text;
     if (!text || text.trim().length === 0) return text;
 
@@ -67,7 +72,7 @@ export async function translateArticle(
         summary?: string | null;
         content: string;
     },
-    targetLang: SupportedLanguage
+    targetLang: GeneratedTranslationLanguage
 ): Promise<{
     title: string;
     subtitle: string | null;
@@ -171,7 +176,7 @@ export async function getTranslation(
 // ───────────────────────────────────────────────────────────────────────────────
 
 const LANG_NAMES: Record<string, string> = {
-    fr: 'French', ar: 'Modern Standard Arabic', pt: 'Portuguese',
+    fr: 'French', ar: 'Modern Standard Arabic',
     de: 'German', hi: 'Hindi', zh: 'Simplified Chinese',
 };
 
@@ -233,7 +238,7 @@ export function parseLongTranslationBatch(raw: string, expected: number): string
 async function llmTranslateBatch(
     env: Env,
     texts: string[],
-    targetLang: SupportedLanguage,
+    targetLang: ReaderTranslationLanguage,
 ): Promise<string[] | null | undefined> {
     if (!texts.length) return [];
     const { extractAIText, hasProcessLeakage, MODELS } = await import('./ai');
@@ -262,7 +267,7 @@ async function llmTranslateBatch(
     }
 }
 
-async function llmTranslate(env: Env, text: string, targetLang: SupportedLanguage): Promise<string | null> {
+async function llmTranslate(env: Env, text: string, targetLang: ReaderTranslationLanguage): Promise<string | null> {
     const translated = await llmTranslateBatch(env, [text], targetLang);
     return translated?.[0] || null;
 }
@@ -270,7 +275,7 @@ async function llmTranslate(env: Env, text: string, targetLang: SupportedLanguag
 async function llmTranslateBatchResilient(
     env: Env,
     texts: string[],
-    targetLang: SupportedLanguage,
+    targetLang: ReaderTranslationLanguage,
 ): Promise<string[] | null | undefined> {
     const translated = await llmTranslateBatch(env, texts, targetLang);
     if (translated || translated === undefined) return translated;
@@ -333,7 +338,7 @@ function chunkMarkdown(md: string, max = 1400): string[] {
 export async function translateLongText(
     env: Env,
     text: string,
-    targetLang: SupportedLanguage
+    targetLang: ReaderTranslationLanguage
 ): Promise<string | null> {
     const chunks = chunkMarkdown(text);
     // A structurally invalid large JSON response is a model formatting
@@ -349,7 +354,7 @@ export async function ensureArticleTranslation(
     env: Env,
     articleId: string,
     article: { title: string; subtitle?: string | null; summary?: string | null; content: string },
-    targetLang: Exclude<SupportedLanguage, 'en'>,
+    targetLang: ReaderTranslationLanguage,
 ): Promise<boolean> {
     const existing = await getTranslation(env, articleId, targetLang);
     if (existing?.quality === 1 && existing.content) return true;
@@ -438,8 +443,6 @@ export async function ensureArticleTranslation(
     }
 }
 
-export type ReaderTranslationLanguage = Exclude<SupportedLanguage, 'en'>;
-
 export interface ArticleTranslationQueueMessage {
     type: 'article_translation';
     articleId: string;
@@ -447,7 +450,7 @@ export interface ArticleTranslationQueueMessage {
 }
 
 const READER_TRANSLATION_LANGUAGES: readonly ReaderTranslationLanguage[] = [
-    'fr', 'ar', 'pt', 'de', 'hi', 'zh',
+    'fr', 'ar', 'de', 'hi', 'zh',
 ];
 
 function queuedTranslationKey(articleId: string, language: ReaderTranslationLanguage): string {
@@ -557,7 +560,7 @@ export async function processArticleTranslationJob(
  * output fails the degeneracy gate are marked quality=-1 (skipped, no loop).
  *
  * Once no quality=0 rows remain, spare batch capacity moves to historical
- * coverage: articles in fr/ar/pt-country buckets that predate auto-translation
+ * coverage: articles that predate automatic translation
  * and have no translation row at all get one created, newest-first, through
  * the same model and gate. Gate refusals are stored as quality=-1 rows holding
  * the ENGLISH source fields (the shorts overlay serves any-quality rows, so a
@@ -570,13 +573,13 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         SELECT t.id AS tid, t.article_id AS aid, t.language, a.title, a.subtitle, a.summary, a.content
         FROM article_translations t
         JOIN articles a ON a.id = t.article_id
-        WHERE (
+        WHERE t.language <> 'pt' AND (
             t.quality = 0
             OR (t.quality = -1 AND t.created_at < datetime('now', '-6 hours'))
         ) AND a.status = 'published'
         ORDER BY a.published_at DESC
         LIMIT ?
-    `).bind(batch).all<{ tid: string; aid: string; language: SupportedLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
+    `).bind(batch).all<{ tid: string; aid: string; language: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 
     let done = 0;
     for (const r of rows.results || []) {
@@ -585,7 +588,7 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
                 env,
                 r.aid,
                 { title: r.title, subtitle: r.subtitle, summary: r.summary, content: r.content || '' },
-                r.language as ReaderTranslationLanguage,
+                r.language,
             );
             if (!ok) {
                 await env.DB.prepare("UPDATE article_translations SET quality = -1, created_at = datetime('now') WHERE id = ?").bind(r.tid).run();
@@ -619,7 +622,7 @@ async function backfillMissingTranslations(env: Env, batch: number): Promise<num
         SELECT a.id AS aid, l.lang, a.title, a.subtitle, a.summary, a.content
         FROM articles a
         -- json_each avoids a compound SELECT (D1 rejects UNION ALL chains).
-        CROSS JOIN (SELECT value AS lang FROM json_each('["fr","ar","pt","de","hi","zh"]')) l
+        CROSS JOIN (SELECT value AS lang FROM json_each('["fr","ar","de","hi","zh"]')) l
         WHERE a.status = 'published'
           AND NOT EXISTS (
               SELECT 1 FROM article_translations t
@@ -627,7 +630,7 @@ async function backfillMissingTranslations(env: Env, batch: number): Promise<num
           )
         ORDER BY a.published_at DESC, a.view_count DESC, l.lang ASC
         LIMIT ?
-    `).bind(batch).all<{ aid: string; lang: SupportedLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
+    `).bind(batch).all<{ aid: string; lang: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 
     if ((missing.results || []).length === 0) {
         await env.CACHE.put(DONE_FLAG, '1', { expirationTtl: 6 * 3600 });

@@ -229,5 +229,5 @@ export const SUPPORTED_LANGUAGES: { code: LanguageCode; name: string; dir: 'ltr'
     { code: 'ar', name: 'العربية', dir: 'rtl' },
     { code: 'hi', name: 'हिन्दी', dir: 'ltr' },
     { code: 'zh', name: '中文', dir: 'ltr' },
-    { code: 'pt', name: 'Português', dir: 'ltr' },
+    { code: 'pt', name: 'Português (Portugal · ortografia de 1945)', dir: 'ltr' },
 ];

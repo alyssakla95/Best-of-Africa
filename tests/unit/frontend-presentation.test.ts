@@ -74,4 +74,15 @@ describe('reader-facing presentation text', () => {
         expect(privacy).toContain('retained for no more than 90 days');
         expect(privacy).toContain('raw user-agent string is not stored');
     });
+
+    it('routes sourced editorial images through the controlled cache and retires failed service-worker entries', () => {
+        const imageHelper = readFileSync('frontend/src/lib/editorialImage.ts', 'utf8');
+        const serviceWorker = readFileSync('frontend/public/sw.js', 'utf8');
+
+        expect(imageHelper).toContain('/articles/${encodeURIComponent(item.id)}/image');
+        expect(serviceWorker).toContain("request.destination === 'image'");
+        expect(serviceWorker).toContain("name.startsWith('boa-cache-')");
+        expect(serviceWorker).toContain('self.skipWaiting()');
+        expect(serviceWorker).toContain('self.clients.claim()');
+    });
 });

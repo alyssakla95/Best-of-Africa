@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { ArrowTopRightIcon } from '@radix-ui/react-icons';
 import { Badge } from '@/components/ui/badge';
 import type { ArticleListItem } from '../types';
-import { sourcedEditorialImage } from '../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../lib/editorialImage';
 import { PhotoCredit } from './PhotoCredit';
 
 interface CountryHeroArticleProps {
@@ -29,6 +29,7 @@ export const CountryHeroArticle: React.FC<CountryHeroArticleProps> = ({ article 
                     <img
                         src={heroThumb(image)}
                         alt={cleanText(article.title)}
+                        onError={(event) => hideFailedEditorialImage(event.currentTarget)}
                         className="w-full h-full object-cover opacity-60 transition-transform ease-linear group-hover:scale-110"
                         style={{ transitionDuration: '10000ms' }}
                     />

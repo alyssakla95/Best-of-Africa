@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { CountryFlag } from './CountryFlag';
-import { sourcedEditorialImage } from '../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../lib/editorialImage';
 import { PhotoCredit } from './PhotoCredit';
 
 // Local editorial fallbacks, rotated deterministically per article so cards
@@ -38,7 +38,7 @@ export const ArticleCard: React.FC<{ article: ArticleListItem; featured?: boolea
             {/* Thumbnail — on a broken hero (e.g. dead /assets URL) fall back to a
                 local editorial image rather than a blank/branded placeholder. */}
             <div className="relative min-h-28 shrink-0 overflow-hidden bg-navy sm:h-44">
-                {imgSrc ? <img src={imgSrc} alt={title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" /> : (
+                {imgSrc ? <img src={imgSrc} alt={title} loading="lazy" onError={(event) => hideFailedEditorialImage(event.currentTarget)} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" /> : (
                     <div className="flex h-full min-h-28 items-end p-4 text-white sm:min-h-44"><span className="max-w-[16rem] text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Source-linked reporting<br/><span className="text-white">{article.country_name || 'Africa'}</span></span></div>
                 )}
                 {featured && (

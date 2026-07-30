@@ -16,7 +16,7 @@ import { ScrollReveal } from '../../components/beta/ScrollReveal';
 import type { PlayableTrack } from '../../context/AudioContext';
 import type { ArticleListItem, SearchResult } from '../../types';
 import { EditorialContent } from '../../components/EditorialContent';
-import { sourcedEditorialImage } from '../../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
 type CuratedArticle = ArticleListItem & {
@@ -442,7 +442,7 @@ export const BetaStories = () => {
                       {/* Hero thumbnail */}
                     <div className={`overflow-hidden shrink-0 relative bg-navy ${isFeatured ? 'min-h-36 md:h-auto md:w-[55%]' : 'min-h-28 sm:h-52'}`}>
                       {sourcedEditorialImage(article) ? <>
-                        <img src={heroThumb(sourcedEditorialImage(article)!)} alt={stripMarkdown(article.title)} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-500" />
+                        <img src={heroThumb(sourcedEditorialImage(article)!)} alt={stripMarkdown(article.title)} loading="lazy" onError={(event) => hideFailedEditorialImage(event.currentTarget)} className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-500" />
                         <PhotoCredit credit={article.image_credit} sourceUrl={article.image_source_url} className="absolute bottom-2 left-3 rounded bg-navy/80 px-2 py-1 text-white" />
                       </> : <div className="flex h-full min-h-28 items-end p-5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Verified source record</div>}
                     </div>

@@ -1,64 +1,50 @@
-const CACHE_NAME = 'boa-cache-v3';
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/vite.svg'
-];
+const CACHE_NAME = 'boa-shell-v4';
+const SHELL_URLS = ['/', '/index.html', '/manifest.json'];
 
-// Install SW and cache static assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
-            })
+            .then((cache) => cache.addAll(SHELL_URLS))
+            .then(() => self.skipWaiting())
     );
 });
 
-// Listen for requests
 self.addEventListener('fetch', (event) => {
-    // Network First strategy for HTML navigation requests
-    if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
-        event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match(event.request);
-            })
-        );
+    const request = event.request;
+    const acceptsHtml = request.headers.get('accept')?.includes('text/html');
+
+    // Navigations always check the network so a deployed bundle replaces an
+    // older browser cache immediately. The shell is only an offline fallback.
+    if (request.mode === 'navigate' || acceptsHtml) {
+        event.respondWith(fetch(request).catch(() => caches.match('/index.html')));
         return;
     }
 
-    // Do not cache API requests
-    if (event.request.url.includes('/api/')) {
+    // API, image and media responses keep their own HTTP cache policy. In
+    // particular, never let Cache Storage retain a failed publisher image.
+    if (
+        request.destination === 'image'
+        || request.destination === 'audio'
+        || request.url.includes('/api/')
+        || request.url.includes('/assets/')
+    ) {
         return;
     }
 
-    // Cache First strategy for static assets
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
-            })
-    );
+    // Hashed application assets can use the browser/Cloudflare HTTP cache.
+    // Cache Storage is reserved for the small offline shell above.
 });
 
-// Activate and clean up old caches
 self.addEventListener('activate', (event) => {
-    const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        Promise.all([
+            caches.keys().then((names) => Promise.all(
+                names
+                    .filter((name) => name.startsWith('boa-cache-') || name.startsWith('boa-shell-'))
+                    .filter((name) => name !== CACHE_NAME)
+                    .map((name) => caches.delete(name))
+            )),
+            self.clients.claim(),
+        ])
     );
 });

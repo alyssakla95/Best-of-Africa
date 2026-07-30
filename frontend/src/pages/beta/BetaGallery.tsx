@@ -5,7 +5,7 @@ import { SEO } from '../../components/SEO';
 import { PhotoCredit } from '../../components/PhotoCredit';
 import { api } from '../../services/api';
 import type { ArticleListItem } from '../../types';
-import { sourcedEditorialImage } from '../../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { stripMarkdown } from '../../lib/utils';
 
 export const BetaGallery = () => {
@@ -35,7 +35,7 @@ export const BetaGallery = () => {
               <Link key={story.slug} to={`/posts/${story.slug}`} className="group overflow-hidden rounded-xl border border-border bg-white transition-colors hover:border-navy/35">
                 {image ? (
                   <figure className="relative aspect-[4/3] overflow-hidden bg-navy">
-                    <img src={image} alt={stripMarkdown(story.title)} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+                    <img src={image} alt={stripMarkdown(story.title)} loading="lazy" onError={(event) => hideFailedEditorialImage(event.currentTarget)} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
                     <PhotoCredit credit={story.image_credit} sourceUrl={story.image_source_url} className="absolute bottom-2 left-2 rounded bg-navy/85 px-2 py-1 text-white" />
                   </figure>
                 ) : (

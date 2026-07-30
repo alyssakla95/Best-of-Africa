@@ -13,6 +13,7 @@ import { callConfiguredAI } from '../lib/ai';
 import { generateAudioNarration } from '../lib/audio';
 import { verifyJWT } from '../lib/auth';
 import { publisherNameForStoredArticle } from '../lib/source-attribution';
+import { getMedia, putMedia } from '../lib/media';
 
 // Temporary read-only stakeholder review mode. Keep authenticated actions
 // (including paid TTS generation) protected; only article truncation is lifted.
@@ -41,6 +42,38 @@ async function activeMemberId(env: Env, authHeader: string | undefined): Promise
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 const READER_LANGUAGES = new Set(['fr', 'ar', 'pt', 'de', 'hi', 'zh']);
+const SOURCE_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+const SOURCE_IMAGE_TYPES = new Set(['image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/webp']);
+
+function isEligiblePublisherUrl(url: URL): boolean {
+    const hostname = url.hostname.toLowerCase();
+    return url.protocol === 'https:'
+        && hostname.includes('.')
+        && hostname !== 'localhost'
+        && !hostname.endsWith('.local')
+        && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)
+        && !hostname.includes(':');
+}
+
+function sourceImageResponse(body: ReadableStream | ArrayBuffer, contentType: string, etag: string): Response {
+    return new Response(body, {
+        headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2592000',
+            ETag: etag,
+            'Access-Control-Allow-Origin': '*',
+            'Cross-Origin-Resource-Policy': 'cross-origin',
+            'X-Content-Type-Options': 'nosniff',
+        },
+    });
+}
+
+function sourceImageFailure(status: 404 | 502, message: string): Response {
+    return Response.json(
+        { error: status === 404 ? 'not_found' : 'image_unavailable', message },
+        { status, headers: { 'Cache-Control': 'no-store' } },
+    );
+}
 
 async function localizeArticleList<T extends { id?: string }>(env: Env, rows: T[], language: string | undefined): Promise<T[]> {
     if (!language || !READER_LANGUAGES.has(language) || !rows.length) return rows;
@@ -439,6 +472,64 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
+// GET /articles/:id/image - Cached publisher-sourced editorial image
+router.get('/:id/image', validate('param', z.object({ id: z.string().uuid() })), async (c) => {
+    const { id } = (c.req as any).valid('param') as { id: string };
+    const mediaKey = `source-images/${id}`;
+    const cached = await getMedia(c.env, mediaKey);
+    if (cached) return sourceImageResponse(cached.body, cached.contentType, cached.etag);
+
+    const article = await c.env.DB.prepare(`
+        SELECT hero_image_url, image_source_url
+        FROM articles
+        WHERE id = ? AND status = 'published'
+        LIMIT 1
+    `).bind(id).first<{ hero_image_url: string | null; image_source_url: string | null }>();
+    if (!article?.hero_image_url) {
+        return sourceImageFailure(404, 'No sourced image is attached to this article');
+    }
+
+    let imageUrl: URL;
+    try {
+        imageUrl = new URL(article.hero_image_url);
+        if (!isEligiblePublisherUrl(imageUrl)) {
+            return sourceImageFailure(404, 'No eligible sourced image is attached to this article');
+        }
+    } catch {
+        return sourceImageFailure(404, 'No eligible sourced image is attached to this article');
+    }
+
+    const headers = new Headers({
+        Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8',
+        'User-Agent': 'BOA-Story/1.0 editorial image cache',
+    });
+    if (article.image_source_url) {
+        try {
+            const source = new URL(article.image_source_url);
+            if (source.protocol === 'https:') headers.set('Referer', source.href);
+        } catch { /* fetch without a referrer */ }
+    }
+
+    try {
+        const upstream = await fetch(imageUrl, { headers, redirect: 'follow' });
+        const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        const declaredSize = Number(upstream.headers.get('content-length') || 0);
+        if (!upstream.ok || !SOURCE_IMAGE_TYPES.has(contentType) || declaredSize > SOURCE_IMAGE_MAX_BYTES) {
+            return sourceImageFailure(502, 'The publisher image could not be retrieved');
+        }
+        const bytes = await upstream.arrayBuffer();
+        if (!bytes.byteLength || bytes.byteLength > SOURCE_IMAGE_MAX_BYTES) {
+            return sourceImageFailure(502, 'The publisher image could not be retrieved');
+        }
+        await putMedia(c.env, mediaKey, bytes, contentType);
+        const stored = await getMedia(c.env, mediaKey);
+        if (!stored) return sourceImageFailure(502, 'The publisher image could not be stored');
+        return sourceImageResponse(stored.body, stored.contentType, stored.etag);
+    } catch {
+        return sourceImageFailure(502, 'The publisher image could not be retrieved');
+    }
+});
+
 // GET /articles/:slug - Single article by slug (OPTIMIZED)
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/:slug', validate('param', SlugParamSchema), async (c) => {

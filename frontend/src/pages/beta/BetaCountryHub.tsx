@@ -21,7 +21,7 @@ import { ScrollReveal } from '../../components/beta/ScrollReveal';
 import { stripMarkdown, heroThumb } from '@/lib/utils';
 import type { ArticleListItem } from '../../types';
 import { EditorialContent } from '../../components/EditorialContent';
-import { sourcedEditorialImage } from '../../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ const ArticleCard = ({ article }: { article: ArticleListItem }) => {
     className="group block bg-card rounded-2xl border border-foreground/10 overflow-hidden hover:border-foreground/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-1"
   >
     <div className="min-h-28 sm:aspect-[16/9] overflow-hidden bg-navy relative">
-      {image ? <img src={heroThumb(image)} alt={stripMarkdown(article.title)} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-500" /> : <div className="flex min-h-28 items-end p-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Source-linked country reporting</div>}
+      {image ? <img src={heroThumb(image)} alt={stripMarkdown(article.title)} loading="lazy" onError={(event) => hideFailedEditorialImage(event.currentTarget)} className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-500" /> : <div className="flex min-h-28 items-end p-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Source-linked country reporting</div>}
       <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
       {image && <PhotoCredit credit={article.image_credit} sourceUrl={article.image_source_url} className="absolute bottom-2 left-3 rounded bg-navy/80 px-2 py-1 text-white" />}
     </div>

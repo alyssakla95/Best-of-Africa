@@ -16,7 +16,7 @@ import { heroThumb, stripMarkdown } from '@/lib/utils';
 import { EditorialContent } from '../../components/EditorialContent';
 import { useSetBreadcrumb } from '@/context/BreadcrumbContext';
 import type { Article, ArticleListItem, Country } from '../../types';
-import { sourcedEditorialImage } from '../../lib/editorialImage';
+import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
 interface ArticleResponse {
@@ -416,17 +416,17 @@ export const BetaArticle = () => {
       </div>
 
       {/* Hero */}
-      {article.hero_image_url ? (
+      {editorialImage ? (
         <div className="hidden">
           {/* ?w=768 serves the pre-resized mobile variant (or the original if
               none exists yet) — same breakpoint as the prerendered fold. */}
           <picture>
-            <source media="(max-width: 768px)" srcSet={`${article.hero_image_url}?w=768`} />
+            <source media="(max-width: 768px)" srcSet={editorialImage} />
             <motion.img
               initial={{ scale: 1.05 }}
               animate={{ scale: 1 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
-              src={article.hero_image_url}
+              src={editorialImage}
               alt={stripMarkdown(article.title)}
               fetchPriority="high"
               decoding="async"
@@ -511,6 +511,7 @@ export const BetaArticle = () => {
             <img
               src={heroThumb(editorialImage)}
               alt={stripMarkdown(article.title)}
+              onError={(event) => hideFailedEditorialImage(event.currentTarget)}
               className="w-full aspect-[16/9] object-cover"
               loading="eager"
             />

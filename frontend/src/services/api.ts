@@ -468,7 +468,9 @@ export const api = {
         sector_coverage: { id: string; name: string; article_count: number; }[];
     }>(`/narratives/country/${code}`),
     getReports: () => readerRequest<{ data: ArticleListItem[] }>('/market-intel/reports'),
-    getGeneratedReports: () => readerRequest<{ data: GeneratedReportSummary[] }>('/market-intel/generated-reports'),
+    // The archive changes throughout the day. Do not let the general 30-day
+    // reader cache hide newly generated country evidence briefs.
+    getGeneratedReports: () => readerRequest<{ data: GeneratedReportSummary[] }>('/market-intel/generated-reports', 5 * 60 * 1000),
     getGeneratedReport: (id: string) => readerRequest<{ data: GeneratedReport }>(`/market-intel/generated-reports/${id}`),
     getReportsBySector: (sectorId: string) => readerRequest<{ data: ArticleListItem[] }>(`/market-intel/reports/sector/${sectorId}`),
     getReport: (id: string) => readerRequest<{ report: Article; related: ArticleListItem[] }>(`/market-intel/reports/${id}`),

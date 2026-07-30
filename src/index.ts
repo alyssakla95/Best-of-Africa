@@ -462,9 +462,10 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         });
     }
 
-    // 3. Reporting: Daily at 5am UTC
-    if (hours === 5 && minutes === 0) {
-        await safe('daily-reporting', () => runDailyReporting(env));
+    // 3. Country reporting: one fairly rotated country every four hours.
+    // Sector analysis remains daily at 05:00 UTC to keep this cost-effective.
+    if (hours % 4 === 1 && minutes === 0) {
+        await safe('scheduled-reporting', () => runDailyReporting(env, hours === 5));
     }
 
     // 4. Newsletter Dispatch: Daily & Weekly at 6am UTC
@@ -583,10 +584,10 @@ async function processOptimization(data: Record<string, unknown>, env: Env) {
     await processOptimizationTask(data, env);
 }
 
-async function runDailyReporting(env: Env) {
+async function runDailyReporting(env: Env, includeSectorAnalysis = true) {
     // Implemented in workers/reporter.ts
     const { runDailyReporting } = await import('./workers/reporter');
-    await runDailyReporting(env);
+    await runDailyReporting(env, { includeSectorAnalysis });
 }
 
 async function runNewsletterDispatch(env: Env, frequency: 'daily' | 'weekly') {

@@ -231,7 +231,14 @@ router.get('/country/:code/outlook', async (c) => {
         `[${index + 1}] ${record.published_at} — ${record.title}\nSector: ${record.sector_name || 'General coverage'}\n${record.summary.slice(0, 1200)}\nSource: ${record.source_title} | ${record.source_url || `/stories/${record.slug}`}`
     ).join('\n\n');
 
-    const evidenceBriefingKey = `${CACHE_KEYS.countryOutlook(code)}:evidence-contract-v3`;
+    // A static key kept a country dossier unchanged for 30 days even after new
+    // source records were published. Bind the cached synthesis to the newest
+    // record so every evidence-window change produces a fresh extended brief.
+    const newestRecord = sourceRecords[0];
+    const evidenceRevision = newestRecord
+        ? `${newestRecord.slug}:${newestRecord.published_at || 'undated'}`
+        : 'empty';
+    const evidenceBriefingKey = `${CACHE_KEYS.countryOutlook(code)}:evidence-contract-v4:${evidenceRevision}`;
     const generateEvidenceBriefing = async () => {
             if (!evidenceContext) return `The current BOA-Story evidence window contains zero published records for ${countryData.name}. That observed zero is the finding: no country-level inference can be supported from this dataset until reporting records enter the window.`;
             const prompt = `System: You are BOA-Story's country evidence editor. Use only the numbered records. This is not an investment rating. Do not infer economic performance, political stability, policy quality, tourism safety or investability from article volume, engagement or narrative fields. Cite records inline and distinguish reported fact, supported interpretation and unresolved question.
@@ -297,17 +304,58 @@ router.get('/generated-reports', async (c) => {
         SELECT id, type, title, metadata, created_at
         FROM generated_reports
         ORDER BY created_at DESC
-        LIMIT 20
+        LIMIT 100
     `).all();
 
     return c.json({
-        data: (reports.results || []).map((r: any) => ({
+        data: (reports.results || []).map((r: any) => {
+            let metadata: Record<string, unknown> = {};
+            try { metadata = r.metadata ? JSON.parse(r.metadata as string) : {}; } catch { metadata = {}; }
+            // Report sections can contain thousands of words. The archive only
+            // needs identifying metadata; the body is fetched from the detail
+            // endpoint after a reader opens one report.
+            const { sections: _sections, ...summaryMetadata } = metadata;
+            return {
+                id: r.id,
+                type: r.type,
+                title: r.title,
+                metadata: summaryMetadata,
+                created_at: r.created_at,
+            };
+        })
+    });
+});
+
+// GET /market-intel/generated-reports/:id - serve the complete extended
+// evidence brief as structured data. This route must live on this active router
+// (the older split reports router is not mounted by src/routes/index.ts).
+router.get('/generated-reports/:id', async (c) => {
+    const report = await c.env.DB.prepare(`
+        SELECT id, type, title, metadata, created_at
+        FROM generated_reports
+        WHERE id = ?
+    `).bind(c.req.param('id')).first();
+
+    if (!report) {
+        return c.json({ error: 'not_found', message: 'Report not found' }, 404);
+    }
+
+    const r = report as Record<string, any>;
+    let metadata: Record<string, any> = {};
+    try { metadata = r.metadata ? JSON.parse(r.metadata as string) : {}; } catch { metadata = {}; }
+    const { sections, subtitle, generated_at, ...rest } = metadata;
+
+    return c.json({
+        data: {
             id: r.id,
             type: r.type,
             title: r.title,
-            metadata: JSON.parse(r.metadata as string),
-            created_at: r.created_at
-        }))
+            subtitle: subtitle || null,
+            sections: Array.isArray(sections) ? sections : [],
+            metadata: rest,
+            generated_at: generated_at || r.created_at,
+            created_at: r.created_at,
+        },
     });
 });
 

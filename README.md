@@ -72,9 +72,9 @@ Last checked on 26 July 2026:
 - the seven-day coverage pulse contained 17 stories across 4 countries;
 - the continental overview returned all 5 regions and 6 narrated briefings;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 222 passing tests.
+- the complete test suite contained 226 passing tests.
 
-The verified Alyssa-account release was repository commit `8826d83` and Worker version `d25cbd56-020e-49df-840f-8d46631b0190`.
+The verified Alyssa-account release was repository commit `7c82495` and Worker version `c3ec3adf-d366-4db4-811c-d9bfc0161710`.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 

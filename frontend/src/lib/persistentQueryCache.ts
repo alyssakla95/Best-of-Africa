@@ -1,7 +1,8 @@
 // Increment when a previously valid cached response can hide newly available
-// reader content. v1 may contain empty article feeds saved before automated
-// editorial publication was enabled.
-const CACHE_NAME = 'boa-reader-data-v2';
+// reader content. v2 can contain article payloads saved before publisher-image
+// backfilling completed; those payloads omit provenance and prevent the UI from
+// requesting images that are now present on the server.
+const CACHE_NAME = 'boa-reader-data-v3';
 const CACHE_PREFIX = '/__boa_reader_cache__/';
 
 interface CacheEnvelope<T> {

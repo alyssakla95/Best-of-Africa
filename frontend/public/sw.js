@@ -1,4 +1,5 @@
-const CACHE_NAME = 'boa-shell-v4';
+const CACHE_NAME = 'boa-shell-v5';
+const READER_CACHE_NAME = 'boa-reader-data-v3';
 const SHELL_URLS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -40,11 +41,18 @@ self.addEventListener('activate', (event) => {
         Promise.all([
             caches.keys().then((names) => Promise.all(
                 names
-                    .filter((name) => name.startsWith('boa-cache-') || name.startsWith('boa-shell-'))
-                    .filter((name) => name !== CACHE_NAME)
+                    .filter((name) => name.startsWith('boa-cache-') || name.startsWith('boa-shell-') || name.startsWith('boa-reader-data-'))
+                    .filter((name) => name !== CACHE_NAME && name !== READER_CACHE_NAME)
                     .map((name) => caches.delete(name))
             )),
             self.clients.claim(),
-        ])
+        ]).then(() => self.clients.matchAll({ type: 'window' }))
+          .then((clients) => Promise.all(clients.map((client) => {
+              // One activation-only navigation moves a tab that was initially
+              // rendered by an older worker onto the new reader-cache version.
+              // Without it, that tab can keep showing its pre-backfill payload
+              // until the reader manually reloads a second time.
+              return 'navigate' in client ? client.navigate(client.url) : undefined;
+          })))
     );
 });

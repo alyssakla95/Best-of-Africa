@@ -5,7 +5,7 @@
 
 import type { Env, ContentGenerationMessage } from '../types';
 import { extractPublisherImage, normalizeEditorialImageUrl } from '../lib/editorial-images';
-import { sourceQualityProfile, TRUSTED_DISCOVERY_DOMAINS } from '../lib/source-quality';
+import { sourceQualityProfile, TRUSTED_DISCOVERY_CATALOG } from '../lib/source-quality';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // RSS Feed Parser (Simple)
@@ -458,45 +458,80 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                 SELECT c.code, c.name, c.region,
                        SUM(CASE WHEN a.status IN ('published', 'pending_audit')
                                  AND a.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS article_count
+                       , d.last_attempted_at
                 FROM countries c
                 LEFT JOIN articles a ON a.country_code = c.code
-                GROUP BY c.code
-                ORDER BY article_count ASC, c.region ASC, c.name ASC
+                LEFT JOIN coverage_discovery_state d ON d.country_code = c.code
+                GROUP BY c.code, d.last_attempted_at
+                ORDER BY article_count ASC,
+                         COALESCE(d.last_attempted_at, '1970-01-01') ASC,
+                         c.region ASC, c.name ASC
             `).all();
 
-            const [sectors] = await Promise.all([
-                env.DB.prepare('SELECT name FROM sectors').all()
-            ]);
+            const sectors = await env.DB.prepare('SELECT name FROM sectors').all();
+            let discoveryCatalog: Array<{ domain: string; lane: string }> = [...TRUSTED_DISCOVERY_CATALOG];
+            try {
+                const configuredCatalog = await env.DB.prepare(`
+                    SELECT domain, lane
+                    FROM discovery_source_catalog
+                    WHERE is_active = 1 AND quality_tier >= 3
+                    ORDER BY quality_tier DESC, lane ASC, domain ASC
+                `).all<{ domain: string; lane: string }>();
+                if (configuredCatalog.results?.length) discoveryCatalog = configuredCatalog.results;
+            } catch (error) {
+                console.warn('[ingestion] Using the built-in discovery catalogue fallback.', error);
+            }
 
-            // Take one under-covered country from every region on each run. Rotate
-            // within each regional queue so a country with no usable articles does
-            // not permanently monopolise the discovery slot.
+            // Take the least-covered, least-recently-attempted country from every
+            // region. Persisting attempts prevents a hard-to-source market from
+            // permanently monopolising a regional slot while retaining a strict
+            // all-country coverage objective.
             const minute = Math.floor(Date.now() / 60000);
-            const byRegion = new Map<string, Array<{ name: string; article_count: number }>>();
-            for (const country of (underservedQuery.results || []) as Array<{ name: string; region: string; article_count: number }>) {
+            const byRegion = new Map<string, Array<{ code: string; name: string; article_count: number; last_attempted_at: string | null }>>();
+            for (const country of (underservedQuery.results || []) as Array<{ code: string; name: string; region: string; article_count: number; last_attempted_at: string | null }>) {
                 const group = byRegion.get(country.region) || [];
                 group.push(country);
                 byRegion.set(country.region, group);
             }
-            const targetCountries = [...byRegion.values()].map(group => group[minute % group.length]?.name).filter(Boolean);
+            const targetCountries = [...byRegion.values()].map(group => group[0]).filter(Boolean);
+            await Promise.all(targetCountries.map(country => env.DB.prepare(`
+                INSERT INTO coverage_discovery_state (country_code, last_attempted_at, attempt_count)
+                VALUES (?, datetime('now'), 1)
+                ON CONFLICT(country_code) DO UPDATE SET
+                    last_attempted_at = datetime('now'),
+                    attempt_count = attempt_count + 1
+            `).bind(country.code).run()));
             const sectorList = (sectors.results || []).map((s: any) => s.name);
             const targetSector = sectorList[minute % Math.max(1, sectorList.length)];
-            const trustedDomains = [
-                TRUSTED_DISCOVERY_DOMAINS[(minute * 2) % TRUSTED_DISCOVERY_DOMAINS.length],
-                TRUSTED_DISCOVERY_DOMAINS[(minute * 2 + 1) % TRUSTED_DISCOVERY_DOMAINS.length],
+            const countryPool = discoveryCatalog.filter(source =>
+                ['global-news', 'primary-evidence', 'markets', 'multilingual'].includes(source.lane)
+            );
+            const sectorPool = discoveryCatalog.filter(source =>
+                ['sector-evidence', 'primary-evidence', 'markets'].includes(source.lane)
+            );
+            const domainWindow = (pool: Array<{ domain: string; lane: string }>, offset: number, size = 3) =>
+                Array.from({ length: size }, (_, index) => pool[(offset + index) % pool.length].domain);
+            const globalDomains = domainWindow(countryPool, minute % countryPool.length, 2);
+
+            console.log(`PRIORITY COUNTRIES (underserved): ${targetCountries.map(country => country.name).join(', ')}`);
+
+            const queries: Array<{ query: string; targetCountryCode?: string }> = [
+                ...targetCountries.map((country, index) => {
+                    const domains = domainWindow(countryPool, (minute + index * 7) % countryPool.length);
+                    return {
+                        query: `(${domains.map(domain => `site:${domain}`).join(' OR ')}) "${country.name}" (economy OR business OR trade OR investment OR infrastructure) when:30d`,
+                        targetCountryCode: country.code,
+                    };
+                }),
+                ...(targetSector ? [{
+                    query: `(${domainWindow(sectorPool, minute % sectorPool.length).map(domain => `site:${domain}`).join(' OR ')}) "${targetSector}" Africa (market OR trade OR investment OR policy) when:14d`,
+                }] : []),
+                ...globalDomains.map(domain => ({ query: `site:${domain} Africa economy trade investment markets when:14d` })),
             ];
 
-            console.log(`PRIORITY COUNTRIES (underserved): ${targetCountries.join(', ')}`);
+            console.log(`Aggregating topics: ${queries.map(item => item.query).join(' | ')}`);
 
-            const queries = [
-                ...targetCountries.map((c: string) => `"${c}" (economy OR business OR trade OR investment) when:2d`),
-                ...(targetSector ? [`"${targetSector}" Africa market policy when:2d`] : []),
-                ...trustedDomains.map(domain => `site:${domain} Africa economy trade investment when:7d`),
-            ];
-
-            console.log(`Aggregating topics: ${queries.join(' | ')}`);
-
-            await Promise.all(queries.map(async (query) => {
+            await Promise.all(queries.map(async ({ query, targetCountryCode }) => {
                 try {
                     const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
                     const items = await parseRSS(googleNewsUrl);
@@ -525,6 +560,13 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         await env.CONTENT_QUEUE.send({
                             type: 'generate_article', ingested_item_id: itemId, source_id: 'google-news-aggregator', priority: 'normal',
                         });
+                        if (targetCountryCode) {
+                            await env.DB.prepare(`
+                                UPDATE coverage_discovery_state
+                                SET last_queued_at = datetime('now'), queued_count = queued_count + 1
+                                WHERE country_code = ?
+                            `).bind(targetCountryCode).run();
+                        }
                         processed++;
                         queued++;
                     }

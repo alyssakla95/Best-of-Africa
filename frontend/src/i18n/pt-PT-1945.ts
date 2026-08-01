@@ -2369,6 +2369,7 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   "Spotlight on Tanzania's gold, nickel, and rare earth minerals sectors.": 'Destaque para os sectores do ouro, níquel e minerais de terras raras da Tanzânia.',
   'The rolling evidence window remains too concentrated by country or publisher.': 'A janela documental móvel continua demasiado concentrada por país ou entidade editora.',
   'Coverage diversity check failed': 'A verificação da diversidade da cobertura falhou',
+  'The rolling evidence window has not yet met the all-country, publisher and global-source quality standard.': 'A janela documental móvel ainda não atingiu o padrão de qualidade exigido para a cobertura de todos os países, a diversidade de entidades editoras e as fontes mundiais.',
 };
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {

@@ -247,9 +247,13 @@ router.get('/health/deep', async (c) => {
     try {
         const diversity = await c.env.DB.prepare(`
             WITH recent AS (
-                SELECT country_code, COALESCE(NULLIF(source_title, ''), 'unattributed') AS source_title
-                FROM articles
-                WHERE status = 'published' AND published_at >= datetime('now', '-30 days')
+                SELECT a.country_code,
+                       COALESCE(NULLIF(a.source_title, ''), 'unattributed') AS source_title,
+                       a.source_quality_tier,
+                       c.region
+                FROM articles a
+                LEFT JOIN countries c ON c.code = a.country_code
+                WHERE a.status = 'published' AND a.published_at >= datetime('now', '-30 days')
             ),
             country_counts AS (
                 SELECT COALESCE(country_code, 'continental/unclassified') AS name, COUNT(*) AS n
@@ -258,39 +262,74 @@ router.get('/health/deep', async (c) => {
             source_counts AS (
                 SELECT source_title AS name, COUNT(*) AS n
                 FROM recent GROUP BY source_title ORDER BY n DESC LIMIT 1
+            ),
+            region_counts AS (
+                SELECT COALESCE(region, 'continental/unclassified') AS name, COUNT(*) AS n
+                FROM recent GROUP BY region ORDER BY n DESC LIMIT 1
             )
             SELECT COUNT(*) AS total,
                    COUNT(DISTINCT country_code) AS countries,
                    COUNT(DISTINCT source_title) AS publishers,
+                   COUNT(DISTINCT region) AS regions,
+                   SUM(CASE WHEN source_quality_tier = 4 THEN 1 ELSE 0 END) AS tier4_count,
+                   SUM(CASE WHEN source_quality_tier = 3 THEN 1 ELSE 0 END) AS tier3_count,
+                   SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_count,
+                   (SELECT COUNT(*) FROM discovery_source_catalog WHERE is_active = 1) AS approved_discovery_domains,
                    (SELECT name FROM country_counts) AS top_country,
                    COALESCE((SELECT n FROM country_counts), 0) AS top_country_count,
                    (SELECT name FROM source_counts) AS top_publisher,
-                   COALESCE((SELECT n FROM source_counts), 0) AS top_publisher_count
+                   COALESCE((SELECT n FROM source_counts), 0) AS top_publisher_count,
+                   (SELECT name FROM region_counts) AS top_region,
+                   COALESCE((SELECT n FROM region_counts), 0) AS top_region_count
             FROM recent
         `).first<Record<string, string | number | null>>();
         const total = Number(diversity?.total || 0);
         const countryShare = total ? Number(diversity?.top_country_count || 0) / total : 0;
         const publisherShare = total ? Number(diversity?.top_publisher_count || 0) / total : 0;
+        const regionShare = total ? Number(diversity?.top_region_count || 0) / total : 0;
+        const tier4Share = total ? Number(diversity?.tier4_count || 0) / total : 0;
+        const tier2Share = total ? Number(diversity?.tier2_count || 0) / total : 0;
         const balanced = total === 0 || (
-            Number(diversity?.countries || 0) >= 20
-            && countryShare <= 0.12
-            && publisherShare <= 0.18
+            Number(diversity?.countries || 0) >= 54
+            && Number(diversity?.regions || 0) >= 5
+            && Number(diversity?.publishers || 0) >= 20
+            && countryShare <= 0.04
+            && publisherShare <= 0.08
+            && regionShare <= 0.38
+            && tier4Share >= 0.50
+            && tier2Share <= 0.20
         );
         checks.push({
             name: 'coverage_diversity',
             status: balanced ? 'healthy' : 'degraded',
             responseTimeMs: Date.now() - diversityStart,
-            message: balanced ? undefined : 'The rolling evidence window remains too concentrated by country or publisher.',
+            message: balanced ? undefined : 'The rolling evidence window has not yet met the all-country, publisher and global-source quality standard.',
             details: {
                 windowDays: 30,
                 total,
                 countries: Number(diversity?.countries || 0),
                 publishers: Number(diversity?.publishers || 0),
+                regions: Number(diversity?.regions || 0),
+                approvedDiscoveryDomains: Number(diversity?.approved_discovery_domains || 0),
                 topCountry: diversity?.top_country,
                 topCountryShare: Number(countryShare.toFixed(3)),
                 topPublisher: diversity?.top_publisher,
                 topPublisherShare: Number(publisherShare.toFixed(3)),
-                healthyThresholds: { minimumCountries: 20, maximumCountryShare: 0.12, maximumPublisherShare: 0.18 },
+                topRegion: diversity?.top_region,
+                topRegionShare: Number(regionShare.toFixed(3)),
+                primaryOrGlobalShare: Number(tier4Share.toFixed(3)),
+                establishedSpecialistShare: Number((total ? Number(diversity?.tier3_count || 0) / total : 0).toFixed(3)),
+                verifiedNationalShare: Number(tier2Share.toFixed(3)),
+                healthyThresholds: {
+                    minimumCountries: 54,
+                    minimumRegions: 5,
+                    minimumPublishers: 20,
+                    maximumCountryShare: 0.04,
+                    maximumPublisherShare: 0.08,
+                    maximumRegionShare: 0.38,
+                    minimumPrimaryOrGlobalShare: 0.50,
+                    maximumVerifiedNationalShare: 0.20,
+                },
             },
         });
     } catch (error) {

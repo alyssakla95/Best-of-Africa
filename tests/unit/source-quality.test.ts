@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverageAdmissionFailure, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
+import { coverageAdmissionFailure, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_CATALOG, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
 
 describe('source quality and coverage admission', () => {
     it('distinguishes authoritative, established, national and aggregator sources', () => {
@@ -8,13 +8,19 @@ describe('source quality and coverage admission', () => {
         expect(sourceQualityProfile('Ghana Business News', null, 'discovery').tier).toBe(2);
         expect(sourceQualityProfile('AllAfrica · Liberia', null, 'fixed').tier).toBe(1);
         expect(sourceQualityProfile('Unknown Blog', null, 'discovery').tier).toBe(0);
+        expect(sourceQualityProfile('Unknown Feed', 'https://example.test/feed', 'fixed').tier).toBe(0);
+        expect(sourceQualityProfile('Whoever Markets', 'https://whoever.example', 'discovery').tier).toBe(0);
     });
 
     it('ships a broad trusted discovery pool', () => {
-        expect(TRUSTED_DISCOVERY_DOMAINS.length).toBeGreaterThanOrEqual(12);
+        expect(TRUSTED_DISCOVERY_DOMAINS.length).toBeGreaterThanOrEqual(45);
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('reuters.com');
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('afdb.org');
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('afreximbank.com');
+        expect(new Set(TRUSTED_DISCOVERY_CATALOG.map(source => source.lane))).toEqual(new Set([
+            'global-news', 'markets', 'primary-evidence', 'sector-evidence',
+            'africa-specialist', 'multilingual',
+        ]));
     });
 
     it('caps rolling country and publisher concentration', () => {
@@ -29,6 +35,27 @@ describe('source quality and coverage admission', () => {
     it('rejects aggregators and unknown discovery publishers as final evidence sources', () => {
         expect(coverageAdmissionFailure({ total30d: 20, country30d: 0, source30d: 0, countryCode: 'LR', sourceName: 'AllAfrica', qualityTier: 1 }))
             .toContain('source quality gate');
+    });
+
+    it('limits lower-tier national reporting after it has filled a country gap', () => {
+        expect(coverageAdmissionFailure({
+            total30d: 100,
+            country30d: 2,
+            source30d: 2,
+            countryCode: 'GH',
+            sourceName: 'Ghana Business News',
+            qualityTier: 2,
+            tier2Total30d: 20,
+        })).toContain('source quality mix');
+        expect(coverageAdmissionFailure({
+            total30d: 100,
+            country30d: 0,
+            source30d: 2,
+            countryCode: 'LR',
+            sourceName: 'Verified Liberian outlet',
+            qualityTier: 2,
+            tier2Total30d: 20,
+        })).toBeNull();
     });
 
     it('keeps visible lists diverse without backfilling from dominant publishers', () => {

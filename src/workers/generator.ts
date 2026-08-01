@@ -65,6 +65,11 @@ export async function generateArticleFromQueue(
         const countryCode = await identifyCountry(env, itemData.title || '', itemData.content || '');
         const sectorId = await identifySector(env, itemData.title || '', itemData.content || '');
         const publisherName = publisherNameForArticle(itemData);
+        const quality = sourceQualityProfile(
+            publisherName,
+            itemData.publisher_url || itemData.url,
+            itemData.source_id === 'google-news-aggregator' ? 'discovery' : 'fixed',
+        );
 
         // Rolling admission guard. Lifetime totals let a short, intense publisher
         // or country spike dominate for weeks; the decision must use the current
@@ -72,16 +77,12 @@ export async function generateArticleFromQueue(
         const coverage = await env.DB.prepare(`
             SELECT COUNT(*) AS total_30d,
                    SUM(CASE WHEN ((? IS NULL AND country_code IS NULL) OR country_code = ?) THEN 1 ELSE 0 END) AS country_30d,
-                   SUM(CASE WHEN LOWER(COALESCE(source_title, '')) = LOWER(?) THEN 1 ELSE 0 END) AS source_30d
+                   SUM(CASE WHEN LOWER(COALESCE(source_title, '')) = LOWER(?) THEN 1 ELSE 0 END) AS source_30d,
+                   SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_30d
             FROM articles
             WHERE status IN ('published', 'pending_audit')
               AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
         `).bind(countryCode, countryCode, publisherName).first<Record<string, number>>();
-        const quality = sourceQualityProfile(
-            publisherName,
-            itemData.publisher_url || itemData.url,
-            itemData.source_id === 'google-news-aggregator' ? 'discovery' : 'fixed',
-        );
         const admissionFailure = coverageAdmissionFailure({
             total30d: Number(coverage?.total_30d || 0),
             country30d: Number(coverage?.country_30d || 0),
@@ -89,6 +90,7 @@ export async function generateArticleFromQueue(
             countryCode: countryCode || null,
             sourceName: publisherName,
             qualityTier: quality.tier,
+            tier2Total30d: Number(coverage?.tier2_30d || 0),
         });
         if (admissionFailure) {
             await env.DB.prepare(
@@ -137,10 +139,11 @@ export async function generateArticleFromQueue(
                 id, slug, title, subtitle, content, summary,
                 country_code, sector_id, tags,
                 reading_time_minutes, source_url, source_title, source_published_at,
+                source_quality_tier,
                 hero_image_url, image_credit, image_source_url,
                 generation_model, generation_prompt_version, ai_investor_brief,
                 status, moderation_status, published_at, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_audit', 'pending', NULL, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_audit', 'pending', NULL, datetime('now'))
         `).bind(
             articleId, slug,
             generated.title,
@@ -154,6 +157,7 @@ export async function generateArticleFromQueue(
             itemData.url           ?? null,
             publisherName,
             itemData.published_at  ?? null,
+            quality.tier,
             itemData.image_url ?? null,
             itemData.image_url ? (itemData.image_credit || itemData.source_name) : null,
             itemData.image_url ? (itemData.image_source_url || itemData.url) : null,

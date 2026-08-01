@@ -750,7 +750,10 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
         }
     }
 
-    c.header('Cache-Control', 'private, max-age=600, stale-while-revalidate=86400');
+    // Stored articles are already fast to read from D1, while translations and
+    // editorial corrections can change independently of the article slug.
+    // Revalidate on every open so returning browsers never retain obsolete copy.
+    c.header('Cache-Control', 'private, no-cache, max-age=0, must-revalidate');
     return c.json({
         article: {
             ...article,

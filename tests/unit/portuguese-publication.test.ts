@@ -38,6 +38,18 @@ describe('Portuguese publication locale', () => {
         });
     });
 
+    it('does not mix untranslated English cards into Portuguese article lists', async () => {
+        const statement = {
+            bind: () => statement,
+            all: async () => ({ results: [] }),
+        };
+        const env = { DB: { prepare: () => statement } } as unknown as Env;
+        const rows = [{ id: 'article-without-portuguese', title: 'English title' }];
+
+        expect(await localizeArticleList(env, rows, 'pt')).toEqual([]);
+        expect(await localizeArticleList(env, rows, 'en')).toEqual(rows);
+    });
+
     it('requests Portuguese content from reader endpoints while keeping generation disabled', async () => {
         const source = await import('node:fs/promises').then(fs => fs.readFile('frontend/src/services/api.ts', 'utf8'));
         expect(source).toContain("['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language)");

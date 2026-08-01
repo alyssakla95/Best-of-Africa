@@ -1254,6 +1254,150 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'What you should understand': 'O que deve compreender',
   'Worked example': 'Exemplo desenvolvido',
   'Close page guide': 'Fechar o guia da página',
+  'Back to': 'Voltar a',
+  'Manage corporate sponsorship delivery and review first-party impression, click and click-through records. Access is strictly limited to corporate partners.':
+    'Faça a gestão da entrega de patrocínios empresariais e consulte os registos próprios de impressões, cliques e taxa de cliques. O acesso é estritamente reservado aos parceiros empresariais.',
+  'Open secure sign-in': 'Abrir o início de sessão seguro',
+  'You do not have any active sponsorship campaigns running right now. Contact your account manager to launch one.':
+    'Não tem actualmente nenhuma campanha de patrocínio activa. Contacte o seu gestor de conta para iniciar uma campanha.',
+  'Daily impressions and clicks will appear here as this campaign runs.':
+    'As impressões e os cliques diários aparecerão aqui durante a campanha.',
+  'BOA-Story': 'BOA-Story',
+  'BOA': 'BOA',
+  'BOA-': 'BOA-',
+  'Best of Africa': 'Best of Africa',
+  'Currency Brief: NGN Stabilizing against USD': 'Síntese cambial: o NGN estabiliza face ao USD',
+  'Market Alert: Mozambique Energy Sector Surge': 'Alerta de mercado: forte avanço do sector energético de Moçambique',
+  'Policy Update: AfCFTA Implementation Readiness': 'Actualização de política: preparação para aplicar a ZCLCAf',
+  'LIVE': 'EM DIRECTO',
+  'ESC': 'ESC',
+  'Select': 'Seleccionar',
+  'Browse All Continent Summits &rarr;': 'Consultar todas as cimeiras continentais &rarr;',
+  'Browse All Continent Summits →': 'Consultar todas as cimeiras continentais →',
+  'MARKET CONTEXT': 'CONTEXTO DE MERCADO',
+  'The': 'O',
+  'Gov/Policy': 'Governo/Política',
+  'Investor': 'Investidor',
+  'NGO': 'ONG',
+  'Target Vectors': 'Vectores prioritários',
+  'Admin': 'Administração',
+  'Photo:': 'Fotografia:',
+  'VIEW:': 'VISTA:',
+  '7-day skill performance': 'Desempenho das funções nos últimos sete dias',
+  'Avg ms': 'Média em ms',
+  'Core OS v1.0.0': 'Sistema central v1.0.0',
+  'Core System': 'Sistema central',
+  'Done': 'Concluído',
+  'Fail': 'Falha',
+  'Latest Published': 'Publicação mais recente',
+  'Pipeline': 'Fluxo de trabalho',
+  'Recent Tasks (': 'Tarefas recentes (',
+  'Runs': 'Execuções',
+  'Sources': 'Fontes',
+  'Dispatch': 'Despacho',
+  'Ko-fi ↗': 'Ko-fi ↗',
+  'Africa,': 'África,',
+  'African nation': 'nação africana',
+  'Booking.com': 'Booking.com',
+  'Expedia': 'Expedia',
+  'Check-in': 'Entrada',
+  'Check-out': 'Saída',
+  'No credit card required to request. Availabilty confirmed in 2h.':
+    'Não é necessário cartão de crédito para efectuar o pedido. Disponibilidade confirmada no prazo de duas horas.',
+  'Save $': 'Poupe $',
+  'More': 'Mais',
+  'Market-intelligence guide': 'Guia de inteligência de mercado',
+  'Understand sector performance without specialist training.':
+    'Compreenda o desempenho sectorial sem formação especializada.',
+  'This page compares named measures of output, demand, access, capacity, cost and operating conditions. It does not turn unlike evidence into a single unsupported score.':
+    'Esta página compara indicadores identificados de produção, procura, acesso, capacidade, custo e condições operacionais. Não transforma dados incomparáveis numa pontuação única sem fundamento.',
+  'You should leave knowing what changed, how widespread it was, how countries differ, how recent the evidence is and which questions still need investigation.':
+    'No final, deverá saber o que mudou, qual foi a amplitude da mudança, como diferem os países, quão recentes são os dados e que questões ainda exigem investigação.',
+  'Identify the main performance measure and read its exact unit.':
+    'Identifique o principal indicador de desempenho e leia a respectiva unidade exacta.',
+  'Separate scale from growth: a large market can grow slowly, while a small market can grow quickly.':
+    'Separe dimensão de crescimento: um grande mercado pode crescer lentamente, enquanto um mercado pequeno pode crescer depressa.',
+  'Use country coverage and the middle-half range to see whether a continental figure is broadly representative.':
+    'Utilize a cobertura nacional e o intervalo da metade central para avaliar se um valor continental é amplamente representativo.',
+  'Compare the supporting measures separately; access, cost, infrastructure and output do not mean the same thing.':
+    'Compare separadamente os indicadores complementares; acesso, custo, infra-estruturas e produção não significam o mesmo.',
+  'Check the period and previous observation before describing a movement as current or sustained.':
+    'Confirme o período e a observação anterior antes de descrever uma evolução como actual ou sustentada.',
+  'Read the limitation and diligence questions before treating the evidence as an opportunity, risk or recommendation.':
+    'Leia as limitações e as questões de diligência antes de interpretar os dados como oportunidade, risco ou recomendação.',
+  'Performance proxy': 'Indicador indirecto de desempenho',
+  'A measurable indicator used to represent one part of sector activity; it is not the whole sector.':
+    'Um indicador mensurável utilizado para representar uma parte da actividade sectorial; não representa todo o sector.',
+  'The middle country after values are ordered, giving each reporting country equal weight.':
+    'O país central depois de ordenados os valores, atribuindo o mesmo peso a cada país declarante.',
+  'Breadth': 'Amplitude',
+  'How many comparable countries moved in the stated direction.':
+    'O número de países comparáveis que evoluíram na direcção indicada.',
+  'Dispersion': 'Dispersão',
+  'How far country readings are spread apart rather than clustered around one value.':
+    'O grau de dispersão dos valores nacionais, em vez da sua concentração em torno de um único valor.',
+  'Country-dossier guide': 'Guia do dossiê nacional',
+  'Build a country view from facts, change and context.':
+    'Construa uma visão do país a partir de factos, evolução e contexto.',
+  'The dossier combines dated country indicators, sector evidence, trade and economic context, and linked sources. Each section answers a different question about the country.':
+    'O dossiê combina indicadores nacionais datados, dados sectoriais, contexto comercial e económico e fontes ligadas. Cada secção responde a uma questão diferente sobre o país.',
+  'You should understand the country’s scale, recent direction, structural strengths, constraints and the age and coverage of the supporting evidence.':
+    'Deverá compreender a dimensão do país, a evolução recente, os pontos fortes estruturais, os condicionalismos e a antiguidade e cobertura dos dados de apoio.',
+  'Confirm the country, latest observation date and source.':
+    'Confirme o país, a data da observação mais recente e a fonte.',
+  'Read the plain-language overview before comparing detailed measures.':
+    'Leia a visão geral em linguagem clara antes de comparar os indicadores pormenorizados.',
+  'Separate current conditions from longer-term structural characteristics.':
+    'Distinga as condições actuais das características estruturais de longo prazo.',
+  'Keep currency totals, percentages and per-person figures in their own units.':
+    'Mantenha os totais monetários, as percentagens e os valores por pessoa nas respectivas unidades.',
+  'Use sector and trade sections to add context rather than infer causation.':
+    'Utilize as secções sectoriais e comerciais para acrescentar contexto, não para inferir causalidade.',
+  'Open primary sources and compare countries on like-for-like periods for important decisions.':
+    'Abra as fontes primárias e compare os países em períodos equivalentes antes de tomar decisões importantes.',
+  'Latest observation': 'Observação mais recente',
+  'The newest available official value, which may predate today because reporting is delayed.':
+    'O valor oficial disponível mais recente, que pode ser anterior à data actual devido a atrasos na publicação.',
+  'Per capita': 'Por habitante',
+  'A total divided by population, useful for scale-adjusted comparison.':
+    'Um total dividido pela população, útil para comparações ajustadas à dimensão.',
+  'Structural': 'Estrutural',
+  'A persistent feature of an economy rather than a short-term movement.':
+    'Uma característica persistente de uma economia, em vez de uma evolução de curto prazo.',
+  'Source date': 'Data da fonte',
+  'When the underlying observation was measured, not merely when this page retrieved it.':
+    'A data em que a observação subjacente foi medida, não apenas a data em que esta página a recolheu.',
+  'Story and briefing guide': 'Guia de histórias e sínteses',
+  'Separate established facts, analysis and open questions.':
+    'Distinga factos estabelecidos, análise e questões em aberto.',
+  'Stories and briefings explain events using named actors, dates, evidence and context. Analysis can clarify significance without turning uncertainty into fact.':
+    'As histórias e as sínteses explicam acontecimentos através de intervenientes identificados, datas, dados e contexto. A análise pode esclarecer o significado sem transformar a incerteza em facto.',
+  'You should understand what happened, why it matters, which claims are directly supported and what remains uncertain or contested.':
+    'Deverá compreender o que aconteceu, por que razão é importante, que afirmações têm apoio directo e o que permanece incerto ou contestado.',
+  'Read the publication date, update date and central summary.':
+    'Leia a data de publicação, a data de actualização e a síntese principal.',
+  'Identify the event, decision or evidence that supports the headline.':
+    'Identifique o acontecimento, a decisão ou os dados que sustentam o título.',
+  'Distinguish direct facts and attributed claims from interpretation.':
+    'Distinga os factos directos e as afirmações atribuídas da interpretação.',
+  'Check source links and the dates of the evidence.':
+    'Confirme as ligações das fontes e as datas dos dados.',
+  'Use related context to understand what preceded the event.':
+    'Utilize o contexto relacionado para compreender o que precedeu o acontecimento.',
+  'Treat forecasts and implications as conditional, not guaranteed outcomes.':
+    'Trate as previsões e implicações como condicionais, não como resultados garantidos.',
+  'Attribution': 'Atribuição',
+  'Naming who supplied a claim, estimate or opinion.':
+    'Identificação de quem forneceu uma afirmação, estimativa ou opinião.',
+  'Analysis': 'Análise',
+  'Reasoned interpretation of evidence rather than a newly observed fact.':
+    'Interpretação fundamentada dos dados, e não um facto recentemente observado.',
+  'Primary source': 'Fonte primária',
+  'The original institution, filing, dataset, speech or document behind a claim.':
+    'A instituição, o registo, o conjunto de dados, o discurso ou o documento original subjacente a uma afirmação.',
+  'Uncertainty': 'Incerteza',
+  'What the available evidence cannot yet establish confidently.':
+    'Aquilo que os dados disponíveis ainda não permitem estabelecer com segurança.',
   'Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.':
     'Leia os dados por camadas: definição, valor, comparação, cobertura, período e limitação. Isto evita que um número elevado, uma evolução positiva ou uma classificação alta sejam confundidos com uma conclusão completa.',
   'A value is evidence, not a verdict.': 'Um valor é um dado, não um veredicto.',
@@ -1326,7 +1470,6 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Posts': 'Publicações',
   'Story': 'História',
   'Browse countries': 'Consultar países',
-  'Browse All Continent Summits →': 'Consultar todas as cimeiras do continente →',
   'Key Upcoming Summits': 'Principais cimeiras futuras',
   'No upcoming summits scheduled for this region.': 'Não há cimeiras futuras programadas para esta região.',
   'View Agenda': 'Ver o programa',
@@ -1533,24 +1676,38 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
     'A regra utilizada para combinar observações nacionais, como um total ou uma mediana.',
   'The share of Africa’s 54 countries represented by usable observations.':
     'A proporção dos 54 países de África representada por observações utilizáveis.',
+  'Page guide': 'Guia da página',
+  'Understand what this page offers and how to use it.': 'Compreenda o que esta página oferece e como a utilizar.',
+  'The introduction explains the page’s purpose. Major sections move from overview to detail, while links and controls let you inspect the underlying content.':
+    'A introdução explica a finalidade da página. As secções principais avançam da visão geral para o pormenor, enquanto as ligações e os controlos permitem consultar o conteúdo subjacente.',
+  'You should be able to find the main information, understand its context and move to the relevant story, country, event or intelligence page.':
+    'Deverá conseguir encontrar a informação principal, compreender o seu contexto e seguir para a história, o país, o evento ou a página de inteligência pertinente.',
+  'Read the title and introduction to confirm the page’s purpose.':
+    'Leia o título e a introdução para confirmar a finalidade da página.',
+  'Use the sticky main navigation and section navigation on long pages.':
+    'Nas páginas extensas, utilize a navegação principal fixa e a navegação entre secções.',
+  'Begin with summaries, then open supporting detail when needed.':
+    'Comece pelas sínteses e abra depois os pormenores de apoio quando necessário.',
+  'Check labels, dates and sources before relying on a claim.':
+    'Confirme os rótulos, as datas e as fontes antes de confiar numa afirmação.',
+  'Use clear action links to continue to the next relevant page.':
+    'Utilize as ligações de acção para prosseguir para a página pertinente seguinte.',
+  'Return to this guide whenever an unfamiliar term or structure appears.':
+    'Volte a este guia sempre que encontrar um termo ou uma estrutura desconhecidos.',
+  'Overview': 'Visão geral',
+  'A concise orientation to the page, not a replacement for its supporting detail.':
+    'Uma orientação concisa sobre a página, que não substitui os pormenores de apoio.',
+  'Source': 'Fonte',
+  'The publisher, institution or dataset from which information was obtained.':
+    'O editor, a instituição ou o conjunto de dados de onde foi obtida a informação.',
+  'Background needed to understand why a fact or event matters.':
+    'O enquadramento necessário para compreender por que razão um facto ou acontecimento é importante.',
+  'Updated': 'Actualizado',
+  'When the page or dataset was most recently refreshed.':
+    'A data da actualização mais recente da página ou do conjunto de dados.',
 };
-
-const PHRASE_RULES = Object.entries(PORTUGUESE_INTERFACE_PHRASES)
-  .sort(([left], [right]) => right.length - left.length)
-  .map(([english, portuguese]) => {
-    const escaped = english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const prefix = /^[A-Za-z0-9]/.test(english) ? '\\b' : '';
-    const suffix = /[A-Za-z0-9]$/.test(english) ? '\\b' : '';
-    return [new RegExp(`${prefix}${escaped}${suffix}`, 'g'), portuguese] as const;
-  });
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {
   const exact = PORTUGUESE_INTERFACE_PHRASES[value];
-  if (exact) return applyPortuguese1945Orthography(exact);
-
-  const translated = PHRASE_RULES.reduce(
-    (result, [pattern, replacement]) => result.replace(pattern, replacement),
-    value,
-  );
-  return translated === value ? undefined : applyPortuguese1945Orthography(translated);
+  return exact ? applyPortuguese1945Orthography(exact) : undefined;
 }

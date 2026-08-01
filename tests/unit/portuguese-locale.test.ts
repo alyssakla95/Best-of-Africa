@@ -93,13 +93,29 @@ describe('coded Portuguese interface locale', () => {
             .toBe('Quantos países forneceram dados utilizáveis e poderiam os países em falta alterar o panorama continental?');
     });
 
+    it('translates the shared default page guide without mixed-language fragments', () => {
+        expect(translatePortugueseInterfaceText('The introduction explains the page’s purpose. Major sections move from overview to detail, while links and controls let you inspect the underlying content.'))
+            .toBe('A introdução explica a finalidade da página. As secções principais avançam da visão geral para o pormenor, enquanto as ligações e os controlos permitem consultar o conteúdo subjacente.');
+        expect(translatePortugueseInterfaceText('You should be able to find the main information, understand its context and move to the relevant story, country, event or intelligence page.'))
+            .toBe('Deverá conseguir encontrar a informação principal, compreender o seu contexto e seguir para a história, o país, o evento ou a página de inteligência pertinente.');
+        expect(translatePortugueseInterfaceText('Use the sticky main navigation and section navigation on long pages.'))
+            .toBe('Nas páginas extensas, utilize a navegação principal fixa e a navegação entre secções.');
+    });
+
     it('covers direct copy across every reader-facing routed page', () => {
         const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
-        const pageFiles = readdirSync('frontend/src/pages', { recursive: true })
-            .map(entry => String(entry).replaceAll('\\', '/'))
-            .filter(entry => entry.endsWith('.tsx'))
-            .filter(entry => !entry.endsWith('AdminPage.tsx'))
-            .map(entry => `frontend/src/pages/${entry}`);
+        const pageFiles = [
+            ...readdirSync('frontend/src/pages', { recursive: true })
+                .map(entry => String(entry).replaceAll('\\', '/'))
+                .filter(entry => entry.endsWith('.tsx'))
+                .filter(entry => !entry.endsWith('AdminPage.tsx'))
+                .map(entry => `frontend/src/pages/${entry}`),
+            ...readdirSync('frontend/src/components', { recursive: true })
+                .map(entry => String(entry).replaceAll('\\', '/'))
+                .filter(entry => entry.endsWith('.tsx'))
+                .filter(entry => !entry.startsWith('admin/'))
+                .map(entry => `frontend/src/components/${entry}`),
+        ];
         const missingByFile: Record<string, string[]> = {};
 
         for (const file of pageFiles) {
@@ -120,7 +136,7 @@ describe('coded Portuguese interface locale', () => {
                 ts.forEachChild(node, visit);
             };
             visit(source);
-            if (missing.size) missingByFile[file.replace('frontend/src/pages/', '')] = [...missing].sort();
+            if (missing.size) missingByFile[file.replace('frontend/src/', '')] = [...missing].sort();
         }
 
         expect(missingByFile).toEqual({});

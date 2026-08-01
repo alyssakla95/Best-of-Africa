@@ -87,15 +87,16 @@ export async function localizeArticleList<T extends { id?: string }>(env: Env, r
         WHERE language = ? AND quality >= 0 AND article_id IN (${placeholders})
     `).bind(language, ...ids).all<{ article_id: string; title: string; subtitle: string | null; summary: string | null }>();
     const byId = new Map((translations.results || []).map(translation => [translation.article_id, translation]));
-    return rows.map(row => {
+    return rows.flatMap(row => {
         const translation = row.id ? byId.get(row.id) : undefined;
-        return translation ? {
+        if (!translation) return language === 'pt' ? [] : [row];
+        return [{
             ...row,
             title: language === 'pt' ? normalisePortuguesePortugal1945(translation.title) : translation.title,
             ...(translation.subtitle ? { subtitle: language === 'pt' ? normalisePortuguesePortugal1945(translation.subtitle) : translation.subtitle } : {}),
             ...(translation.summary ? { summary: language === 'pt' ? normalisePortuguesePortugal1945(translation.summary) : translation.summary } : {}),
             title_language: language,
-        } : row;
+        }];
     });
 }
 
@@ -121,27 +122,32 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
     const offset = (pageNum - 1) * limitNum;
 
     // Build query
-    let whereClause = "WHERE status = 'published'";
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    let whereClause = "WHERE a.status = 'published'";
     const params: unknown[] = [];
 
+    if (reqLang === 'pt') {
+        whereClause += " AND EXISTS (SELECT 1 FROM article_translations pt WHERE pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0 AND length(trim(pt.title)) > 0)";
+    }
+
     if (country) {
-        whereClause += ' AND country_code = ?';
+        whereClause += ' AND a.country_code = ?';
         params.push(country.toUpperCase());
     }
 
     if (sector) {
-        whereClause += ' AND sector_id = ?';
+        whereClause += ' AND a.sector_id = ?';
         params.push(sector);
     }
 
     if (region) {
-        whereClause += ' AND country_code IN (SELECT code FROM countries WHERE region = ?)';
+        whereClause += ' AND a.country_code IN (SELECT code FROM countries WHERE region = ?)';
         params.push(region);
     }
 
     // Add urgency filter
     if (urgency && urgency !== 'Normal') {
-        whereClause += ' AND urgency = ?';
+        whereClause += ' AND a.urgency = ?';
         params.push(urgency);
     }
 
@@ -161,7 +167,7 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
 
     try {
         const countResult = await c.env.DB.prepare(
-            `SELECT COUNT(*) as total FROM articles ${whereClause}`
+            `SELECT COUNT(*) as total FROM articles a ${whereClause}`
         ).bind(...params).first<{ total: number }>();
 
         total = countResult?.total || 0;
@@ -183,7 +189,7 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
     LIMIT ? OFFSET ?
   `).bind(...params, limitNum, offset).all<ArticleListItem>();
 
-        articleResults = await localizeArticleList(c.env, articles.results || [], c.req.query('lang')?.toLowerCase());
+        articleResults = await localizeArticleList(c.env, articles.results || [], reqLang);
     } catch (err) {
         console.error('[articles] list query failed:', err);
         // Return empty paginated response rather than 500
@@ -234,6 +240,10 @@ function diversifyByCountry<T extends { country_code?: string | null }>(rows: T[
 router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true, lens: true })), async (c) => {
     const { limit, lens } = (c.req as any).valid('query') as { limit: number; lens?: string };
     const limitNum = limit;
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseOnly = reqLang === 'pt'
+        ? " AND EXISTS (SELECT 1 FROM article_translations pt WHERE pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0 AND length(trim(pt.title)) > 0)"
+        : '';
 
     // Build where clause for lens
     let lensWhereClause = '';
@@ -246,7 +256,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
     // Cache featured articles for 5 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_FEATURED}:${limitNum}:${lens || 'all'}`,
+        `${CACHE_KEYS.ARTICLES_FEATURED}:${limitNum}:${lens || 'all'}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -260,7 +270,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
-                WHERE a.status = 'published' ${lensWhereClause}
+                WHERE a.status = 'published' ${lensWhereClause} ${portugueseOnly}
                 ORDER BY a.curated DESC, ((a.engagement_score + 3.0) / pow((julianday('now') - julianday(a.published_at)) + 2, 1.3)) DESC, a.published_at DESC, a.id DESC
                 LIMIT ?
             `).bind(...lensParams, limitNum * 4).all();
@@ -295,8 +305,16 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
         `${index + 1}. ${article.title}. ${(article.summary || '').slice(0, 320)}`
     ).join('\n\n');
 
-    const localizedArticles = await localizeArticleList(c.env, articles as ArticleListItem[], c.req.query('lang')?.toLowerCase());
-    return c.json({ data: localizedArticles, ai_global_briefing: globalBriefing || `Current source-linked reporting\n\n${recordBriefing}` });
+    const localizedArticles = await localizeArticleList(c.env, articles as ArticleListItem[], reqLang);
+    const portugueseBriefing = localizedArticles.slice(0, 5).map((article, index) =>
+        `${index + 1}. ${article.title}. ${(article.summary || '').slice(0, 320)}`
+    ).join('\n\n');
+    return c.json({
+        data: localizedArticles,
+        ai_global_briefing: reqLang === 'pt'
+            ? `Informação actual sustentada por fontes\n\n${portugueseBriefing}`
+            : globalBriefing || `Current source-linked reporting\n\n${recordBriefing}`,
+    });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -305,11 +323,15 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
 router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })), async (c) => {
     const { limit } = (c.req as any).valid('query') as { limit: number };
     const limitNum = limit;
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseOnly = reqLang === 'pt'
+        ? " AND EXISTS (SELECT 1 FROM article_translations pt WHERE pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0 AND length(trim(pt.title)) > 0)"
+        : '';
 
     // Cache latest articles for 2 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_LATEST}:${limitNum}`,
+        `${CACHE_KEYS.ARTICLES_LATEST}:${limitNum}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -321,7 +343,7 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
-                WHERE a.status = 'published'
+                 WHERE a.status = 'published' ${portugueseOnly}
                 ORDER BY a.published_at DESC
                 LIMIT ?
             `).bind(limitNum * 4).all();
@@ -330,7 +352,7 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
         { ttl: CACHE_TTL.DYNAMIC }
     );
 
-    return c.json({ data: await localizeArticleList(c.env, articles as ArticleListItem[], c.req.query('lang')?.toLowerCase()) });
+    return c.json({ data: await localizeArticleList(c.env, articles as ArticleListItem[], reqLang) });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -343,6 +365,10 @@ router.get('/country/:code', validate('param', CountryCodeParamSchema), validate
     const pageNum = page;
     const limitNum = limit;
     const offset = (pageNum - 1) * limitNum;
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseOnly = reqLang === 'pt'
+        ? " AND EXISTS (SELECT 1 FROM article_translations pt WHERE pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0 AND length(trim(pt.title)) > 0)"
+        : '';
 
     // Get country info
     const country = await c.env.DB.prepare(
@@ -355,7 +381,7 @@ router.get('/country/:code', validate('param', CountryCodeParamSchema), validate
 
     // Get articles
     const countResult = await c.env.DB.prepare(
-        "SELECT COUNT(*) as total FROM articles WHERE country_code = ? AND status = 'published'"
+        `SELECT COUNT(*) as total FROM articles a WHERE a.country_code = ? AND a.status = 'published' ${portugueseOnly}`
     ).bind(code).first<{ total: number }>();
 
     const total = countResult?.total || 0;
@@ -368,7 +394,7 @@ router.get('/country/:code', validate('param', CountryCodeParamSchema), validate
       a.published_at, a.engagement_score
     FROM articles a
     LEFT JOIN sectors s ON a.sector_id = s.id
-    WHERE a.country_code = ? AND a.status = 'published'
+    WHERE a.country_code = ? AND a.status = 'published' ${portugueseOnly}
     ORDER BY a.published_at DESC
     LIMIT ? OFFSET ?
   `).bind(code, limitNum, offset).all();
@@ -377,7 +403,7 @@ router.get('/country/:code', validate('param', CountryCodeParamSchema), validate
     return c.json({
         country,
         articles: {
-            data: await localizeArticleList(c.env, articles.results || [], c.req.query('lang')?.toLowerCase()),
+            data: await localizeArticleList(c.env, articles.results || [], reqLang),
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -398,6 +424,10 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
     const pageNum = page;
     const limitNum = limit;
     const offset = (pageNum - 1) * limitNum;
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseOnly = reqLang === 'pt'
+        ? " AND EXISTS (SELECT 1 FROM article_translations pt WHERE pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0 AND length(trim(pt.title)) > 0)"
+        : '';
 
     // Get sector info
     const sector = await c.env.DB.prepare(
@@ -410,7 +440,7 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
 
     // Get articles
     const countResult = await c.env.DB.prepare(
-        "SELECT COUNT(*) as total FROM articles WHERE sector_id = ? AND status = 'published'"
+        `SELECT COUNT(*) as total FROM articles a WHERE a.sector_id = ? AND a.status = 'published' ${portugueseOnly}`
     ).bind(sectorId).first<{ total: number }>();
 
     const total = countResult?.total || 0;
@@ -423,7 +453,7 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
       a.published_at, a.engagement_score
     FROM articles a
     LEFT JOIN countries c ON a.country_code = c.code
-    WHERE a.sector_id = ? AND a.status = 'published'
+    WHERE a.sector_id = ? AND a.status = 'published' ${portugueseOnly}
     ORDER BY a.published_at DESC
     LIMIT ? OFFSET ?
   `).bind(sectorId, limitNum, offset).all();
@@ -461,7 +491,7 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
             ai_outlook: aiOutlook || immediateSectorOutlook
         },
         articles: {
-            data: await localizeArticleList(c.env, articles.results || [], c.req.query('lang')?.toLowerCase()),
+            data: await localizeArticleList(c.env, articles.results || [], reqLang),
             pagination: {
                 page: pageNum,
                 limit: limitNum,

@@ -2,6 +2,7 @@ import type { Article, ArticleListItem, CalendarEvent, Country, CountryStats, Da
 import { readThroughCache } from '@/lib/persistentQueryCache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
+const ARTICLE_CONTENT_REVISION = 'pt1945-v2';
 
 // Session helper
 const getSessionId = () => {
@@ -339,16 +340,19 @@ export interface GeneratedReport {
 export const api = {
     // Articles
     getArticles: (params: Record<string, string> = {}) => {
-        const searchParams = new URLSearchParams({ ...params, lang: params.lang || getReaderLanguage() });
+        const searchParams = new URLSearchParams({ ...params, lang: params.lang || getReaderLanguage(), content_rev: ARTICLE_CONTENT_REVISION });
         const endpoint = `/articles?${searchParams}`;
         return readerRequest<PaginatedResponse<ArticleListItem>>(endpoint, 5 * 60 * 1000);
     },
-    getArticle: (slug: string, lang?: string) =>
-        readerRequest<{ article: Article; country: Country; sector: Sector; related: ArticleListItem[] }>(
-            `/articles/${slug}${lang && ['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(lang) ? `?lang=${lang}` : ''}`,
+    getArticle: (slug: string, lang?: string) => {
+        const searchParams = new URLSearchParams({ content_rev: ARTICLE_CONTENT_REVISION });
+        if (lang && ['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(lang)) searchParams.set('lang', lang);
+        return readerRequest<{ article: Article; country: Country; sector: Sector; related: ArticleListItem[] }>(
+            `/articles/${slug}?${searchParams}`,
             5 * 60 * 1000,
-        ),
-    getFeaturedArticles: () => readerRequest<{ data: ArticleListItem[] }>(`/articles/featured?limit=20&lang=${getReaderLanguage()}`, 5 * 60 * 1000),
+        );
+    },
+    getFeaturedArticles: () => readerRequest<{ data: ArticleListItem[] }>(`/articles/featured?limit=20&lang=${getReaderLanguage()}&content_rev=${ARTICLE_CONTENT_REVISION}`, 5 * 60 * 1000),
     getWorldCupTeams: () => request<{
         teams: { name: string; flag: string; code: string }[];
         updated_at: string | null;

@@ -2367,6 +2367,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   "Exploring Mauritius as Africa's offshore financial center and gateway to Asia.": 'Análise da Maurícia como centro financeiro internacional de África e porta de entrada para a Ásia.',
   "Ethiopia's flagship investment event at the seat of the African Union.": 'O principal evento de investimento da Etiópia, na sede da União Africana.',
   "Spotlight on Tanzania's gold, nickel, and rare earth minerals sectors.": 'Destaque para os sectores do ouro, níquel e minerais de terras raras da Tanzânia.',
+  'The rolling evidence window remains too concentrated by country or publisher.': 'A janela documental móvel continua demasiado concentrada por país ou entidade editora.',
+  'Coverage diversity check failed': 'A verificação da diversidade da cobertura falhou',
 };
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {

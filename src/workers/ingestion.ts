@@ -5,6 +5,7 @@
 
 import type { Env, ContentGenerationMessage } from '../types';
 import { extractPublisherImage, normalizeEditorialImageUrl } from '../lib/editorial-images';
+import { sourceQualityProfile, TRUSTED_DISCOVERY_DOMAINS } from '../lib/source-quality';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // RSS Feed Parser (Simple)
@@ -335,12 +336,20 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     SELECT id, name, type, url, country_code, sector_id
     FROM sources
     WHERE is_active = 1
+      AND (last_fetched_at IS NULL OR last_fetched_at <= datetime('now', '-' || COALESCE(fetch_interval_minutes, 60) || ' minutes'))
       AND id = (
         SELECT s2.id FROM sources s2
         WHERE s2.is_active = 1 AND s2.url = sources.url
         ORDER BY s2.created_at ASC, s2.id ASC LIMIT 1
       )
-    ORDER BY last_fetched_at ASC
+    ORDER BY
+      CASE
+        WHEN name IN ('UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization', 'African Development Bank Group') THEN 0
+        WHEN name IN ('BBC Africa', 'The Africa Report', 'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
+        WHEN name LIKE 'AllAfrica%' THEN 3
+        ELSE 2
+      END,
+      last_fetched_at ASC
     LIMIT ?
   `).bind(SOURCES_PER_RUN).all();
 
@@ -350,7 +359,7 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     // Per-invocation budgets (shared across fixed-source + discovery tasks) to
     // cap total fetches/DB writes and stay within Worker limits.
     const MAX_ITEMS_PER_SOURCE = 6;
-    const MAX_NEW_ITEMS_PER_FIXED_SOURCE = 2;
+    const MAX_NEW_ITEMS_PER_FIXED_SOURCE = 1;
     let scrapeBudget = 8;   // full-content scrapes (each is an extra fetch)
     let fixedItemBudget = 12;
     let discoveryItemBudget = 8;
@@ -363,6 +372,12 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
             await Promise.all(batch.map(async (source: any) => {
                 const s = source;
                 try {
+                    const sourceProfile = sourceQualityProfile(s.name, s.url, 'fixed');
+                    if (sourceProfile.tier <= 1) {
+                        await env.DB.prepare(`UPDATE sources SET last_fetched_at = datetime('now') WHERE id = ?`).bind(s.id).run();
+                        console.warn(`[ingestion] Skipping non-independent source ${s.name}.`);
+                        return;
+                    }
                     let items: Array<{ title: string; url: string; content: string; publishedAt: string; imageUrl: string | null; imageCredit: string | null; publisherName: string | null; publisherUrl: string | null }> = [];
 
                     if (s.type === 'rss') {
@@ -440,31 +455,43 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             // PRIORITY TARGETING: Query underserved countries first
             const underservedQuery = await env.DB.prepare(`
-                SELECT c.name, COUNT(a.id) as article_count
+                SELECT c.code, c.name, c.region,
+                       SUM(CASE WHEN a.status IN ('published', 'pending_audit')
+                                 AND a.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS article_count
                 FROM countries c
                 LEFT JOIN articles a ON a.country_code = c.code
                 GROUP BY c.code
-                ORDER BY article_count ASC
-                LIMIT 20
+                ORDER BY article_count ASC, c.region ASC, c.name ASC
             `).all();
 
             const [sectors] = await Promise.all([
                 env.DB.prepare('SELECT name FROM sectors').all()
             ]);
 
-            // PRIORITY: 10 most underserved countries + 5 random for diversity
-            const underservedCountries = (underservedQuery.results || []).map((c: any) => c.name);
-            const targetCountries = underservedCountries.slice(0, 4);
+            // Take one under-covered country from every region on each run. Rotate
+            // within each regional queue so a country with no usable articles does
+            // not permanently monopolise the discovery slot.
+            const minute = Math.floor(Date.now() / 60000);
+            const byRegion = new Map<string, Array<{ name: string; article_count: number }>>();
+            for (const country of (underservedQuery.results || []) as Array<{ name: string; region: string; article_count: number }>) {
+                const group = byRegion.get(country.region) || [];
+                group.push(country);
+                byRegion.set(country.region, group);
+            }
+            const targetCountries = [...byRegion.values()].map(group => group[minute % group.length]?.name).filter(Boolean);
             const sectorList = (sectors.results || []).map((s: any) => s.name);
-            const targetSectors = sectorList.sort(() => 0.5 - Math.random()).slice(0, 2);
+            const targetSector = sectorList[minute % Math.max(1, sectorList.length)];
+            const trustedDomains = [
+                TRUSTED_DISCOVERY_DOMAINS[(minute * 2) % TRUSTED_DISCOVERY_DOMAINS.length],
+                TRUSTED_DISCOVERY_DOMAINS[(minute * 2 + 1) % TRUSTED_DISCOVERY_DOMAINS.length],
+            ];
 
             console.log(`PRIORITY COUNTRIES (underserved): ${targetCountries.join(', ')}`);
 
             const queries = [
-                ...targetCountries.map((c: string) => `"${c}" business news when:1d`),
-                ...targetSectors.map((s: string) => `"${s}" industry Africa news when:1d`),
-                '"Africa" economy investment when:1h',
-                `site:${['afdb.org', 'worldbank.org', 'imf.org', 'uneca.org', 'au.int', 'unctad.org', 'wto.org', 'news.un.org'][Math.floor(Date.now() / 60000) % 8]} Africa economy trade investment when:7d`,
+                ...targetCountries.map((c: string) => `"${c}" (economy OR business OR trade OR investment) when:2d`),
+                ...(targetSector ? [`"${targetSector}" Africa market policy when:2d`] : []),
+                ...trustedDomains.map(domain => `site:${domain} Africa economy trade investment when:7d`),
             ];
 
             console.log(`Aggregating topics: ${queries.join(' | ')}`);
@@ -479,6 +506,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         if (discoveryItemBudget <= 0 || acceptedFromQuery >= 1) break;
                         // Discovery results can drift off-topic — enforce the same Africa gate.
                         if (!isAfricanContent(item.title, item.description || '')) continue;
+                        const publisherProfile = sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery');
+                        if (publisherProfile.tier <= 1) {
+                            console.warn(`[ingestion] Discovery source rejected: ${item.publisherName || item.publisherUrl || 'unknown publisher'}.`);
+                            continue;
+                        }
                         const existing = await env.DB.prepare(`SELECT id FROM ingested_items WHERE external_id = ?`).bind(item.link).first();
                         if (existing) continue;
 

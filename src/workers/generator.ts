@@ -10,6 +10,7 @@ import { generateAudioNarration } from '../lib/audio';
 import { checkContentIntegrity } from '../lib';
 import { publisherNameForArticle } from '../lib/source-attribution';
 import { sourceEvidenceFailure } from '../lib/editorial-quality';
+import { coverageAdmissionFailure, sourceQualityProfile } from '../lib/source-quality';
 
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -63,29 +64,38 @@ export async function generateArticleFromQueue(
         // provenance, not evidence that every syndicated story concerns that market.
         const countryCode = await identifyCountry(env, itemData.title || '', itemData.content || '');
         const sectorId = await identifySector(env, itemData.title || '', itemData.content || '');
+        const publisherName = publisherNameForArticle(itemData);
 
-        // ── Fair-share guard ──────────────────────────────────────────────────
-        // The mission is balanced coverage of all 54 nations, but the news feed
-        // mirrors mainstream media's heavy Nigeria/South-Africa bias. Without a
-        // check, scarce AI budget keeps piling onto already-saturated countries
-        // while most of the continent stays under-covered. Probabilistically skip
-        // items for over-represented countries (more skew → higher skip rate, but
-        // always let ~15% through so genuine news still lands) BEFORE spending any
-        // generation budget, freeing it for under-covered nations.
-        if (countryCode) {
-            const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM articles WHERE country_code = ?').bind(countryCode).first();
-            const n = ((row as Record<string, any>)?.n as number) || 0;
-            const FAIR_SHARE = 600; // generous per-country ceiling before throttling kicks in
-            if (n > FAIR_SHARE) {
-                const skipProb = Math.min(0.85, 1 - FAIR_SHARE / n);
-                if (Math.random() < skipProb) {
-                    await env.DB.prepare(
-                        "UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?"
-                    ).bind(`fair-share skip: ${countryCode} already has ${n} articles`, message.ingested_item_id).run();
-                    console.log(`Fair-share skip: ${countryCode} (${n} articles) to keep pan-African coverage balanced`);
-                    return;
-                }
-            }
+        // Rolling admission guard. Lifetime totals let a short, intense publisher
+        // or country spike dominate for weeks; the decision must use the current
+        // 30-day editorial window and it must constrain publishers independently.
+        const coverage = await env.DB.prepare(`
+            SELECT COUNT(*) AS total_30d,
+                   SUM(CASE WHEN ((? IS NULL AND country_code IS NULL) OR country_code = ?) THEN 1 ELSE 0 END) AS country_30d,
+                   SUM(CASE WHEN LOWER(COALESCE(source_title, '')) = LOWER(?) THEN 1 ELSE 0 END) AS source_30d
+            FROM articles
+            WHERE status IN ('published', 'pending_audit')
+              AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+        `).bind(countryCode, countryCode, publisherName).first<Record<string, number>>();
+        const quality = sourceQualityProfile(
+            publisherName,
+            itemData.publisher_url || itemData.url,
+            itemData.source_id === 'google-news-aggregator' ? 'discovery' : 'fixed',
+        );
+        const admissionFailure = coverageAdmissionFailure({
+            total30d: Number(coverage?.total_30d || 0),
+            country30d: Number(coverage?.country_30d || 0),
+            source30d: Number(coverage?.source_30d || 0),
+            countryCode: countryCode || null,
+            sourceName: publisherName,
+            qualityTier: quality.tier,
+        });
+        if (admissionFailure) {
+            await env.DB.prepare(
+                "UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?"
+            ).bind(admissionFailure, message.ingested_item_id).run();
+            console.log(`[generator] ${admissionFailure}`);
+            return;
         }
 
         // Get country and sector names for prompt
@@ -142,7 +152,7 @@ export async function generateArticleFromQueue(
             generated.tags ? JSON.stringify(generated.tags) : '[]',
             readingTime,
             itemData.url           ?? null,
-            publisherNameForArticle(itemData),
+            publisherName,
             itemData.published_at  ?? null,
             itemData.image_url ?? null,
             itemData.image_url ? (itemData.image_credit || itemData.source_name) : null,

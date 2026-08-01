@@ -241,6 +241,67 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    // Coverage health is an output invariant. A running ingestion cron is not
+    // healthy when one country or publisher dominates the evidence window.
+    const diversityStart = Date.now();
+    try {
+        const diversity = await c.env.DB.prepare(`
+            WITH recent AS (
+                SELECT country_code, COALESCE(NULLIF(source_title, ''), 'unattributed') AS source_title
+                FROM articles
+                WHERE status = 'published' AND published_at >= datetime('now', '-30 days')
+            ),
+            country_counts AS (
+                SELECT COALESCE(country_code, 'continental/unclassified') AS name, COUNT(*) AS n
+                FROM recent GROUP BY country_code ORDER BY n DESC LIMIT 1
+            ),
+            source_counts AS (
+                SELECT source_title AS name, COUNT(*) AS n
+                FROM recent GROUP BY source_title ORDER BY n DESC LIMIT 1
+            )
+            SELECT COUNT(*) AS total,
+                   COUNT(DISTINCT country_code) AS countries,
+                   COUNT(DISTINCT source_title) AS publishers,
+                   (SELECT name FROM country_counts) AS top_country,
+                   COALESCE((SELECT n FROM country_counts), 0) AS top_country_count,
+                   (SELECT name FROM source_counts) AS top_publisher,
+                   COALESCE((SELECT n FROM source_counts), 0) AS top_publisher_count
+            FROM recent
+        `).first<Record<string, string | number | null>>();
+        const total = Number(diversity?.total || 0);
+        const countryShare = total ? Number(diversity?.top_country_count || 0) / total : 0;
+        const publisherShare = total ? Number(diversity?.top_publisher_count || 0) / total : 0;
+        const balanced = total === 0 || (
+            Number(diversity?.countries || 0) >= 20
+            && countryShare <= 0.12
+            && publisherShare <= 0.18
+        );
+        checks.push({
+            name: 'coverage_diversity',
+            status: balanced ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - diversityStart,
+            message: balanced ? undefined : 'The rolling evidence window remains too concentrated by country or publisher.',
+            details: {
+                windowDays: 30,
+                total,
+                countries: Number(diversity?.countries || 0),
+                publishers: Number(diversity?.publishers || 0),
+                topCountry: diversity?.top_country,
+                topCountryShare: Number(countryShare.toFixed(3)),
+                topPublisher: diversity?.top_publisher,
+                topPublisherShare: Number(publisherShare.toFixed(3)),
+                healthyThresholds: { minimumCountries: 20, maximumCountryShare: 0.12, maximumPublisherShare: 0.18 },
+            },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'coverage_diversity',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - diversityStart,
+            message: error instanceof Error ? error.message : 'Coverage diversity check failed',
+        });
+    }
+
     const emailConfigured = Boolean(
         c.env.EMAIL_FROM && (c.env.EMAIL?.send || c.env.RESEND_API_KEY)
     );

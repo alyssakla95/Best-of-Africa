@@ -1,5 +1,5 @@
 const CACHE_NAME = 'boa-shell-v5';
-const READER_CACHE_NAME = 'boa-reader-data-v3';
+const READER_CACHE_NAME = 'boa-reader-data-v4';
 const SHELL_URLS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

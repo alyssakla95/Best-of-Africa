@@ -54,7 +54,7 @@ describe('coded Portuguese interface locale', () => {
                 const value = raw.replace(/\s+/g, ' ').trim();
                 if (value.length > 1 && /[A-Za-z]{2}/.test(value)
                     && (value.includes(' ') || /^[A-Z]/.test(value))
-                    && !/(?:^|\s)(?:bg|text|border|hover|focus):?-/.test(value)
+                    && !/(?:^|\s)(?:bg-|text-|border-|hover:|focus:)/.test(value)
                     && !maintainedEnglish.has(value)
                     && !PORTUGUESE_INTERFACE_PHRASES[value]) {
                     missing.add(value);
@@ -104,6 +104,13 @@ describe('coded Portuguese interface locale', () => {
 
     it('covers direct copy across every reader-facing routed page', () => {
         const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
+        const readerCopyProperties = new Set([
+            'action', 'answer', 'body', 'caption', 'caution', 'copy', 'description',
+            'detail', 'disclaimer', 'empty', 'error', 'eyebrow', 'heading', 'helper',
+            'interpretation', 'kicker', 'label', 'limitation', 'message', 'method',
+            'name', 'note', 'outcome', 'placeholder', 'purpose', 'question', 'status',
+            'subtitle', 'summary', 'text', 'title', 'unit', 'value',
+        ]);
         const pageFiles = [
             ...readdirSync('frontend/src/pages', { recursive: true })
                 .map(entry => String(entry).replaceAll('\\', '/'))
@@ -125,7 +132,10 @@ describe('coded Portuguese interface locale', () => {
                 const value = raw.replace(/\s+/g, ' ').trim();
                 if (value.length > 1 && /[A-Za-z]{2}/.test(value)
                     && (value.includes(' ') || /^[A-Z]/.test(value))
-                    && !/(?:^|\s)(?:bg|text|border|hover|focus):?-/.test(value)
+                    && !/(?:^|\s)(?:bg-|text-|border-|hover:|focus:)/.test(value)
+                    && !/(?:^|\s)(?:sm:|md:|lg:|xl:|data-\[|group|flex|grid|relative|absolute|hidden|block|inline-|w-|h-|min-|max-|p[trblxy]?[-[]|m[trblxy]?[-[]|opacity-|cursor-|transition-)/.test(value)
+                    && !/(?:@keyframes|rgba\(|linear-gradient\(|var\(--|chrome-(?:flow|shimmer))/.test(value)
+                    && !/^(?:GET|POST|PUT|PATCH|DELETE|USD)$/.test(value)
                     && !maintainedEnglish.has(value)
                     && !translatePortugueseInterfaceText(value)) {
                     missing.add(value);
@@ -134,11 +144,51 @@ describe('coded Portuguese interface locale', () => {
             const visit = (node: ts.Node) => {
                 if (ts.isJsxText(node)) {
                     record(node.text);
+                } else if (ts.isStringLiteral(node) && ts.isJsxAttribute(node.parent)) {
+                    const attribute = node.parent.name.getText(source);
+                    if (['alt', 'aria-label', 'placeholder', 'title'].includes(attribute)) record(node.text);
                 } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
                     && ts.isPropertyAssignment(node.parent)) {
                     const property = node.parent.name.getText(source).replace(/^['"]|['"]$/g, '');
-                    if (['title', 'heading', 'label', 'copy', 'body', 'description', 'purpose', 'outcome', 'caution', 'value'].includes(property)) {
+                    if (readerCopyProperties.has(property)) {
                         record(node.text);
+                    }
+                } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.parent) {
+                    let parent: ts.Node | undefined = node.parent;
+                    let withinJsxExpression = false;
+                    while (parent && !ts.isSourceFile(parent)) {
+                        if (ts.isJsxAttribute(parent)) break;
+                        if (ts.isJsxExpression(parent)) {
+                            withinJsxExpression = true;
+                            break;
+                        }
+                        parent = parent.parent;
+                    }
+                    if (withinJsxExpression) record(node.text);
+                } else if (ts.isTemplateExpression(node)) {
+                    let parent: ts.Node | undefined = node.parent;
+                    let jsxAttribute = '';
+                    let withinJsx = false;
+                    let hasPortugueseBranch = false;
+                    while (parent && !ts.isSourceFile(parent)) {
+                        if (ts.isConditionalExpression(parent) && parent.getText(source).includes("language === 'pt'")) {
+                            hasPortugueseBranch = true;
+                        }
+                        if (ts.isJsxAttribute(parent)) {
+                            jsxAttribute = parent.name.getText(source);
+                            withinJsx = true;
+                            break;
+                        }
+                        if (ts.isJsxExpression(parent)) withinJsx = true;
+                        parent = parent.parent;
+                    }
+                    if (withinJsx && !['className', 'href', 'src', 'style', 'to'].includes(jsxAttribute)) {
+                        const literalCopy = [node.head.text, ...node.templateSpans.map(span => span.literal.text)].join(' ').replace(/\s+/g, ' ').trim();
+                        const technical = /^(?:flag|ms|report-section-|locked-|https?:\/\/|\| BOA-Story)/.test(literalCopy);
+                        const translatedInterpolation = node.getText(source).includes('t(');
+                        if (!hasPortugueseBranch && !technical && !translatedInterpolation && /[A-Za-z]{2}/.test(literalCopy) && !translatePortugueseInterfaceText(literalCopy)) {
+                            missing.add(`[dynamic] ${literalCopy}`);
+                        }
                     }
                 }
                 ts.forEachChild(node, visit);
@@ -147,6 +197,85 @@ describe('coded Portuguese interface locale', () => {
             if (missing.size) missingByFile[file.replace('frontend/src/', '')] = [...missing].sort();
         }
 
+        expect(missingByFile).toEqual({});
+    });
+
+    it('covers fixed explanatory copy returned by reader-facing data services', () => {
+        const readerCopyProperties = new Set([
+            'description', 'evidenceFallback', 'interpretation', 'investment_commentary',
+            'limitation', 'limitations', 'message', 'methodology', 'observation_status',
+            'status', 'summary', 'title',
+        ]);
+        const missingByFile: Record<string, string[]> = {};
+        for (const file of [
+            'src/lib/country-evidence.ts',
+            'src/lib/sector-performance.ts',
+            'src/routes/campaigns.ts',
+            'src/routes/countries.ts',
+            'src/routes/dashboards.ts',
+            'src/routes/intelligence.ts',
+            'src/routes/market-intel.ts',
+            'src/routes/system.ts',
+        ]) {
+            const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+            const missing = new Set<string>();
+            const record = (value: string) => {
+                const phrase = value.replace(/\s+/g, ' ').trim();
+                if (phrase.length > 3 && /[A-Za-z]{2}/.test(phrase) && phrase.includes(' ')
+                    && !translatePortugueseInterfaceText(phrase)) missing.add(phrase);
+            };
+            const visitCopyValue = (node: ts.Node) => {
+                if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) record(node.text);
+                ts.forEachChild(node, visitCopyValue);
+            };
+            const visit = (node: ts.Node) => {
+                if (ts.isPropertyAssignment(node)) {
+                    const property = node.name.getText(source).replace(/^['"]|['"]$/g, '');
+                    if (readerCopyProperties.has(property)) visitCopyValue(node.initializer);
+                }
+                ts.forEachChild(node, visit);
+            };
+            visit(source);
+            if (missing.size) missingByFile[file] = [...missing].sort();
+        }
+        expect(missingByFile).toEqual({});
+    });
+
+    it('covers reader-facing notifications and validation errors', () => {
+        const missingByFile: Record<string, string[]> = {};
+        const files = [
+            ...readdirSync('frontend/src/pages', { recursive: true }),
+            ...readdirSync('frontend/src/components', { recursive: true }),
+        ].map(String).filter(file => file.endsWith('.tsx') && !file.includes('Admin') && !file.startsWith('admin/'));
+        for (const relative of files) {
+            const candidates = [`frontend/src/pages/${relative}`, `frontend/src/components/${relative}`];
+            const file = candidates.find(candidate => {
+                try { readFileSync(candidate); return true; } catch { return false; }
+            });
+            if (!file) continue;
+            const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+            const missing = new Set<string>();
+            const visit = (node: ts.Node) => {
+                if (ts.isCallExpression(node)) {
+                    const callee = node.expression.getText(source);
+                    if (/^(?:toast\.(?:success|error|info|warning)|setError(?:Message|Msg)?)$/.test(callee)) {
+                        for (const argument of node.arguments) {
+                            const inspect = (child: ts.Node) => {
+                                if (ts.isStringLiteral(child) || ts.isNoSubstitutionTemplateLiteral(child)) {
+                                    const phrase = child.text.trim();
+                                    if (phrase.length > 3 && /[A-Za-z]{2}/.test(phrase) && !translatePortugueseInterfaceText(phrase)) missing.add(phrase);
+                                }
+                                ts.forEachChild(child, inspect);
+                            };
+                            inspect(argument);
+                        }
+                    }
+                }
+                ts.forEachChild(node, visit);
+            };
+            visit(source);
+            if (missing.size) missingByFile[file.replace('frontend/src/', '')] = [...missing].sort();
+        }
         expect(missingByFile).toEqual({});
     });
 

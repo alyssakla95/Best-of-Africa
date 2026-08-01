@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { WORLD_CUP } from '@/config/worldCup';
 import { useWorldCupTeams } from '@/hooks/useWorldCupTeams';
+import { useLanguage } from '@/context/LanguageContext';
+import { activeReaderLocale } from '@/i18n/locale';
 
 /**
  * TEMPORARY landing feature band celebrating African nations at the World Cup.
@@ -11,14 +13,16 @@ import { useWorldCupTeams } from '@/hooks/useWorldCupTeams';
 const relativeTime = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.round(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m} min ago`;
+  const relative = new Intl.RelativeTimeFormat(activeReaderLocale(), { numeric: 'auto' });
+  if (m < 1) return relative.format(0, 'minute');
+  if (m < 60) return relative.format(-m, 'minute');
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
+  if (h < 24) return relative.format(-h, 'hour');
+  return relative.format(-Math.round(h / 24), 'day');
 };
 
 export const WorldCupFeature = () => {
+  const { language } = useLanguage();
   const { teams, updatedAt } = useWorldCupTeams();
   if (!WORLD_CUP.enabled || teams.length === 0) return null;
 
@@ -71,7 +75,7 @@ export const WorldCupFeature = () => {
 
         {updatedAt && (
           <p className="mt-6 text-[11px] uppercase tracking-widest text-white/40">
-            Teams updated {relativeTime(updatedAt)}
+            {language === 'pt' ? 'Equipas actualizadas' : 'Teams updated'} {relativeTime(updatedAt)}
           </p>
         )}
       </div>

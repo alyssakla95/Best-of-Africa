@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { LogOut, CheckCircle, Clock, BookOpen, Globe, Mail, BarChart2 } from 'lucide-react';
 import { TIER_LABELS, KO_FI_URL } from '../../constants/beta';
+import { useLanguage } from '../../context/LanguageContext';
 
 // per-tier icon to add visual identity to the dashboard
 const TIER_ICONS: Record<string, string> = {
@@ -18,6 +19,7 @@ interface BetaDashboardProps {
 }
 
 export const BetaDashboard = ({ memberData, onLogout }: BetaDashboardProps) => {
+  const { language } = useLanguage();
   const tierInfo = TIER_LABELS[memberData.tier] || TIER_LABELS.basic;
   const tierIcon = TIER_ICONS[memberData.tier] || '🥉';
 
@@ -25,10 +27,10 @@ export const BetaDashboard = ({ memberData, onLogout }: BetaDashboardProps) => {
   const renewalMsg = (() => {
     const days = memberData.expires_in_days;
     if (days == null) return null;
-    if (days <= 0) return 'Access expired, please renew';
-    if (days <= 7) return `Access expires in ${days} day${days === 1 ? '' : 's'}`;
-    if (days <= 30) return `${days} days remaining`;
-    return `Renews in ~${Math.ceil(days / 30)} months`;
+    if (days <= 0) return language === 'pt' ? 'O acesso expirou; renove a adesão' : 'Access expired, please renew';
+    if (days <= 7) return language === 'pt' ? `O acesso expira dentro de ${days} ${days === 1 ? 'dia' : 'dias'}` : `Access expires in ${days} day${days === 1 ? '' : 's'}`;
+    if (days <= 30) return language === 'pt' ? `${days} dias restantes` : `${days} days remaining`;
+    return language === 'pt' ? `Renovação dentro de cerca de ${Math.ceil(days / 30)} meses` : `Renews in ~${Math.ceil(days / 30)} months`;
   })();
 
   return (

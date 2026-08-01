@@ -6,8 +6,10 @@ import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon, Cross2Icon, DownloadIcon }
 import { Input } from "@/components/ui/input";
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const BetaLibrary: React.FC = () => {
+    const { t } = useLanguage();
     const queryClient = useQueryClient();
     const [query, setQuery] = useState('');
     const [watchInput, setWatchInput] = useState('');
@@ -97,7 +99,7 @@ export const BetaLibrary: React.FC = () => {
                             <button className="inline-flex items-center gap-2 rounded-md bg-navy px-4 text-xs font-semibold text-white hover:bg-navy/90"><PlusIcon /> Add</button>
                         </form>
                         <div className="mt-4 flex min-h-10 flex-wrap gap-2">
-                            {watchlist.map(item => <span key={item} className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-3 py-2 text-xs font-medium text-navy">{item}<button onClick={() => saveWatchlist(watchlist.filter(value => value !== item))} aria-label={`Remove ${item}`}><Cross2Icon /></button></span>)}
+                            {watchlist.map(item => <span key={item} className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-3 py-2 text-xs font-medium text-navy">{item}<button onClick={() => saveWatchlist(watchlist.filter(value => value !== item))} aria-label={`${t('library.remove', 'Remove')} ${item}`}><Cross2Icon /></button></span>)}
                             {!watchlist.length && <span className="text-sm text-muted-foreground">No monitored subjects yet.</span>}
                         </div>
                     </div>

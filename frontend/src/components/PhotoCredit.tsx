@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 type PhotoCreditProps = {
   credit?: string | null;
@@ -7,6 +8,7 @@ type PhotoCreditProps = {
 };
 
 export function PhotoCredit({ credit, sourceUrl, className = '' }: PhotoCreditProps) {
+  const { t } = useLanguage();
   if (!credit || !sourceUrl) return null;
   return (
     <a
@@ -14,9 +16,9 @@ export function PhotoCredit({ credit, sourceUrl, className = '' }: PhotoCreditPr
       target="_blank"
       rel="noreferrer noopener"
       className={`inline-flex items-center gap-1.5 text-[11px] leading-4 underline decoration-current/30 underline-offset-2 hover:decoration-current ${className}`}
-      aria-label={`Photography source: ${credit}`}
+      aria-label={`${t('photo.source', 'Photography source')}: ${credit}`}
     >
-      Photo: {credit}
+      {t('photo.credit', 'Photo')}: {credit}
       <ExternalLink size={11} aria-hidden="true" />
     </a>
   );

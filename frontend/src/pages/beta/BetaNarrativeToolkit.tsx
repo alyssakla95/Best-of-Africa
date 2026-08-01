@@ -10,6 +10,7 @@ import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { stripMarkdown } from '@/lib/utils';
 import { activeReaderLocale, formatReaderDate } from '../../i18n/locale';
+import { useLanguage } from '../../context/LanguageContext';
 
 type Indicator = {
   code: string;
@@ -73,6 +74,7 @@ function guidanceFor(indicator: Indicator) {
 }
 
 export const BetaNarrativeToolkit: React.FC = () => {
+  const { language } = useLanguage();
   const { code } = useParams<{ code: string }>();
   const upperCode = code?.toUpperCase();
 
@@ -103,8 +105,10 @@ export const BetaNarrativeToolkit: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-navy">
       <SEO
-        title={`${countryName} Market Evidence Toolkit | BOA-Story`}
-        description={`Source-linked economic, trade and sector evidence for understanding and communicating ${countryName}'s market position.`}
+        title={language === 'pt' ? `Instrumentos de dados de mercado — ${countryName} | BOA-Story` : `${countryName} Market Evidence Toolkit | BOA-Story`}
+        description={language === 'pt'
+          ? `Dados económicos, comerciais e sectoriais ligados às fontes para compreender e comunicar a posição de mercado de ${countryName}.`
+          : `Source-linked economic, trade and sector evidence for understanding and communicating ${countryName}'s market position.`}
       />
 
       <header className="bg-navy px-4 py-12 text-white sm:px-6 md:py-16">
@@ -125,11 +129,15 @@ export const BetaNarrativeToolkit: React.FC = () => {
             <div className="rounded-2xl border border-white/20 bg-white/10 p-6">
               <p className="text-xs font-bold uppercase tracking-widest text-white/60">Evidence status</p>
               <p className="mt-3 text-2xl font-semibold text-white">
-                {isLoading ? 'Loading verified records' : `${indicators.length} official indicators`}
+                {isLoading
+                  ? 'Loading verified records'
+                  : language === 'pt' ? `${indicators.length} indicadores oficiais` : `${indicators.length} official indicators`}
               </p>
               <p className="mt-3 text-sm leading-6 text-white/70">
                 {provenance?.retrieved_at
-                  ? `Sources checked ${formatReaderDate(provenance.retrieved_at, { dateStyle: 'long' })}.`
+                  ? language === 'pt'
+                    ? `Fontes consultadas em ${formatReaderDate(provenance.retrieved_at, { dateStyle: 'long' })}.`
+                    : `Sources checked ${formatReaderDate(provenance.retrieved_at, { dateStyle: 'long' })}.`
                   : 'The source record is being assembled from official providers.'}
               </p>
             </div>

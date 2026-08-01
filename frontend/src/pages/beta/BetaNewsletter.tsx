@@ -6,10 +6,13 @@ import { } from '../../components/beta';
 import { SEO } from '../../components/SEO';
 import { CountryFlag } from '../../components/CountryFlag';
 import { request } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
+import { activeReaderLocale } from '../../i18n/locale';
 
 const MIN_DISPLAY_SUBSCRIBERS = 50;
 
 export const BetaNewsletter = () => {
+  const { language } = useLanguage();
   const [searchParams] = useSearchParams();
   // Landing target of the one-click unsubscribe redirect — confirm it worked.
   const justUnsubscribed = searchParams.get('unsubscribed') === '1';
@@ -159,7 +162,9 @@ export const BetaNewsletter = () => {
 
           <p className="text-sm font-medium text-primary/50 mb-12 uppercase tracking-wide">
             {subscriberCount !== null && subscriberCount >= MIN_DISPLAY_SUBSCRIBERS
-              ? `${subscriberCount.toLocaleString()} readers already on the list`
+              ? language === 'pt'
+                ? `${subscriberCount.toLocaleString(activeReaderLocale())} leitores já inscritos`
+                : `${subscriberCount.toLocaleString(activeReaderLocale())} readers already on the list`
               : `Join the founding reader community`
             }
           </p>

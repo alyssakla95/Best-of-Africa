@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, Zap, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { request } from '../../services/api';
 import { stripMarkdown } from '@/lib/utils';
+import { activeReaderLocale } from '@/i18n/locale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,11 +54,12 @@ const HEALTH_CONFIG: Record<string, { label: string; color: string; pulse: boole
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  const relative = new Intl.RelativeTimeFormat(activeReaderLocale(), { numeric: 'auto' });
+  if (mins < 1) return relative.format(0, 'minute');
+  if (mins < 60) return relative.format(-mins, 'minute');
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return relative.format(-hrs, 'hour');
+  return relative.format(-Math.floor(hrs / 24), 'day');
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────

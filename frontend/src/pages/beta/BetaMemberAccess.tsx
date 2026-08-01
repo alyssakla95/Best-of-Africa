@@ -6,8 +6,10 @@ import { SEO } from '../../components/SEO';
 import { request } from '../../services/api';
 import { KO_FI_URL } from '../../constants/beta';
 import { useMember } from '../../context/MemberContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const BetaMemberAccess = () => {
+  const { language } = useLanguage();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [phase, setPhase] = useState<'form' | 'otp' | 'success' | 'error' | 'expired'>('form');
@@ -270,7 +272,11 @@ export const BetaMemberAccess = () => {
                       disabled={isSubmitting || resendCooldown > 0}
                       className="text-[11px] text-foreground/50 hover:text-foreground uppercase tracking-widest font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-center"
                     >
-                      {isSubmitting ? 'Resending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                      {isSubmitting
+                        ? (language === 'pt' ? 'A reenviar...' : 'Resending...')
+                        : resendCooldown > 0
+                          ? (language === 'pt' ? `Reenviar dentro de ${resendCooldown} s` : `Resend in ${resendCooldown}s`)
+                          : (language === 'pt' ? 'Reenviar código' : 'Resend code')}
                     </button>
                     <button
                       type="button"

@@ -164,7 +164,9 @@ export const BetaCountryHub = () => {
     <div className="pb-24 bg-background text-foreground">
       <SEO
         title={`${countryName} | BOA-Story`}
-        description={`Curated stories and independent insights for ${countryName}.`}
+        description={language === 'pt'
+          ? `Histórias seleccionadas, dados oficiais e análise independente sobre ${countryName}.`
+          : `Curated stories and independent insights for ${countryName}.`}
       />
       
 

@@ -7,6 +7,7 @@ import { SEO } from '../../components/SEO';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { api } from '../../services/api';
 import { activeReaderLocale, formatReaderDateTime } from '../../i18n/locale';
+import { useLanguage } from '../../context/LanguageContext';
 
 const number = (value: number) => new Intl.NumberFormat(activeReaderLocale()).format(value);
 const compact = (value: number) => new Intl.NumberFormat(activeReaderLocale(), {
@@ -22,6 +23,7 @@ const changeWithUnit = (value: number, unit: string) => {
 const period = (start: number, end: number) => start === end ? String(end) : `${start}–${end}`;
 
 export const PremiumSectorTrends: React.FC = () => {
+  const { language } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const query = useQuery({
     queryKey: ['sector-performance-dossier', id, 'market-v3'],
@@ -41,7 +43,12 @@ export const PremiumSectorTrends: React.FC = () => {
   ];
 
   return <div className="min-h-screen bg-background pb-24 text-foreground">
-    <SEO title={`${sector.name} market performance | BOA-Story`} description={`Official multi-indicator performance, country breadth, structural conditions and questions for ${sector.name} across Africa.`}/>
+    <SEO
+      title={language === 'pt' ? `Desempenho do mercado — ${sector.name} | BOA-Story` : `${sector.name} market performance | BOA-Story`}
+      description={language === 'pt'
+        ? `Desempenho oficial com vários indicadores, cobertura nacional, condições estruturais e questões de verificação para ${sector.name} em África.`
+        : `Official multi-indicator performance, country breadth, structural conditions and questions for ${sector.name} across Africa.`}
+    />
     <header className="border-b border-white/10 bg-navy px-5 py-16 text-white sm:px-6 md:py-24">
       <div className="mx-auto max-w-6xl">
         <Link to="/intelligence/sectors" className="inline-flex items-center gap-2 text-sm text-white/65 hover:text-white"><ArrowLeft size={15}/> Market Intelligence</Link>

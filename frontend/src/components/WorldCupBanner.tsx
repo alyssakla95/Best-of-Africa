@@ -4,22 +4,24 @@ import { X, Trophy } from 'lucide-react';
 import { WORLD_CUP, type WorldCupTeam } from '@/config/worldCup';
 import { useWorldCupTeams } from '@/hooks/useWorldCupTeams';
 import { CountryFlag } from '@/components/CountryFlag';
+import { activeReaderLocale } from '@/i18n/locale';
+import { useLanguage } from '@/context/LanguageContext';
 
 const DISMISS_KEY = 'boa_wc_banner_dismissed_2026';
 
 /** Compact, human kickoff label: "Today 20:00", "Tomorrow 18:00", "Sat 20:00", "14 Jun". */
-function formatKickoff(iso: string): string {
+function formatKickoff(iso: string, language: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const now = new Date();
   const diff = d.getTime() - now.getTime();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (diff <= 0) return 'Live';
+  const time = d.toLocaleTimeString(activeReaderLocale(), { hour: '2-digit', minute: '2-digit' });
+  if (diff <= 0) return language === 'pt' ? 'Em directo' : 'Live';
   const DAY = 86400000;
-  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
-  if (d.toDateString() === new Date(now.getTime() + DAY).toDateString()) return `Tomorrow ${time}`;
-  if (diff < 7 * DAY) return `${d.toLocaleDateString([], { weekday: 'short' })} ${time}`;
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  if (d.toDateString() === now.toDateString()) return language === 'pt' ? `Hoje ${time}` : `Today ${time}`;
+  if (d.toDateString() === new Date(now.getTime() + DAY).toDateString()) return language === 'pt' ? `Amanhã ${time}` : `Tomorrow ${time}`;
+  if (diff < 7 * DAY) return `${d.toLocaleDateString(activeReaderLocale(), { weekday: 'short' })} ${time}`;
+  return d.toLocaleDateString(activeReaderLocale(), { month: 'short', day: 'numeric' });
 }
 
 /**
@@ -31,6 +33,7 @@ function formatKickoff(iso: string): string {
  * Remove by setting WORLD_CUP.enabled = false.
  */
 export const WorldCupBanner = () => {
+  const { language } = useLanguage();
   const [dismissed, setDismissed] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem(DISMISS_KEY) === '1'
   );
@@ -118,7 +121,7 @@ export const WorldCupBanner = () => {
               {nextFixture.away.name}
             </span>
             <span className="text-accent text-[11px] font-bold tabular-nums whitespace-nowrap border-l border-accent/25 pl-2">
-              {formatKickoff(nextFixture.utcDate)}
+              {formatKickoff(nextFixture.utcDate, language)}
             </span>
           </div>
         )}

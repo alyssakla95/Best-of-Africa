@@ -6,27 +6,29 @@ import { SEO } from '../../components/SEO';
 import { CountryFlag } from '../../components/CountryFlag';
 import { useWorldCupTeams } from '../../hooks/useWorldCupTeams';
 import { WORLD_CUP, type WorldCupFixture, type WorldCupResult } from '../../config/worldCup';
+import { activeReaderLocale } from '../../i18n/locale';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Full, human kickoff label for the page (locale-aware): "Sat, 14 Jun · 20:00".
 function formatFull(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  const date = d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString(activeReaderLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
+  const time = d.toLocaleTimeString(activeReaderLocale(), { hour: '2-digit', minute: '2-digit' });
   return `${date} · ${time}`;
 }
 
 // Compact relative label used on the spotlight card.
-function relativeLabel(iso: string): string {
+function relativeLabel(iso: string, language: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const now = new Date();
   const diff = d.getTime() - now.getTime();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (diff <= 0) return 'Kicking off';
+  const time = d.toLocaleTimeString(activeReaderLocale(), { hour: '2-digit', minute: '2-digit' });
+  if (diff <= 0) return language === 'pt' ? 'A começar' : 'Kicking off';
   const DAY = 86400000;
-  if (d.toDateString() === now.toDateString()) return `Today · ${time}`;
-  if (d.toDateString() === new Date(now.getTime() + DAY).toDateString()) return `Tomorrow · ${time}`;
+  if (d.toDateString() === now.toDateString()) return language === 'pt' ? `Hoje · ${time}` : `Today · ${time}`;
+  if (d.toDateString() === new Date(now.getTime() + DAY).toDateString()) return language === 'pt' ? `Amanhã · ${time}` : `Tomorrow · ${time}`;
   return formatFull(iso);
 }
 
@@ -40,6 +42,7 @@ const Side = ({ side, size = 22 }: { side: { name: string; code?: string }; size
 );
 
 export const BetaWorldCup: React.FC = () => {
+  const { language } = useLanguage();
   const { teams, updatedAt, nextFixture, fixtures, results } = useWorldCupTeams();
 
   // Fixtures beyond the spotlight one. Compare by kickoff+teams, not object
@@ -89,7 +92,9 @@ export const BetaWorldCup: React.FC = () => {
                 ? results.length > 0
                   ? "The African run at this World Cup has ended. Verified results retained by the sports feed are listed below."
                   : "The tournament has ended. This page no longer presents seeded teams or fixtures as live information."
-                : `The continent's ${teams.length} ${teams.length === 1 ? 'nation' : 'nations'} still standing at the tournament — who they are, and the road ahead.`}
+                : language === 'pt'
+                  ? `O continente mantém ${teams.length} ${teams.length === 1 ? 'país' : 'países'} em prova no torneio — quem são e qual o percurso seguinte.`
+                  : `The continent's ${teams.length} ${teams.length === 1 ? 'nation' : 'nations'} still standing at the tournament — who they are, and the road ahead.`}
             </p>
           </motion.div>
         </div>
@@ -123,7 +128,7 @@ export const BetaWorldCup: React.FC = () => {
                 </div>
               </div>
               <div className="mt-6 text-center text-foreground/60 font-semibold tracking-wide">
-                {relativeLabel(nextFixture.utcDate)}
+                {relativeLabel(nextFixture.utcDate, language)}
               </div>
             </div>
           </motion.div>

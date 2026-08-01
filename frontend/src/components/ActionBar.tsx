@@ -9,6 +9,7 @@ import {
 } from '@radix-ui/react-icons';
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ActionBarProps {
     title: string;
@@ -17,6 +18,7 @@ interface ActionBarProps {
 }
 
 export const ActionBar: React.FC<ActionBarProps> = ({ title, type, className }) => {
+    const { language } = useLanguage();
     const [isSaved, setIsSaved] = React.useState(false);
     const [isTracked, setIsTracked] = React.useState(false);
 
@@ -27,7 +29,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({ title, type, className }) 
 
     const handleTrack = () => {
         setIsTracked(!isTracked);
-        toast.success(isTracked ? `Stopped tracking ${type}` : `Now tracking ${type} updates`);
+        toast.success(language === 'pt'
+            ? (isTracked ? `Deixou de acompanhar ${type}` : `A acompanhar actualizações de ${type}`)
+            : (isTracked ? `Stopped tracking ${type}` : `Now tracking ${type} updates`));
     };
 
     const handleShare = () => {

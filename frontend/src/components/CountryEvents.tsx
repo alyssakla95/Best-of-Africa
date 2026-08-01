@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, MixerVerticalIcon, RocketIcon } from '@radix-ui/react-icons';
 import { Link } from 'react-router-dom';
 import { stripMarkdown } from '@/lib/utils';
+import { formatReaderDate } from '../i18n/locale';
 
 interface CountryEventsProps {
     countryCode: string;
@@ -63,7 +64,7 @@ export const CountryEvents: React.FC<CountryEventsProps> = ({ countryCode }) => 
                                             {event.category}
                                         </Badge>
                                         <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest flex items-center gap-1">
-                                            <CalendarIcon className="h-3 w-3" /> {new Date(event.date_start).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                                            <CalendarIcon className="h-3 w-3" /> {formatReaderDate(event.date_start, { month: 'short', year: 'numeric' })}
                                         </span>
                                     </div>
                                     <h4 className="font-bold text-base group-hover:text-primary transition-colors">{stripMarkdown(event.title)}</h4>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api, type ReaderNotification } from '../services/api';
 import { stripMarkdown } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { formatReaderDate } from '../i18n/locale';
 
 export const NotificationBell: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -98,7 +99,7 @@ export const NotificationBell: React.FC = () => {
                                                 <p className="text-xs text-primary/50 leading-relaxed line-clamp-2">{stripMarkdown(n.message)}</p>
                                                 <div className="flex items-center justify-between mt-2">
                                                     <span className="text-[10px] text-primary/30">
-                                                        {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                        {formatReaderDate(n.created_at, { month: 'short', day: 'numeric' })}
                                                     </span>
                                                     {n.article_slug && (
                                                         <Link

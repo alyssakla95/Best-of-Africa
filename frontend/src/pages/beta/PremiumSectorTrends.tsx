@@ -6,9 +6,10 @@ import { ArrowLeft, Eye, FileSearch, Globe2, TrendingUp } from 'lucide-react';
 import { SEO } from '../../components/SEO';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { api } from '../../services/api';
+import { activeReaderLocale, formatReaderDateTime } from '../../i18n/locale';
 
-const number = (value: number) => new Intl.NumberFormat('en').format(value);
-const compact = (value: number) => new Intl.NumberFormat('en', {
+const number = (value: number) => new Intl.NumberFormat(activeReaderLocale()).format(value);
+const compact = (value: number) => new Intl.NumberFormat(activeReaderLocale(), {
   notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1,
 }).format(value);
 const valueWithUnit = (value: number, unit: string) => unit === 'current US$' ? `$${compact(value)}` : `${compact(value)} ${unit}`;
@@ -97,7 +98,7 @@ export const PremiumSectorTrends: React.FC = () => {
         <div className="border-t border-border bg-navy/[.025] p-6 md:p-8 lg:border-l lg:border-t-0"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-navy/60">What to investigate next</p><h2 className="mt-2 font-serif text-3xl text-navy">Questions the numbers cannot answer alone</h2><ol className="mt-6 space-y-4">{performance.diligence_questions.map((question,index) => <li key={question} className="grid grid-cols-[2rem_1fr] gap-3 text-sm leading-6 text-navy/80"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{index+1}</span><span>{question}</span></li>)}</ol></div>
       </section>
 
-      <section className="mt-8 rounded-2xl border border-border bg-navy p-6 text-white md:flex md:items-start md:justify-between md:gap-12 md:p-8"><div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">How the figures were prepared</p><h2 className="mt-2 font-serif text-2xl">Method and fair comparison</h2></div><div className="mt-4 max-w-2xl space-y-3 md:mt-0"><p className="text-sm leading-7 text-white/75">{methodology}</p><p className="flex items-center gap-2 text-xs text-white/60"><Eye size={14}/> Official snapshot retrieved {new Date(updated_at).toLocaleString()}</p></div></section>
+      <section className="mt-8 rounded-2xl border border-border bg-navy p-6 text-white md:flex md:items-start md:justify-between md:gap-12 md:p-8"><div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/60">How the figures were prepared</p><h2 className="mt-2 font-serif text-2xl">Method and fair comparison</h2></div><div className="mt-4 max-w-2xl space-y-3 md:mt-0"><p className="text-sm leading-7 text-white/75">{methodology}</p><p className="flex items-center gap-2 text-xs text-white/60"><Eye size={14}/> Official snapshot retrieved {formatReaderDateTime(updated_at, { dateStyle: 'medium', timeStyle: 'short' })}</p></div></section>
     </main>
   </div>;
 };

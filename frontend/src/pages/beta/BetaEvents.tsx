@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { api } from '../../services/api';
+import { formatReaderDate } from '../../i18n/locale';
 import { CalendarIcon, MapPinIcon, UsersIcon, ArrowRightIcon, CheckCircleIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,7 +152,7 @@ export const BetaEvents: React.FC = () => {
                                     <div className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-foreground/10 bg-foreground/5 p-4 min-[520px]:grid-cols-2 md:mb-10 md:gap-6 md:rounded-2xl md:p-6">
                                         <div className="flex items-center gap-3 text-[15px] font-light text-foreground/80">
                                             <CalendarIcon className="w-5 h-5 text-accent" />
-                                            {new Date(event.date_start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            {formatReaderDate(event.date_start, { month: 'long', day: 'numeric', year: 'numeric' })}
                                         </div>
                                         <div className="flex items-center gap-3 text-[15px] font-light text-foreground/80">
                                             <MapPinIcon className="w-5 h-5 text-accent" />

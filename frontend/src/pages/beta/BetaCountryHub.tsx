@@ -23,13 +23,14 @@ import type { ArticleListItem } from '../../types';
 import { EditorialContent } from '../../components/EditorialContent';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
+import { activeReaderLocale, formatReaderDate, formatReaderDateTime } from '../../i18n/locale';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 const formatEvidenceValue = (value: number, unit: string) => {
-  if (unit === 'USD') return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }).format(value);
-  if (unit === 'USD per person') return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
+  if (unit === 'USD') return new Intl.NumberFormat(activeReaderLocale(), { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }).format(value);
+  if (unit === 'USD per person') return new Intl.NumberFormat(activeReaderLocale(), { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat(activeReaderLocale(), { maximumFractionDigits: 2 }).format(value);
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -291,7 +292,7 @@ export const BetaCountryHub = () => {
                         {evidence.source_records.map(source => (
                           <li key={`${source.record}-${source.title}`} className="flex gap-3">
                             <span className="font-semibold text-accent-ink">[{source.record}]</span>
-                            <span>{source.source_url ? <a href={source.source_url} target="_blank" rel="noreferrer" className="hover:text-navy hover:underline">{stripMarkdown(source.title)}</a> : stripMarkdown(source.title)}{source.published_at ? ` · ${new Date(source.published_at).toLocaleDateString()}` : ''}</span>
+                            <span>{source.source_url ? <a href={source.source_url} target="_blank" rel="noreferrer" className="hover:text-navy hover:underline">{stripMarkdown(source.title)}</a> : stripMarkdown(source.title)}{source.published_at ? ` · ${formatReaderDate(source.published_at, { dateStyle: 'medium' })}` : ''}</span>
                           </li>
                         ))}
                       </ol>
@@ -400,7 +401,7 @@ export const BetaCountryHub = () => {
                 <h2 className="mt-2 font-serif text-3xl text-navy">Economic and trade record</h2>
                 <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">Every value keeps the period published by its provider. The retrieval date records when BOA checked the source; it never makes an older observation look new.</p>
               </div>
-              {provenance?.retrieved_at && <p className="shrink-0 text-xs font-semibold text-navy">Sources checked {new Date(provenance.retrieved_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>}
+              {provenance?.retrieved_at && <p className="shrink-0 text-xs font-semibold text-navy">Sources checked {formatReaderDateTime(provenance.retrieved_at, { dateStyle: 'medium', timeStyle: 'short' })}</p>}
             </div>
             {dossierQuery.isLoading ? <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="h-32 animate-pulse rounded-xl border border-border bg-card" />)}</div> : dossier && officialProfile && <div className="mt-8 space-y-8">
               <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
@@ -413,11 +414,11 @@ export const BetaCountryHub = () => {
                   <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Imports · {dossier.trade.import_year || dossier.trade.year}</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{formatEvidenceValue(dossier.trade.totalImports, 'USD')}</p></div>
                   <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Recorded difference</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{formatEvidenceValue(dossier.trade.balance, 'USD')}</p></div>
                 </div> : <div className="mt-5 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
-                  {dossier.trade.current_account_percent_gdp !== undefined && <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Current-account balance · {dossier.trade.year} {dossier.trade.period_status === 'estimate_or_projection' ? 'projection' : 'observation'}</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{dossier.trade.current_account_percent_gdp.toLocaleString(undefined, { maximumFractionDigits: 2 })}% of GDP</p></div>}
+                  {dossier.trade.current_account_percent_gdp !== undefined && <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Current-account balance · {dossier.trade.year} {dossier.trade.period_status === 'estimate_or_projection' ? 'projection' : 'observation'}</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{dossier.trade.current_account_percent_gdp.toLocaleString(activeReaderLocale(), { maximumFractionDigits: 2 })}% of GDP</p></div>}
                   {dossier.trade.current_account_usd !== undefined && <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Current-account balance · {dossier.trade.year} {dossier.trade.period_status === 'estimate_or_projection' ? 'projection' : 'observation'}</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{formatEvidenceValue(dossier.trade.current_account_usd, 'USD')}</p></div>}
                 </div>}
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dossier.freshness.map(source => <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-navy/30"><p className="text-xs font-bold text-navy">{source.provider}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">Observation period: {source.observation_period}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Checked {new Date(source.checked_at).toLocaleDateString()}</p></a>)}</div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dossier.freshness.map(source => <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-navy/30"><p className="text-xs font-bold text-navy">{source.provider}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">Observation period: {source.observation_period}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Checked {formatReaderDate(source.checked_at, { dateStyle: 'medium' })}</p></a>)}</div>
               {provenance && <div className="border-l-2 border-navy pl-5 text-sm leading-relaxed text-muted-foreground"><p>{provenance.methodology}</p><p className="mt-2 text-xs">Sources: {provenance.sources.map(source => source.name).join(' · ')}</p></div>}
             </div>}
           </section>

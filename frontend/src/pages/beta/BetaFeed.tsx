@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
 import { CountryFlag } from '../../components/CountryFlag';
 import { api } from '../../services/api';
+import { formatReaderDate } from '../../i18n/locale';
 import { stripMarkdown } from '@/lib/utils';
 import { useMember } from '../../context/MemberContext';
 import { useAudio } from '../../context/AudioContext';
@@ -76,7 +77,7 @@ const ArticleRow: React.FC<{ article: ArticleListItem; index: number; isHighligh
                 {article.published_at && (
                     <div className={`flex items-center gap-1 mt-3 text-xs ${isHighlighted ? 'text-accent-ink' : 'text-primary/70'}`}>
                         <Calendar className="w-3 h-3" />
-                        {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {formatReaderDate(article.published_at, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                 )}
             </div>
@@ -136,7 +137,7 @@ export const BetaFeed: React.FC = () => {
         staleTime: 5 * 60 * 1000,
     });
 
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const today = formatReaderDate(new Date(), { weekday: 'long', month: 'long', day: 'numeric' });
 
     const featured: ArticleListItem[] = featuredData?.data?.slice(0, 1) || FALLBACK_ARTICLES.slice(0, 1);
     const featuredSlug = featured[0]?.slug;

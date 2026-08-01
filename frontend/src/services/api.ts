@@ -18,9 +18,7 @@ const getAuthToken = () => localStorage.getItem('boa_auth_token');
 const getAdminToken = () => localStorage.getItem('boa_admin_token');
 const getReaderLanguage = () => {
     const language = localStorage.getItem('boa_lang') || 'en';
-    // Portuguese interface copy is code-owned. Generated publication
-    // translations must never be requested for that locale.
-    return ['fr', 'ar', 'de', 'hi', 'zh'].includes(language) ? language : 'en';
+    return ['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language) ? language : 'en';
 };
 
 // Request helper
@@ -347,7 +345,7 @@ export const api = {
     },
     getArticle: (slug: string, lang?: string) =>
         readerRequest<{ article: Article; country: Country; sector: Sector; related: ArticleListItem[] }>(
-            `/articles/${slug}${lang && ['fr', 'ar', 'de', 'hi', 'zh'].includes(lang) ? `?lang=${lang}` : ''}`,
+            `/articles/${slug}${lang && ['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(lang) ? `?lang=${lang}` : ''}`,
             5 * 60 * 1000,
         ),
     getFeaturedArticles: () => readerRequest<{ data: ArticleListItem[] }>(`/articles/featured?limit=20&lang=${getReaderLanguage()}`, 5 * 60 * 1000),

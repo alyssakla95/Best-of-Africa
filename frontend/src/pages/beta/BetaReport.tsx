@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
 import { EditorialContent } from '../../components/EditorialContent';
 import { api, type GeneratedReportSection } from '../../services/api';
+import { formatReaderDate } from '../../i18n/locale';
 
 const reportTypeLabel = (type: string) => ({
   country_brief: 'Country brief',
@@ -14,7 +15,7 @@ const reportTypeLabel = (type: string) => ({
 
 const formatDate = (value: string) => {
   const date = new Date(value.includes('T') ? value : value.replace(' ', 'T') + 'Z');
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return Number.isNaN(date.getTime()) ? value : formatReaderDate(date, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

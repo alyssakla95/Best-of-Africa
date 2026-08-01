@@ -9,6 +9,7 @@ import {
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { stripMarkdown } from '@/lib/utils';
+import { activeReaderLocale, formatReaderDate } from '../../i18n/locale';
 
 type Indicator = {
   code: string;
@@ -55,12 +56,12 @@ const indicatorGuidance: Record<string, { meaning: string; use: string; caution:
 
 function formatValue(value: number, unit: string) {
   if (unit === 'USD') {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }).format(value);
+    return new Intl.NumberFormat(activeReaderLocale(), { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }).format(value);
   }
   if (unit === '%' || unit.toLowerCase().includes('percent')) {
-    return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+    return `${value.toLocaleString(activeReaderLocale(), { maximumFractionDigits: 2 })}%`;
   }
-  return value.toLocaleString(undefined, { notation: Math.abs(value) >= 1_000_000 ? 'compact' : 'standard', maximumFractionDigits: 2 });
+  return value.toLocaleString(activeReaderLocale(), { notation: Math.abs(value) >= 1_000_000 ? 'compact' : 'standard', maximumFractionDigits: 2 });
 }
 
 function guidanceFor(indicator: Indicator) {
@@ -128,7 +129,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
               </p>
               <p className="mt-3 text-sm leading-6 text-white/70">
                 {provenance?.retrieved_at
-                  ? `Sources checked ${new Date(provenance.retrieved_at).toLocaleDateString(undefined, { dateStyle: 'long' })}.`
+                  ? `Sources checked ${formatReaderDate(provenance.retrieved_at, { dateStyle: 'long' })}.`
                   : 'The source record is being assembled from official providers.'}
               </p>
             </div>
@@ -275,7 +276,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
                   {dossier!.sector_evidence.map((sector, index) => (
                     <li key={sector.id} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 p-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center">
                       <span className="font-serif text-2xl text-navy/35">{String(index + 1).padStart(2, '0')}</span>
-                      <div><p className="font-bold">{sector.name}</p><p className="mt-1 text-sm text-navy/60">Latest evidence {sector.latest_evidence_at ? new Date(sector.latest_evidence_at).toLocaleDateString() : 'under review'}</p></div>
+                      <div><p className="font-bold">{sector.name}</p><p className="mt-1 text-sm text-navy/60">Latest evidence {sector.latest_evidence_at ? formatReaderDate(sector.latest_evidence_at, { dateStyle: 'medium' }) : 'under review'}</p></div>
                       <p className="col-start-2 text-sm font-semibold sm:col-start-auto">{sector.article_count} source-linked {sector.article_count === 1 ? 'record' : 'records'}</p>
                     </li>
                   ))}
@@ -325,7 +326,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
               {(dossier?.freshness || []).map(source => (
                 <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="grid gap-2 rounded-2xl border border-navy/15 p-5 transition-colors hover:bg-navy hover:text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <div><p className="font-bold">{source.provider}</p><p className="mt-1 text-sm opacity-70">Observation period: {source.observation_period}</p></div>
-                  <p className="text-sm font-semibold">Checked {new Date(source.checked_at).toLocaleDateString()} <ArrowUpRight className="ml-1 inline" size={14} /></p>
+                  <p className="text-sm font-semibold">Checked {formatReaderDate(source.checked_at, { dateStyle: 'medium' })} <ArrowUpRight className="ml-1 inline" size={14} /></p>
                 </a>
               ))}
               {(dossier?.official_resources || []).map(resource => (
@@ -345,7 +346,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {dossier!.upcoming_events.slice(0, 6).map(event => (
                 <article key={event.id} className="rounded-xl bg-navy/5 p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-navy/55">{event.category} · {new Date(event.date_start).toLocaleDateString()}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-navy/55">{event.category} · {formatReaderDate(event.date_start, { dateStyle: 'medium' })}</p>
                   <h3 className="mt-2 font-bold">{stripMarkdown(event.title)}</h3>
                   <p className="mt-2 text-sm text-navy/65">{event.location}</p>
                 </article>

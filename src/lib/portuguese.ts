@@ -1,0 +1,58 @@
+/** Deterministic pt-PT normalisation using spellings from before AO90. */
+type Replacement = string | ((match: string) => string);
+const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
+    [/\bsetor(es|ial|iais)?\b/gi, 'sector$1'],
+    [/\batividade(s)?\b/gi, 'actividade$1'],
+    [/\bativo(s|a|as)?\b/gi, 'activo$1'],
+    [/\batual(mente|ização|izações)?\b/gi, 'actual$1'],
+    [/\bprojeto(s)?\b/gi, 'projecto$1'],
+    [/\bobjetivo(s)?\b/gi, 'objectivo$1'],
+    [/\bperspetiva(s)?\b/gi, 'perspectiva$1'],
+    [/\bdiretor(es|a|as)?\b/gi, 'director$1'],
+    [/\bdireção\b/gi, 'direcção'],
+    [/\bseleção\b/gi, 'selecção'],
+    [/\bproteção\b/gi, 'protecção'],
+    [/\bcoleção\b/gi, 'colecção'],
+    [/\binteração\b/gi, 'interacção'],
+    [/\btransação\b/gi, 'transacção'],
+    [/\badoção\b/gi, 'adopção'],
+    [/\bação\b/gi, 'acção'],
+    [/\bações\b/gi, 'acções'],
+    [/\bfato(s)?\b/gi, 'facto$1'],
+    [/\bcontato(s)?\b/gi, 'contacto$1'],
+    [/\binfraestrutura(s)?\b/gi, 'infra-estrutura$1'],
+    [/\beconômic([oa]s?)\b/gi, 'económic$1'],
+    [/\bacadêmic([oa]s?)\b/gi, 'académic$1'],
+    [/\bprêmio(s)?\b/gi, 'prémio$1'],
+    [/\bplanejamento\b/gi, 'planeamento'],
+    [/\bgerenciamento\b/gi, 'gestão'],
+    [/\bgovernança\b/gi, 'governação'],
+    [/\bdemanda(s)?\b/gi, 'procura$1'],
+    [/\bequipe(s)?\b/gi, 'equipa$1'],
+    [/\busuários\b/gi, 'utilizadores'],
+    [/\busuário\b/gi, 'utilizador'],
+    [/\btrilhão\b/gi, 'bilião'],
+    [/\btrilhões\b/gi, 'biliões'],
+    [/\bbilhão\b/gi, 'mil milhões'],
+    [/\bbilhões\b/gi, 'mil milhões'],
+    [/\bônibus\b/gi, 'autocarro'],
+    [/\btrens\b/gi, 'comboios'],
+    [/\btrem\b/gi, 'comboio'],
+    [/\bcelulares\b/gi, 'telemóveis'],
+    [/\bcelular\b/gi, 'telemóvel'],
+    [/\bcaminhões\b/gi, 'camiões'],
+    [/\bcaminhão\b/gi, 'camião'],
+    [/\bem uma\b/gi, (match) => /^[A-Z]/.test(match) ? 'Numa' : 'numa'],
+    [/\bem um\b/gi, (match) => /^[A-Z]/.test(match) ? 'Num' : 'num'],
+    [/\bótim([oa]s?)\b/gi, 'óptim$1'],
+];
+
+export function normalisePortuguesePortugal1945(value: string | null | undefined): string | null {
+    if (value == null) return null;
+    return REPLACEMENTS.reduce(
+        (text, [pattern, replacement]) => typeof replacement === 'string'
+            ? text.replace(pattern, replacement)
+            : text.replace(pattern, replacement),
+        value,
+    );
+}

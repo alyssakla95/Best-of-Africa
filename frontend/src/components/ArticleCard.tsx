@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { CountryFlag } from './CountryFlag';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../lib/editorialImage';
+import { formatReaderDate } from '../i18n/locale';
 import { PhotoCredit } from './PhotoCredit';
 
 // Local editorial fallbacks, rotated deterministically per article so cards
@@ -79,7 +80,7 @@ export const ArticleCard: React.FC<{ article: ArticleListItem; featured?: boolea
                         {article.published_at && (
                             <>
                                 <span className="text-foreground/20">·</span>
-                                <span>{new Date(article.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span>{formatReaderDate(article.published_at, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                             </>
                         )}
                     </span>

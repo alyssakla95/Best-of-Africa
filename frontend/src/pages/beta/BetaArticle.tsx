@@ -17,6 +17,7 @@ import { EditorialContent } from '../../components/EditorialContent';
 import { useSetBreadcrumb } from '@/context/BreadcrumbContext';
 import type { Article, ArticleListItem, Country } from '../../types';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
+import { formatReaderDate } from '../../i18n/locale';
 import { PhotoCredit } from '../../components/PhotoCredit';
 
 interface ArticleResponse {
@@ -494,7 +495,7 @@ export const BetaArticle = () => {
                 <>
                   <span className="text-primary/20">·</span>
                   <time dateTime={article.published_at} className="whitespace-nowrap text-ink-blue">
-                    {new Date(article.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {formatReaderDate(article.published_at, { day: 'numeric', month: 'long', year: 'numeric' })}
                   </time>
                 </>
               )}
@@ -714,7 +715,7 @@ export const BetaArticle = () => {
                 {sourceHost}
                 {article.source_published_at && (() => {
                   const d = new Date(article.source_published_at);
-                  return Number.isNaN(d.getTime()) ? '' : ` · ${d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                  return Number.isNaN(d.getTime()) ? '' : ` · ${formatReaderDate(d, { day: 'numeric', month: 'short', year: 'numeric' })}`;
                 })()}
               </div>
             </aside>

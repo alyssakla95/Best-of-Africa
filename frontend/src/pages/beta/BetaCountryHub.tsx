@@ -86,7 +86,7 @@ export const BetaCountryHub = () => {
   const heroOffset = useTransform(scrollY, [0, 800], [0, 250]);
   const { code } = useParams<{ code: string }>();
   const { isMember } = useMember();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const upperCode = (code || '').toUpperCase();
 
   const [countryQuery, outlookQuery, narrativeQuery, articlesQuery, dossierQuery] = useQueries({
@@ -154,7 +154,9 @@ export const BetaCountryHub = () => {
 
   const countryName = country?.name ?? upperCode;
   const region = country?.region ?? '';
-  const investmentHighlights: string[] = Array.isArray(country?.investment_highlights)
+  const investmentHighlights: string[] = language === 'pt'
+    ? ['Registo nacional assente em fontes oficiais e cobertura editorial atribuída']
+    : Array.isArray(country?.investment_highlights)
     ? country!.investment_highlights
     : [];
 

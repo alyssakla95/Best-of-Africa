@@ -1,5 +1,6 @@
 import { Clock3, Database, ShieldCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatReaderDateTime } from '../../i18n/locale';
 
 interface IntelligenceTrustPanelProps {
   updatedAt?: string | number | null;
@@ -12,7 +13,7 @@ export const IntelligenceTrustPanel = ({ updatedAt, sourceLabel }: IntelligenceT
 
   const items = [
     { Icon: Database, label: 'Source', value: sourceLabel },
-    { Icon: Clock3, label: 'Freshness', value: validTimestamp ? timestamp.toLocaleString() : 'Updated with the live dataset' },
+    { Icon: Clock3, label: 'Freshness', value: validTimestamp ? formatReaderDateTime(timestamp, { dateStyle: 'medium', timeStyle: 'short' }) : 'Updated with the live dataset' },
     { Icon: UserCheck, label: 'Review', value: 'Critical claims require editorial review' },
     { Icon: ShieldCheck, label: 'Evidence policy', value: 'Summaries must remain source-bound and factual' },
   ];

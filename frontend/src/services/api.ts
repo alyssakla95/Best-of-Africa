@@ -428,7 +428,7 @@ export const api = {
             limitations: string[];
             source_records: { record: number; title: string; published_at: string; source_title: string; source_url: string }[];
         };
-    }>(`/market-intel/country/${code}/outlook`),
+    }>(`/market-intel/country/${code}/outlook?lang=${getReaderLanguage()}`),
     getCountryRelationships: (code: string) => readerRequest<{
         country_code: string;
         country_name: string;

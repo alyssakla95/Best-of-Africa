@@ -51,8 +51,14 @@ describe('Portuguese publication locale', () => {
     });
 
     it('requests Portuguese content from reader endpoints while keeping generation disabled', async () => {
-        const source = await import('node:fs/promises').then(fs => fs.readFile('frontend/src/services/api.ts', 'utf8'));
+        const fs = await import('node:fs/promises');
+        const source = await fs.readFile('frontend/src/services/api.ts', 'utf8');
+        const articleRoute = await fs.readFile('src/routes/articles.ts', 'utf8');
+        const outlookRoute = await fs.readFile('src/routes/market-intel.ts', 'utf8');
         expect(source).toContain("['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language)");
         expect(source).toContain("['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(lang)");
+        expect(source).toContain('/outlook?lang=${getReaderLanguage()}');
+        expect(articleRoute).toContain("aiContext && reqLang !== 'pt'");
+        expect(outlookRoute).toContain('zero registos publicados na janela documental');
     });
 });

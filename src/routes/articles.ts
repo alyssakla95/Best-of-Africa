@@ -749,7 +749,7 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
         article: {
             ...article,
             content: articleContent,
-            ...(aiContext ? { ai_context: aiContext } : {}),
+            ...(aiContext && reqLang !== 'pt' ? { ai_context: aiContext } : {}),
             ...(paywallActive && {
                 paywall: true,
                 paragraphs_visible: paragraphsVisible,

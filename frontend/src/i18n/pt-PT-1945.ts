@@ -853,7 +853,6 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Built for consequential decisions': 'Concebido para decisões com consequências',
   'Choose interests': 'Escolher interesses',
   'Enter Intelligence': 'Entrar na inteligência',
-  'Explore': 'Explorar',
   'Explore the market-entry pilot': 'Explorar o projecto-piloto de entrada no mercado',
   'From signal to continental context.': 'Do sinal ao contexto continental.',
   'Independent by design': 'Independente por concepção',
@@ -1398,16 +1397,104 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Uncertainty': 'Incerteza',
   'What the available evidence cannot yet establish confidently.':
     'Aquilo que os dados disponíveis ainda não permitem estabelecer com segurança.',
+  'Reporting': 'Informação',
+  'Source-attributed stories and a concise current briefing.':
+    'Histórias com fontes atribuídas e uma síntese actual concisa.',
+  'Country hubs': 'Dossiês nacionais',
+  'Coverage, sectors and context for all 54 nations.':
+    'Cobertura, sectores e contexto para os 54 países.',
+  'Comparable sector measures and official market evidence.':
+    'Indicadores sectoriais comparáveis e dados oficiais de mercado.',
+  'Listen': 'Ouvir',
+  'Clear, consistent audio briefings for listening on the move.':
+    'Sínteses sonoras claras e coerentes para ouvir em mobilidade.',
+  'Explore': 'Explorar',
+  'Freshness': 'Actualidade',
+  'Review': 'Revisão',
+  'Evidence policy': 'Política documental',
+  'Critical claims require editorial review': 'As afirmações críticas exigem revisão editorial',
+  'Summaries must remain source-bound and factual': 'As sínteses devem permanecer factuais e ligadas às fontes',
+  'Updated with the live dataset': 'Actualizado com o conjunto de dados em directo',
+  'Intelligence trust protocol': 'Protocolo de confiança da inteligência',
+  'BOA Trust Protocol': 'Protocolo de confiança da BOA',
+  'Live, source-bound intelligence': 'Inteligência actual ligada às fontes',
+  'View method +': 'Ver método +',
+  'Read editorial standards': 'Ler as normas editoriais',
+  'Traceable by design.': 'Rastreável desde a concepção.',
+  'Editorial standards →': 'Normas editoriais →',
+  'Dossiê nacional assente em fontes': 'Dossiê nacional assente em fontes',
+  'Registo nacional assente em fontes oficiais e cobertura editorial atribuída':
+    'Registo nacional assente em fontes oficiais e cobertura editorial atribuída',
+  'Narration is still generating for this article.': 'A narração deste artigo ainda está a ser produzida.',
+  'New stories published': 'Novas histórias publicadas',
+  'Regional briefing updated': 'Síntese regional actualizada',
+  'Strategic briefing ready': 'Síntese estratégica pronta',
+  'Dashboard': 'Painel',
+  'Market-Entry Pilot': 'Projecto-piloto de entrada no mercado',
+  'Degraded': 'Degradado',
+  'Done (24h)': 'Concluídas (24 h)',
+  'Failed': 'Com falha',
+  'Idle': 'Inactivo',
+  'Operational': 'Operacional',
+  'Pending': 'Pendente',
+  'Queued': 'Em fila',
+  'Running': 'Em execução',
+  'Stalled': 'Interrompido',
+  'Daily Breakfast for Two': 'Pequeno-almoço diário para duas pessoas',
+  'Early Check-in / Late Checkout': 'Entrada antecipada / saída tardia',
+  'Executive Lounge Access': 'Acesso ao salão executivo',
+  'High-Speed WiFi': 'Wi-Fi de alta velocidade',
+  'Partner Hotel Credit': 'Crédito no hotel parceiro',
+  'Room Upgrade': 'Melhoria de quarto',
+  'A travel specialist will contact you shortly to plan your trip.':
+    'Um especialista em viagens contactá-lo-á em breve para planear a sua deslocação.',
+  'Our concierge team will confirm your exclusive rate within 2 hours.':
+    'A nossa equipa de concierge confirmará o seu preço exclusivo no prazo de duas horas.',
+  'Email Digest': 'Síntese por correio electrónico',
+  'New Reports': 'Novos relatórios',
+  'Real-time Alerts': 'Alertas em tempo real',
+  'African regions': 'Regiões africanas',
+  'Countries covered': 'Países abrangidos',
+  'Stories published': 'Histórias publicadas',
+  'Total reads': 'Total de leituras',
+  'A large economy does not automatically mean high household purchasing power or easy market entry.':
+    'Uma grande economia não significa automaticamente elevado poder de compra das famílias nem facilidade de entrada no mercado.',
+  'A national rate can conceal large differences between food, housing, energy and regions.':
+    'Uma taxa nacional pode ocultar grandes diferenças entre alimentação, habitação, energia e regiões.',
+  'A single large transaction can move the ratio sharply; it is not a stand-alone measure of investment quality.':
+    'Uma única grande transacção pode alterar fortemente o rácio; não constitui, por si só, uma medida da qualidade do investimento.',
+  'Definitions, reporting periods and country coverage can differ. Inspect the provider record before comparison.':
+    'As definições, os períodos de referência e a cobertura nacional podem diferir. Consulte o registo do fornecedor antes de comparar.',
+  'High trade intensity can signal integration and also exposure to external shocks.':
+    'Uma elevada intensidade comercial pode indicar integração, mas também exposição a choques externos.',
+  'One year can be affected by base effects, commodity cycles or weather; inspect several years before concluding.':
+    'Um único ano pode ser afectado por efeitos de base, ciclos das matérias-primas ou condições meteorológicas; examine vários anos antes de concluir.',
+  'Population is not the same as addressable demand or purchasing power.':
+    'População não equivale a procura acessível nem a poder de compra.',
+  'All Results': 'Todos os resultados',
+  'Articles': 'Artigos',
+  "A contemporary five-star anchor for investors moving through the AfCFTA's fastest-opening market.":
+    'Uma referência contemporânea de cinco estrelas para investidores que operam num dos mercados em abertura mais rápida ao abrigo da ZCLCAf.',
+  "A design icon above the V&A Waterfront, pairing world-class hospitality with boardrooms fit for the continent's biggest deals.":
+    'Um ícone de arquitectura sobre a V&A Waterfront, que combina hotelaria de nível mundial com salas de administração adequadas aos maiores negócios do continente.',
+  'A legendary palace hotel blending Moorish grandeur with modern executive comfort — a landmark for high-level meetings in North Africa.':
+    'Um lendário hotel-palácio que combina a grandiosidade mourisca com o conforto executivo moderno — uma referência para reuniões de alto nível no Norte de África.',
+  'A luxury lifestyle resort offering an effortlessly chic business retreat — ideal for executive retreats and strategy offsites.':
+    'Um complexo de luxo que proporciona um retiro empresarial elegante — ideal para encontros executivos e sessões externas de estratégia.',
+  "East Africa's diplomatic and tech hub, from a tower designed around the executive traveller.":
+    'Uma base no centro diplomático e tecnológico da África Oriental, numa torre concebida para o viajante executivo.',
+  "The 'Grand Dame' of Maputo — a historic, palatial hotel with the finest executive amenities and secure conference facilities in the capital.":
+    'A «Grande Dama» de Maputo — um hotel histórico e palaciano, com excelentes comodidades executivas e instalações seguras para conferências na capital.',
+  "The calm, secure base of choice in Africa's most walkable capital — minutes from the convention centre.":
+    'Uma base tranquila e segura numa das capitais africanas mais fáceis de percorrer a pé, a poucos minutos do centro de convenções.',
+  "West Africa's premier business address on Victoria Island, with the conference infrastructure and security serious deal-making demands.":
+    'Uma referência empresarial da África Ocidental em Victoria Island, com as infra-estruturas para conferências e a segurança exigidas por negociações importantes.',
+  'Change in the middle reading': 'Variação do valor central',
+  'Countries reading higher': 'Países com valor superior',
+  'Countries with usable data': 'Países com dados utilizáveis',
   'Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.':
     'Leia os dados por camadas: definição, valor, comparação, cobertura, período e limitação. Isto evita que um número elevado, uma evolução positiva ou uma classificação alta sejam confundidos com uma conclusão completa.',
   'A value is evidence, not a verdict.': 'Um valor é um dado, não um veredicto.',
-  'BOA Trust Protocol': 'Protocolo de confiança da BOA',
-  'Intelligence trust protocol': 'Protocolo de confiança da inteligência',
-  'Live, source-bound intelligence': 'Inteligência em directo, limitada às fontes',
-  'Traceable by design.': 'Rastreável desde a concepção.',
-  'Read editorial standards': 'Ler as normas editoriais',
-  'Editorial standards →': 'Normas editoriais →',
-  'View method +': 'Ver o método +',
   'Inspect provider record ↗': 'Consultar o registo do fornecedor ↗',
   'Open report': 'Abrir o relatório',
   'Every photograph shown here is attached to a specific published report and carries a visible credit linking back to the publisher or rights holder. Illustrative and generated imagery is excluded.':

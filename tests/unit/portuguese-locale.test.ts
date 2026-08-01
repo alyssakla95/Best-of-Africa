@@ -132,7 +132,15 @@ describe('coded Portuguese interface locale', () => {
                 }
             };
             const visit = (node: ts.Node) => {
-                if (ts.isJsxText(node)) record(node.text);
+                if (ts.isJsxText(node)) {
+                    record(node.text);
+                } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+                    && ts.isPropertyAssignment(node.parent)) {
+                    const property = node.parent.name.getText(source).replace(/^['"]|['"]$/g, '');
+                    if (['title', 'heading', 'label', 'copy', 'body', 'description', 'purpose', 'outcome', 'caution', 'value'].includes(property)) {
+                        record(node.text);
+                    }
+                }
                 ts.forEachChild(node, visit);
             };
             visit(source);

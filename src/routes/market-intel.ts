@@ -8,6 +8,7 @@ import type { Env, Variables, MarketIntelligence } from '../types';
 import { requireApiKey, rateLimit } from '../lib/auth';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
+import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
 import {
     getSectorPerformanceCache,
     refreshSectorPerformance,
@@ -175,6 +176,12 @@ router.get('/sector/:id/trends', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/country/:code/outlook', async (c) => {
     const code = c.req.param('code').toUpperCase();
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseJoin = reqLang === 'pt'
+        ? "JOIN article_translations pt ON pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0"
+        : '';
+    const localizedTitle = reqLang === 'pt' ? 'pt.title' : 'a.title';
+    const localizedSummary = reqLang === 'pt' ? 'COALESCE(pt.summary, pt.title)' : 'COALESCE(a.summary, a.title)';
 
     const country = await c.env.DB.prepare(`
         SELECT code, name, region, COALESCE(flag_emoji, '') AS flag_emoji,
@@ -212,12 +219,13 @@ router.get('/country/:code/outlook', async (c) => {
             WHERE country_code = ? AND status = 'active'
         `).bind(code).first(),
         c.env.DB.prepare(`
-            SELECT a.slug, a.title, COALESCE(a.summary, a.title) AS summary,
+            SELECT a.slug, ${localizedTitle} AS title, ${localizedSummary} AS summary,
                    COALESCE(a.published_at, a.updated_at, a.created_at) AS published_at,
                    COALESCE(NULLIF(a.source_title, ''), a.title) AS source_title,
                    a.source_url,
                    s.name AS sector_name
             FROM articles a
+            ${portugueseJoin}
             LEFT JOIN sectors s ON s.id = a.sector_id
             WHERE a.country_code = ? AND a.status = 'published'
             ORDER BY a.published_at DESC
@@ -226,7 +234,11 @@ router.get('/country/:code/outlook', async (c) => {
     ]);
 
     const countryData = country as Record<string, any>;
-    const sourceRecords = recentRecords.results || [];
+    const sourceRecords = (recentRecords.results || []).map(record => reqLang === 'pt' ? {
+        ...record,
+        title: normalisePortuguesePortugal1945(record.title) || record.title,
+        summary: normalisePortuguesePortugal1945(record.summary) || record.summary,
+    } : record);
     const evidenceContext = sourceRecords.map((record, index) =>
         `[${index + 1}] ${record.published_at} — ${record.title}\nSector: ${record.sector_name || 'General coverage'}\n${record.summary.slice(0, 1200)}\nSource: ${record.source_title} | ${record.source_url || `/stories/${record.slug}`}`
     ).join('\n\n');
@@ -249,21 +261,26 @@ RECORDS:
 ${evidenceContext}`;
             return callConfiguredAI(c.env, { prompt, max_tokens: 6500, temperature: 0.15, response_profile: 'evidence-brief' });
     };
-    const evidenceBriefing = await getCachedValue<string>(c.env, evidenceBriefingKey);
-    if (!evidenceBriefing && evidenceContext) {
+    const evidenceBriefing = reqLang === 'pt' ? null : await getCachedValue<string>(c.env, evidenceBriefingKey);
+    if (reqLang !== 'pt' && !evidenceBriefing && evidenceContext) {
         c.executionCtx.waitUntil(
             getCached(c.env, evidenceBriefingKey, generateEvidenceBriefing, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
         );
     }
-    const immediateCountryBriefing = sourceRecords.slice(0, 6).map((record, index) =>
-        `${index + 1}. ${record.title} (${record.published_at || 'date not recorded'}, ${record.sector_name || 'general coverage'}). ${(record.summary || '').slice(0, 420)}`
-    ).join('\n\n') || `The current BOA-Story evidence window contains zero published records for ${countryData.name}. No country-level inference is supported from this dataset until reporting records enter the window.`;
+    const immediateCountryBriefing = sourceRecords.slice(0, 6).map((record, index) => reqLang === 'pt'
+        ? `${index + 1}. ${record.title} (${record.published_at || 'data não registada'}). ${(record.summary || '').slice(0, 420)}`
+        : `${index + 1}. ${record.title} (${record.published_at || 'date not recorded'}, ${record.sector_name || 'general coverage'}). ${(record.summary || '').slice(0, 420)}`
+    ).join('\n\n') || (reqLang === 'pt'
+        ? `A janela documental actual da BOA-Story não contém registos publicados em português para ${countryData.name}. Não é possível sustentar uma conclusão nacional a partir desta janela até existirem registos editoriais adequados.`
+        : `The current BOA-Story evidence window contains zero published records for ${countryData.name}. No country-level inference is supported from this dataset until reporting records enter the window.`);
 
     return c.json({
         country: countryData,
         outlook: {
             investment_commentary: evidenceBriefing || immediateCountryBriefing,
-            methodology: 'This source-linked briefing analyzes BOA-Story reporting records. It does not infer investment readiness, stability, safety or economic performance from coverage or engagement.'
+            methodology: reqLang === 'pt'
+                ? 'Esta síntese ligada às fontes analisa os registos publicados pela BOA-Story. Não infere preparação para investimento, estabilidade, segurança ou desempenho económico a partir da cobertura ou da reacção do público.'
+                : 'This source-linked briefing analyzes BOA-Story reporting records. It does not infer investment readiness, stability, safety or economic performance from coverage or engagement.'
         },
         sector_opportunities: [],
         sector_coverage: sectorOpportunities.results || [],
@@ -271,7 +288,9 @@ ${evidenceContext}`;
             published_articles: Number((articleStats as Record<string, any>)?.total_articles || 0),
             sectors_covered: (sectorOpportunities.results || []).length,
             active_narrative_strategies: Number((narrativeStrength as Record<string, any>)?.strategies || 0),
-            status: sourceRecords.length > 0 ? 'source-linked' : 'zero published records in the evidence window',
+            status: reqLang === 'pt'
+                ? (sourceRecords.length > 0 ? 'ligado às fontes' : 'zero registos publicados na janela documental')
+                : (sourceRecords.length > 0 ? 'source-linked' : 'zero published records in the evidence window'),
             source_records: sourceRecords.map((record, index) => ({
                 record: index + 1,
                 title: record.title,
@@ -279,7 +298,12 @@ ${evidenceContext}`;
                 source_title: record.source_title,
                 source_url: record.source_url || `/stories/${record.slug}`,
             })),
-            limitations: [
+            limitations: reqLang === 'pt' ? [
+                'O volume de artigos representa cobertura editorial, não oportunidade de mercado nem desempenho nacional.',
+                'A síntese está limitada aos 15 registos publicados mais recentes e pode omitir acontecimentos fora dessa janela.',
+                'As sínteses dos artigos não substituem contas auditadas, instrumentos jurídicos, registos regulamentares nem dados de execução.',
+                'Toda a conclusão com consequências exige verificação nos documentos primários identificados na síntese.',
+            ] : [
                 'Article volume is reporting coverage, not market opportunity or country performance.',
                 'The briefing is bounded by the latest 15 published records and can omit developments outside that window.',
                 'Article summaries do not replace audited accounts, legal instruments, regulatory filings or implementation data.',

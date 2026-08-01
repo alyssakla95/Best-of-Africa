@@ -155,7 +155,7 @@ export const BetaLanding = () => {
             {[
               { Icon: Newspaper, title: 'Reporting', copy: 'Source-attributed stories and a concise current briefing.', to: '/posts' },
               { Icon: Map, title: 'Country hubs', copy: 'Coverage, sectors and context for all 54 nations.', to: '/countries' },
-              { Icon: TrendingUp, title: 'Intelligence', copy: 'Real coverage momentum and market signals.', to: '/intelligence' },
+              { Icon: TrendingUp, title: 'Intelligence', copy: 'Comparable sector measures and official market evidence.', to: '/intelligence' },
               { Icon: Headphones, title: 'Listen', copy: 'Clear, consistent audio briefings for listening on the move.', to: '/posts' },
             ].map(({ Icon, title, copy, to }) => (
               <Link key={title} to={to} className="group p-6 bg-card hover:bg-secondary/60 transition-colors">

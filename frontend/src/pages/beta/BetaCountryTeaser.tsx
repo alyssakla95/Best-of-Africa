@@ -32,7 +32,10 @@ const CountryCard = ({
   country }: {
   country: Partial<Country>;
 }) => {
-  const tag = Array.isArray(country.investment_highlights) && country.investment_highlights.length > 0
+  const { language } = useLanguage();
+  const tag = language === 'pt'
+    ? 'Dossiê nacional assente em fontes'
+    : Array.isArray(country.investment_highlights) && country.investment_highlights.length > 0
     ? country.investment_highlights[0]
     : country.region || '';
 

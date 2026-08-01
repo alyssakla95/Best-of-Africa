@@ -555,7 +555,7 @@ router.get('/founder-log', async (c) => {
                 tag: 'Registo de publicação',
                 title: `${rows.length} registos revistos nas fontes e publicados nos últimos 14 dias`,
                 body: rows.length
-                    ? `Este é um registo da actividade da plataforma, não uma afirmação sobre impacto no mercado. Os registos publicados mais recentes são: ${recentTitles}. Cada elemento passou pela revisão editorial das fontes antes da publicação.`
+                    ? `Este é um registo da actividade da plataforma, não uma afirmação sobre impacto no mercado. Os ${rows.length} registos deste período passaram pela revisão editorial das fontes antes da publicação. A lista integral, com título, fonte e data, está disponível no arquivo de histórias.`
                     : 'Nenhum artigo atingiu o estado de publicado nos últimos 14 dias. O registo apresenta zero em vez de substituir actividade inexistente.',
             },
             {

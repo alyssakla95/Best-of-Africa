@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { articlesRouter } from '../../src/routes/articles';
+import worker from '../../src/index';
 import type { Env } from '../../src/types';
 
 const ARTICLE_ID = '11111111-1111-4111-8111-111111111111';
@@ -64,6 +65,21 @@ describe('publisher image cache', () => {
         expect(first.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
         expect(second.status).toBe(200);
         expect(upstream).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves cross-origin media access after global security headers run', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), {
+            headers: { 'Content-Type': 'image/jpeg', 'Content-Length': '4' },
+        })));
+        const response = await worker.fetch(
+            new Request(`http://localhost/api/v1/articles/${ARTICLE_ID}/image`),
+            envFor('https://cdn.publisher.example/story.jpg'),
+            { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as unknown as ExecutionContext,
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
+        expect(response.headers.get('access-control-allow-origin')).toBe('*');
     });
 
     it('never makes a publisher failure cacheable', async () => {

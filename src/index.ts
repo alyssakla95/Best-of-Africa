@@ -32,14 +32,18 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 // Global Middleware
 // ───────────────────────────────────────────────────────────────────────────────
 app.use('*', logger());
-// /assets serves public images embedded by the Pages frontend (a different
-// origin). secureHeaders() sets Cross-Origin-Resource-Policy: same-origin,
-// which makes browsers hard-block those embeds (ERR_BLOCKED_BY_RESPONSE) — so
-// every R2-served hero silently fell back. Registered BEFORE secureHeaders so
-// this post-handler override runs after it and wins.
-app.use('/assets/*', async (c, next) => {
+// Public media is embedded by the Pages frontend from a different origin.
+// secureHeaders() sets Cross-Origin-Resource-Policy: same-origin, which makes
+// browsers hard-block otherwise valid image responses. This middleware is
+// registered before secureHeaders so its post-handler override runs last.
+app.use('*', async (c, next) => {
     await next();
-    c.res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    const path = c.req.path;
+    const isPublicMedia = path.startsWith('/assets/')
+        || /^\/api\/v1\/articles\/[^/]+\/image$/.test(path);
+    if (isPublicMedia) {
+        c.res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
 });
 app.use('*', secureHeaders());
 app.use('*', prettyJSON());

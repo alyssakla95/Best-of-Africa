@@ -13,6 +13,7 @@ import {
 import { translationRouter } from '../../src/routes/translation';
 import { translateText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
+import { normalisePortuguesePortugal1945 } from '../../src/lib/portuguese';
 
 const looksPortuguese = (value: string) => {
     if (value === 'Best of Africa.') return true;
@@ -40,6 +41,11 @@ describe('coded Portuguese interface locale', () => {
         expect(maintainedCopy).not.toMatch(/\bsetor(?:es|ial|iais)?\b/i);
         expect(maintainedCopy).not.toMatch(/\batividade(?:s)?\b/i);
         expect(maintainedCopy).not.toMatch(/\bperspetiva(?:s)?\b/i);
+    });
+
+    it('normalises stored publication copy without breaking Portuguese grammar or capitalisation', () => {
+        expect(normalisePortuguesePortugal1945('Faturas vazadas e gastos; regras de política sobre os gastos. Uma justificativa em Cape Town durante maio-junho 2026.'))
+            .toBe('Facturas divulgadas e despesas; regras internas sobre as despesas. Uma justificação na Cidade do Cabo entre Maio e Junho 2026.');
     });
 
     it('ships source-owned copy for both foreground intelligence products', () => {

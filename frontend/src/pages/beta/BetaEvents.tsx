@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
 import { stripMarkdown } from '@/lib/utils';
 import type { CalendarEvent } from '@/types';
+import { useLanguage } from '../../context/LanguageContext';
+import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 
 interface EventRegistrationInput {
     user_email: string;
@@ -24,6 +26,16 @@ interface EventRegistrationInput {
 // Local fallback imagery rotated by index so events without a hero_image_url
 // don't all share one (previously external, washed-out) photo.
 export const BetaEvents: React.FC = () => {
+    const { language } = useLanguage();
+    const localText = (value: string) => language === 'pt' ? (translatePortugueseInterfaceText(value) || value) : value;
+    const eventCategory = (value: string) => language === 'pt' ? ({
+        Trade: 'Comércio', Investment: 'Investimento', Energy: 'Energia', Mining: 'Mineração',
+        Resources: 'Recursos', Technology: 'Tecnologia', Tech: 'Tecnologia', Tourism: 'Turismo',
+        Agriculture: 'Agricultura', Business: 'Negócios',
+    }[value] || localText(value)) : value;
+    const eventStatus = (value: string) => language === 'pt' ? ({
+        open: 'Inscrições abertas', upcoming: 'Próximo', registration_open: 'Inscrições abertas',
+    }[value.toLowerCase()] || localText(value.replace(/_/g, ' '))) : value.replace(/_/g, ' ');
     const { data: eventsData, isLoading, isError, refetch } = useQuery({
         queryKey: ['events'],
         queryFn: () => api.getCorporateEvents()
@@ -136,7 +148,7 @@ export const BetaEvents: React.FC = () => {
                                 <div className="z-10 flex w-full flex-col justify-center p-5 sm:p-8 md:p-12">
                                     <div className="flex flex-wrap items-center gap-4 mb-6">
                                         <span className="text-[11px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full">
-                                            {event.event_type || event.category}
+                                            {eventCategory(event.event_type || event.category)}
                                         </span>
                                         {event.is_vip && (
                                             <span className="text-[11px] font-bold uppercase tracking-widest text-accent bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full flex items-center gap-2">
@@ -146,7 +158,7 @@ export const BetaEvents: React.FC = () => {
                                     </div>
                                     <h2 className="mb-5 break-words font-serif text-[clamp(1.85rem,8vw,2.5rem)] leading-[1.05] text-foreground md:mb-6">{stripMarkdown(event.title)}</h2>
                                     <p className="mb-7 text-base font-light leading-7 text-foreground/60 line-clamp-4 md:mb-10 md:text-[1.125rem] md:leading-[1.8]">
-                                        {stripMarkdown(event.description)}
+                                        {localText(stripMarkdown(event.description))}
                                     </p>
                                     
                                     <div className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-foreground/10 bg-foreground/5 p-4 min-[520px]:grid-cols-2 md:mb-10 md:gap-6 md:rounded-2xl md:p-6">
@@ -162,7 +174,7 @@ export const BetaEvents: React.FC = () => {
                                     
                                     <div className="mt-auto flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-foreground/10">
                                         <span className="text-[13px] font-bold uppercase tracking-widest text-foreground/60">
-                                            {event.status.replace(/_/g, ' ')}
+                                            {eventStatus(event.status)}
                                         </span>
                                         <Button 
                                             onClick={() => handleRegisterClick(event)}

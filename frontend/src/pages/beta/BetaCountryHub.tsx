@@ -25,6 +25,7 @@ import { EditorialContent } from '../../components/EditorialContent';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 import { activeReaderLocale, formatReaderDate, formatReaderDateTime } from '../../i18n/locale';
+import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ export const BetaCountryHub = () => {
   const { code } = useParams<{ code: string }>();
   const { isMember } = useMember();
   const { t, language } = useLanguage();
+  const localText = (value: string) => language === 'pt' ? (translatePortugueseInterfaceText(value) || value) : value;
   const upperCode = (code || '').toUpperCase();
 
   const [countryQuery, outlookQuery, narrativeQuery, articlesQuery, dossierQuery] = useQueries({
@@ -278,7 +280,7 @@ export const BetaCountryHub = () => {
                 <div className="bg-background p-5"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sectors evidenced</p><p className="mt-2 font-serif text-3xl text-navy">{evidence.sectors_covered}</p></div>
                 <div className="bg-background p-5"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Evidence status</p><p className="mt-2 font-serif text-2xl capitalize text-navy">{evidence.status}</p></div>
               </div>
-              <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{outlook.methodology}</p>
+              <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{localText(outlook.methodology)}</p>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">{evidence.limitations.map(item => <li key={item} className="flex gap-3"><span className="text-accent-ink">•</span>{item}</li>)}</ul>
               {outlook.investment_commentary && (
                 <div className="mt-10 border-t border-border pt-8">
@@ -424,7 +426,7 @@ export const BetaCountryHub = () => {
                 </div>}
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dossier.freshness.map(source => <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-navy/30"><p className="text-xs font-bold text-navy">{source.provider}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{language === 'pt' ? 'Período de observação' : 'Observation period'}: {language === 'pt' ? source.observation_period.replace('historical observations and separately labelled projections', 'observações históricas e projecções identificadas separadamente').replace('external-sector record', 'registo do sector externo') : source.observation_period}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{language === 'pt' ? 'Consultado em' : 'Checked'} {formatReaderDate(source.checked_at, { dateStyle: 'medium' })}</p></a>)}</div>
-              {provenance && <div className="border-l-2 border-navy pl-5 text-sm leading-relaxed text-muted-foreground"><p>{provenance.methodology}</p><p className="mt-2 text-xs">{language === 'pt' ? 'Fontes' : 'Sources'}: {provenance.sources.map(source => source.name.replace('external-sector record', language === 'pt' ? 'registo do sector externo' : 'external-sector record').replace('BOA source-linked reporting', language === 'pt' ? 'cobertura da BOA ligada às fontes' : 'BOA source-linked reporting')).join(' · ')}</p></div>}
+              {provenance && <div className="border-l-2 border-navy pl-5 text-sm leading-relaxed text-muted-foreground"><p>{localText(provenance.methodology)}</p><p className="mt-2 text-xs">{language === 'pt' ? 'Fontes' : 'Sources'}: {provenance.sources.map(source => source.name.replace('external-sector record', language === 'pt' ? 'registo do sector externo' : 'external-sector record').replace('BOA source-linked reporting', language === 'pt' ? 'cobertura da BOA ligada às fontes' : 'BOA source-linked reporting')).join(' · ')}</p></div>}
             </div>}
           </section>
         )}

@@ -2362,6 +2362,11 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   "North Africa's premier oil and gas event connecting the Mediterranean energy corridor.": 'O principal evento de petróleo e gás do Norte de África, que liga o corredor energético do Mediterrâneo.',
   'Leading tech, digital infrastructure, and fintech forum for East Africa.': 'Fórum de referência da África Oriental sobre tecnologia, infra-estruturas digitais e tecnologia financeira.',
   'The largest international gathering of African private sector leaders.': 'O maior encontro internacional de dirigentes do sector privado africano.',
+  '% of final energy use': '% do consumo final de energia',
+  'UN Comtrade · external-sector record': 'UN Comtrade · registo do sector externo',
+  "Exploring Mauritius as Africa's offshore financial center and gateway to Asia.": 'Análise da Maurícia como centro financeiro internacional de África e porta de entrada para a Ásia.',
+  "Ethiopia's flagship investment event at the seat of the African Union.": 'O principal evento de investimento da Etiópia, na sede da União Africana.',
+  "Spotlight on Tanzania's gold, nickel, and rare earth minerals sectors.": 'Destaque para os sectores do ouro, níquel e minerais de terras raras da Tanzânia.',
 };
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {

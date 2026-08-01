@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, ChevronDown, CircleHelp, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import { translatePortugueseInterfaceText } from '../i18n/pt-PT-1945';
 
 type Guide = {
   label: string;
@@ -179,12 +181,17 @@ const analyticalPrimer = (subject: string) => {
 };
 
 export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: string }) {
+  const { language } = useLanguage();
+  const text = (value: string) => language === 'pt' ? (translatePortugueseInterfaceText(value) || value) : value;
+  const subjectLabel = language === 'pt'
+    ? subject.includes('sector') ? 'este guia sectorial' : subject.includes('continental') ? 'este panorama continental' : 'este painel'
+    : subject;
   const primer = analyticalPrimer(subject);
   return <section className="page-section overflow-hidden rounded-2xl border border-navy/15 bg-white" aria-labelledby="data-reading-guide-title">
     <div className="border-b border-border bg-navy/[.035] px-5 py-6 md:px-8 md:py-7">
       <p className="text-xs font-bold uppercase tracking-[.08em] text-navy/60">Start here · no specialist background required</p>
-      <h2 id="data-reading-guide-title" className="mt-2 font-serif text-3xl text-navy md:text-4xl">How to read {subject}</h2>
-      <p className="mt-4 readable-copy">Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.</p>
+      <h2 id="data-reading-guide-title" className="mt-2 font-serif text-3xl text-navy md:text-4xl">{language === 'pt' ? `Como ler ${subjectLabel}` : `How to read ${subjectLabel}`}</h2>
+      <p className="mt-4 readable-copy">{text('Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.')}</p>
     </div>
     <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
       {[
@@ -194,9 +201,9 @@ export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: str
         ['4', 'Coverage', 'How many countries supplied usable data, and could missing countries change the continental picture?'],
         ['5', 'Timing', 'Which years are represented, and do reporting delays limit claims about conditions today?'],
         ['6', 'Boundary', 'What can the indicator support, and what requires other evidence or professional diligence?'],
-      ].map(([number,title,body]) => <article key={number} className="bg-white p-5 md:p-6"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{number}</span><h3 className="mt-4 text-base font-bold text-navy">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p></article>)}
+      ].map(([number,title,body]) => <article key={number} className="bg-white p-5 md:p-6"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{number}</span><h3 className="mt-4 text-base font-bold text-navy">{text(title)}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{text(body)}</p></article>)}
     </div>
-    <div className="border-t border-border p-5 md:p-8"><h3 className="text-xl font-bold text-navy">{primer.title}</h3><div className="mt-5 grid gap-4 lg:grid-cols-3">{primer.points.map(([title,body]) => <article key={title} className="rounded-xl bg-navy/[.035] p-4 md:p-5"><h4 className="text-base font-bold text-navy">{title}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p></article>)}</div></div>
+    <div className="border-t border-border p-5 md:p-8"><h3 className="text-xl font-bold text-navy">{text(primer.title)}</h3><div className="mt-5 grid gap-4 lg:grid-cols-3">{primer.points.map(([title,body]) => <article key={title} className="rounded-xl bg-navy/[.035] p-4 md:p-5"><h4 className="text-base font-bold text-navy">{text(title)}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{text(body)}</p></article>)}</div></div>
     <div className="border-t border-border bg-navy px-5 py-6 text-white md:px-8">
       <p className="text-xs font-bold uppercase tracking-[.08em] text-white/65">Worked example</p>
       <p className="mt-3 max-w-4xl text-sm leading-7 text-white/85"><strong className="text-white">“Median real growth: 4.2%, 39 countries, observations from 2023–2024”</strong> means the middle reported country recorded 4.2% real growth. It does not mean every country grew by 4.2%, that Africa’s combined economy grew at that exact rate, or that the same conditions persisted after the observation period.</p>
@@ -207,7 +214,7 @@ export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: str
         ['Coverage', 'The share of Africa’s 54 countries with usable observations for that indicator.'],
         ['Prior observation', 'The previous available value for each country; it may not be exactly one year earlier.'],
         ['Percentage point (pp)', 'The direct difference between percentages: 10% to 12% is +2 pp, not +2%.'],
-      ].map(([term,meaning]) => <div key={term}><dt className="text-sm font-bold text-navy">{term}</dt><dd className="mt-1 text-xs leading-5 text-muted-foreground">{meaning}</dd></div>)}
+      ].map(([term,meaning]) => <div key={term}><dt className="text-sm font-bold text-navy">{text(term)}</dt><dd className="mt-1 text-xs leading-5 text-muted-foreground">{text(meaning)}</dd></div>)}
     </dl>
   </section>;
 }

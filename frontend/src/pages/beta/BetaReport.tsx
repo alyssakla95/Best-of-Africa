@@ -8,7 +8,12 @@ import { formatReaderDate } from '../../i18n/locale';
 import { useLanguage } from '../../context/LanguageContext';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 
-const reportTypeLabel = (type: string) => ({
+const reportTypeLabel = (type: string, language: string) => language === 'pt' ? ({
+  country_brief: 'Síntese nacional',
+  sector_analysis: 'Análise sectorial',
+  weekly_digest: 'Resumo semanal',
+  investment_outlook: 'Perspectivas de investimento',
+}[type] || 'Relatório de síntese') : ({
   country_brief: 'Country brief',
   sector_analysis: 'Sector analysis',
   weekly_digest: 'Weekly digest',
@@ -112,7 +117,7 @@ export const BetaReport = () => {
           {!listQuery.isLoading && !listQuery.isError && !reports.length && <section className="rounded-2xl border border-border bg-white p-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Archive building</p><h2 className="mt-2 font-serif text-3xl text-navy">The first scheduled briefs have not been stored yet.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">Country briefs and sector analyses are produced by the daily reporting worker and appear here once stored.</p></section>}
           {!!reports.length && <section className="grid gap-4 md:grid-cols-2">
             {reports.map(report => <Link key={report.id} to={`/intelligence/reports/${report.id}`} className="group flex flex-col rounded-2xl border border-border bg-white p-5 transition-colors hover:border-navy/40 md:p-6">
-              <div className="flex items-center gap-3"><FileText size={16} className="text-navy/65"/><p className="text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground">{reportTypeLabel(report.type)}</p></div>
+              <div className="flex items-center gap-3"><FileText size={16} className="text-navy/65"/><p className="text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground">{reportTypeLabel(report.type, language)}</p></div>
               <h2 className="mt-3 font-serif text-2xl leading-tight text-navy">{reportTitle(report.title)}</h2>
               <p className="mt-2 text-xs text-muted-foreground">Prepared {formatDate(report.created_at)}</p>
               <span className="mt-5 inline-flex items-center gap-2 border-t border-border pt-4 text-xs font-semibold text-navy">Open structured report <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5"/></span>
@@ -131,7 +136,7 @@ export const BetaReport = () => {
       <div className="mx-auto max-w-[1400px] px-5 py-10 sm:px-6 md:py-14 lg:px-8">
         <Link to="/intelligence/reports" className="inline-flex items-center gap-2 text-xs font-semibold text-white/75 hover:text-white"><ArrowLeft size={14}/> All briefing reports</Link>
         {report && <>
-          <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[.18em] text-white/65"><span>{reportTypeLabel(report.type)}</span><span className="h-1 w-1 rounded-full bg-white/40"/><span>Prepared {formatDate(report.generated_at || report.created_at)}</span></div>
+          <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[.18em] text-white/65"><span>{reportTypeLabel(report.type, language)}</span><span className="h-1 w-1 rounded-full bg-white/40"/><span>{language === 'pt' ? 'Preparado em' : 'Prepared'} {formatDate(report.generated_at || report.created_at)}</span></div>
           <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.2rem,5.5vw,4.2rem)] leading-[.95] tracking-[-.04em]">{reportTitle(report.title)}</h1>
           {report.subtitle && <p className="mt-6 max-w-3xl text-base leading-7 text-white/75 md:text-lg">{report.subtitle}</p>}
         </>}

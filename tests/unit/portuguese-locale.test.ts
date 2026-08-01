@@ -18,7 +18,7 @@ import { normalisePortuguesePortugal1945 } from '../../src/lib/portuguese';
 const looksPortuguese = (value: string) => {
     if (value === 'Best of Africa.') return true;
     if (/^(?:Idioma|Remover|Fotografia|Fontes|Contacto|Conta|Confiança|Definições|Empresas|Inteligência|Ler|Privacidade|Sobre|Termos|Facultativo|Obrigatório)$/i.test(value)) return true;
-    if (/\b(?:abrir|actual|ajudá-lo|apoiar|candidato|candidata|consultado|direitos|fotografia|históricas|identificadas|mercado|nome|observações|oficial|país|países|pesquisar|portal|primeiro|priorizar|projecções|publicações|recurso|registo|reservados|segundo|seleccione|tentar|terceiro)\b/i.test(value)) return true;
+    if (/\b(?:abrir|actual|ajudá-lo|apoiar|candidato|candidata|consultado|direitos|fotografia|históricas|identificadas|mercado|nome|observações|oficial|país|países|pesquisar|portal|preparado|primeiro|priorizar|projecções|publicações|recurso|registo|reservados|segundo|seleccione|tentar|terceiro)\b/i.test(value)) return true;
     const markers = value.match(/\b(?:aos?|as|com|da|das|de|do|dos|em|entre|num|numa|não|o|os|para|pela|pelas|pelo|pelos|por|que|sem|uma|um)\b/gi) || [];
     return /[ãõçáéíóúâêôà]/i.test(value) && markers.length > 0;
 };
@@ -46,6 +46,8 @@ describe('coded Portuguese interface locale', () => {
     it('normalises stored publication copy without breaking Portuguese grammar or capitalisation', () => {
         expect(normalisePortuguesePortugal1945('Faturas vazadas e gastos; regras de política sobre os gastos. Uma justificativa em Cape Town durante maio-junho 2026.'))
             .toBe('Facturas divulgadas e despesas; regras internas sobre as despesas. Uma justificação na Cidade do Cabo entre Maio e Junho 2026.');
+        expect(normalisePortuguesePortugal1945('Desafios socioeconômicos de sua zona numa cerimônia em Liberia.'))
+            .toBe('Desafios socioeconómicos da sua zona numa cerimónia em Libéria.');
     });
 
     it('ships source-owned copy for both foreground intelligence products', () => {

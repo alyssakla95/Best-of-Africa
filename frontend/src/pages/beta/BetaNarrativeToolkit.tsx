@@ -12,6 +12,7 @@ import { stripMarkdown } from '@/lib/utils';
 import { activeReaderLocale, formatReaderDate } from '../../i18n/locale';
 import { useLanguage } from '../../context/LanguageContext';
 import { readerCountryName } from '../../i18n/pt-country-data';
+import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 
 type Indicator = {
   code: string;
@@ -114,6 +115,7 @@ function guidanceFor(indicator: Indicator, language: string) {
 
 export const BetaNarrativeToolkit: React.FC = () => {
   const { language } = useLanguage();
+  const localText = (value: string) => language === 'pt' ? (translatePortugueseInterfaceText(value) || value) : value;
   const { code } = useParams<{ code: string }>();
   const upperCode = code?.toUpperCase();
 
@@ -369,7 +371,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-navy/55">Audit trail</p>
               <h2 className="mt-3 font-serif text-3xl">Sources and freshness</h2>
-              <p className="mt-4 text-sm leading-6 text-navy/70">{provenance?.methodology || 'Official observations retain the period and unit supplied by their provider. Retrieval dates are recorded separately.'}</p>
+              <p className="mt-4 text-sm leading-6 text-navy/70">{localText(provenance?.methodology || 'Official observations retain the period and unit supplied by their provider. Retrieval dates are recorded separately.')}</p>
             </div>
             <div className="space-y-3">
               {(dossier?.freshness || []).map(source => (

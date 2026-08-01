@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { api, type PilotRequestInput } from '@/services/api';
+import { useLanguage } from '@/context/LanguageContext';
 
 const organizationTypes: Array<[PilotRequestInput['organization_type'], string]> = [
   ['corporate', 'Company or corporate team'],
@@ -36,6 +37,7 @@ const initialForm = {
 };
 
 export const EnterprisePilotPage = () => {
+  const { language } = useLanguage();
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -152,19 +154,19 @@ export const EnterprisePilotPage = () => {
 
             <FormSection number="02" title="Decision scope" description="Describe one decision that can be evaluated within a bounded pilot.">
               <Field label="Sector or operating category" name="target_sector">
-                <Input id="target_sector" required minLength={2} maxLength={120} placeholder="For example: logistics, fintech, agribusiness" value={form.target_sector} onChange={e => update('target_sector', e.target.value)} />
+                <Input id="target_sector" required minLength={2} maxLength={120} placeholder={language === 'pt' ? 'Por exemplo: logística, tecnologia financeira, agro-indústria' : 'For example: logistics, fintech, agribusiness'} value={form.target_sector} onChange={e => update('target_sector', e.target.value)} />
               </Field>
               <div className="md:col-span-2">
                 <Label className="text-sm font-bold text-navy">Candidate African markets</Label>
                 <p className="mt-1 text-sm leading-6 text-navy/60">Name one required market and up to two alternatives. This is deliberately limited to keep the pilot comparable.</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <Input aria-label="First candidate market" required minLength={2} maxLength={100} placeholder="Required" value={form.country_one} onChange={e => update('country_one', e.target.value)} />
-                  <Input aria-label="Second candidate market" minLength={2} maxLength={100} placeholder="Optional" value={form.country_two} onChange={e => update('country_two', e.target.value)} />
-                  <Input aria-label="Third candidate market" minLength={2} maxLength={100} placeholder="Optional" value={form.country_three} onChange={e => update('country_three', e.target.value)} />
+                  <Input aria-label={language === 'pt' ? 'Primeiro mercado candidato' : 'First candidate market'} required minLength={2} maxLength={100} placeholder={language === 'pt' ? 'Obrigatório' : 'Required'} value={form.country_one} onChange={e => update('country_one', e.target.value)} />
+                  <Input aria-label={language === 'pt' ? 'Segundo mercado candidato' : 'Second candidate market'} minLength={2} maxLength={100} placeholder={language === 'pt' ? 'Facultativo' : 'Optional'} value={form.country_two} onChange={e => update('country_two', e.target.value)} />
+                  <Input aria-label={language === 'pt' ? 'Terceiro mercado candidato' : 'Third candidate market'} minLength={2} maxLength={100} placeholder={language === 'pt' ? 'Facultativo' : 'Optional'} value={form.country_three} onChange={e => update('country_three', e.target.value)} />
                 </div>
               </div>
               <Field wide label="Decision question" name="decision_question" hint="State the decision, not a broad topic. Minimum 20 characters.">
-                <Textarea id="decision_question" required minLength={20} maxLength={2000} rows={5} placeholder="Which market should we prioritize for…" value={form.decision_question} onChange={e => update('decision_question', e.target.value)} />
+                <Textarea id="decision_question" required minLength={20} maxLength={2000} rows={5} placeholder={language === 'pt' ? 'Que mercado devemos priorizar para…' : 'Which market should we prioritize for…'} value={form.decision_question} onChange={e => update('decision_question', e.target.value)} />
               </Field>
               <Field label="Decision deadline, if known" name="decision_deadline">
                 <Input id="decision_deadline" type="date" value={form.decision_deadline} onChange={e => update('decision_deadline', e.target.value)} />

@@ -10,6 +10,7 @@ import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 import { CONTINENTAL_WDI_SNAPSHOT } from '../data/continental-wdi-snapshot';
 import { getSectorPerformanceCache } from '../lib/sector-performance';
+import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -161,14 +162,20 @@ router.get('/:region', async (c) => {
 // GET /dashboards/continental/overview - Pan-African overview
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/continental/overview', async (c) => {
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseJoin = reqLang === 'pt'
+        ? "JOIN article_translations pt ON pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0"
+        : '';
+    const titleColumn = reqLang === 'pt' ? 'pt.title' : 'a.title';
+    const summaryColumn = reqLang === 'pt' ? 'pt.summary' : 'a.summary';
     const [sectorPerformance, narratedBriefingsResult] = await Promise.all([
         getSectorPerformanceCache(c.env),
         c.env.DB.prepare(`
             SELECT
                 a.id,
                 a.slug,
-                a.title,
-                a.summary,
+                ${titleColumn} AS title,
+                ${summaryColumn} AS summary,
                 a.audio_url,
                 a.audio_duration_seconds,
                 a.published_at,
@@ -176,6 +183,7 @@ router.get('/continental/overview', async (c) => {
                 c.name AS country_name,
                 s.name AS sector_name
             FROM articles a
+            ${portugueseJoin}
             LEFT JOIN countries c ON c.code = a.country_code
             LEFT JOIN sectors s ON s.id = a.sector_id
             WHERE a.status = 'published'
@@ -191,7 +199,11 @@ router.get('/continental/overview', async (c) => {
         sector_performance: sectorPerformance?.data || [],
         sectors_measured: sectorPerformance?.sectors_measured || 0,
         sector_methodology: sectorPerformance?.methodology || '',
-        narrated_briefings: narratedBriefingsResult.results || [],
+        narrated_briefings: (narratedBriefingsResult.results || []).map((briefing: Record<string, any>) => reqLang === 'pt' ? {
+            ...briefing,
+            title: normalisePortuguesePortugal1945(briefing.title) || briefing.title,
+            summary: normalisePortuguesePortugal1945(briefing.summary),
+        } : briefing),
     });
 });
 

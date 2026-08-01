@@ -14,7 +14,7 @@ export function LanguageSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={`${t('language.label', 'Language')}: ${current.name}`}
+        aria-label={`${language === 'pt' ? 'Idioma' : t('language.label', 'Language')}: ${current.name}`}
         className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <GlobeIcon className="h-3.5 w-3.5" />

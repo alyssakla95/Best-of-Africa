@@ -397,7 +397,7 @@ export const api = {
         rankings: { largest_economies: { country_code: string; country_name: string; region: string; year: number; value: number }[]; fastest_growth: { country_code: string; country_name: string; region: string; year: number; value: number }[]; largest_fdi_inflows: { country_code: string; country_name: string; region: string; year: number; value: number }[] };
         sector_performance: SectorMarketPerformance[]; sectors_measured: number; sector_methodology: string;
         narrated_briefings: { id: string; slug: string; title: string; summary: string | null; audio_url: string; audio_duration_seconds: number | null; published_at: string; country_code: string | null; country_name: string | null; sector_name: string | null }[];
-    }>('/dashboards/continental/overview?contract=economy-v1'),
+    }>(`/dashboards/continental/overview?contract=economy-v1&lang=${getReaderLanguage()}`),
 
     // Search
     search: (query: string) => request<{ results: SearchResult[]; suggestions: string[]; editorial_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
@@ -525,7 +525,7 @@ export const api = {
 
     // System & Personalization
     getCuratedFeed: () => request<{ data: (ArticleListItem & { curation?: { relevance_note: string } })[]; personalized: boolean; feed_summary?: string }>('/personalization/feed/curated'),
-    getFounderLog: () => request<ReportingLedgerEntry[]>('/market-intel/founder-log'),
+    getFounderLog: () => request<ReportingLedgerEntry[]>(`/market-intel/founder-log?lang=${getReaderLanguage()}`),
     askAnalyst: (message: string) => request<{ response: string; sources: string[] }>('/intel/analyst', {
         method: 'POST',
         body: JSON.stringify({ message })

@@ -1,5 +1,5 @@
 /** Deterministic pt-PT normalisation using spellings from before AO90. */
-type Replacement = string | ((match: string) => string);
+type Replacement = string | ((match: string, ...groups: string[]) => string);
 const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
     [/\bsetor(es|ial|iais)?\b/gi, 'sector$1'],
     [/\batividade(s)?\b/gi, 'actividade$1'],
@@ -25,9 +25,20 @@ const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
     [/\bacadêmic([oa]s?)\b/gi, 'académic$1'],
     [/\bprêmio(s)?\b/gi, 'prémio$1'],
     [/\bplanejamento\b/gi, 'planeamento'],
+    [/\bplaneja\b/gi, 'planeia'],
+    [/\bplanejam\b/gi, 'planeiam'],
+    [/\bplanejado(s|a|as)?\b/gi, 'planeado$1'],
     [/\bgerenciamento\b/gi, 'gestão'],
     [/\bgovernança\b/gi, 'governação'],
     [/\bdemanda(s)?\b/gi, 'procura$1'],
+    [/\bmanufatura(s)?\b/gi, 'indústria transformadora'],
+    [/\bmanufatureiras?\b/gi, 'industriais'],
+    [/\bmanufatureiros?\b/gi, 'industriais'],
+    [/\bsocioeconômic([oa]s?)\b/gi, 'socioeconómico$1'],
+    [/\bcronograma(s)?\b/gi, 'calendário$1'],
+    [/\bforça coletiva\b/gi, 'força colectiva'],
+    [/\bgovernos estaduais\b/gi, 'governos dos estados'],
+    [/\bse beneficiar de\b/gi, 'beneficiar de'],
     [/\bequipe(s)?\b/gi, 'equipa$1'],
     [/\busuários\b/gi, 'utilizadores'],
     [/\busuário\b/gi, 'utilizador'],
@@ -45,6 +56,8 @@ const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
     [/\bem uma\b/gi, (match) => /^[A-Z]/.test(match) ? 'Numa' : 'numa'],
     [/\bem um\b/gi, (match) => /^[A-Z]/.test(match) ? 'Num' : 'num'],
     [/\bótim([oa]s?)\b/gi, 'óptim$1'],
+    [/\$([0-9]+(?:\.[0-9]+)?)\s+billion\b/gi, (_match: string, amount: string) => `$${amount.replace('.', ',')} mil milhões`],
+    [/\$([0-9]+(?:\.[0-9]+)?)\s+million\b/gi, (_match: string, amount: string) => `$${amount.replace('.', ',')} milhões`],
 ];
 
 export function normalisePortuguesePortugal1945(value: string | null | undefined): string | null {

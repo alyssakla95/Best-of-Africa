@@ -501,18 +501,22 @@ router.get('/performance', async (c) => {
 // GET /market-intel/founder-log - -Written Weekly Project Update
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/founder-log', async (c) => {
+    const reqLang = c.req.query('lang')?.toLowerCase();
     type LedgerRow = {
         title: string;
+        country_code: string | null;
         country_name: string | null;
         sector_name: string | null;
         source_name: string | null;
         published_at: string;
     };
     const recent = await c.env.DB.prepare(`
-        SELECT a.title, c.name AS country_name, s.name AS sector_name,
+        SELECT ${reqLang === 'pt' ? 'COALESCE(pt.title, a.title)' : 'a.title'} AS title,
+               a.country_code, c.name AS country_name, s.name AS sector_name,
                COALESCE(NULLIF(TRIM(a.source_title), ''), a.source_url) AS source_name,
                a.published_at
         FROM articles a
+        ${reqLang === 'pt' ? "LEFT JOIN article_translations pt ON pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0" : ''}
         LEFT JOIN countries c ON a.country_code = c.code
         LEFT JOIN sectors s ON a.sector_id = s.id
         WHERE a.status = 'published' AND a.published_at > datetime('now', '-14 days')
@@ -520,19 +524,54 @@ router.get('/founder-log', async (c) => {
         LIMIT 50
     `).all<LedgerRow>();
     const rows = recent.results || [];
-    const period = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date());
+    const period = new Intl.DateTimeFormat(reqLang === 'pt' ? 'pt-PT' : 'en-US', { month: 'long', year: 'numeric' }).format(new Date());
+    const displayNames = reqLang === 'pt' ? new Intl.DisplayNames(['pt-PT'], { type: 'region' }) : null;
     const tally = (values: Array<string | null>) => Object.entries(
         values.reduce<Record<string, number>>((counts, value) => {
             if (value) counts[value] = (counts[value] || 0) + 1;
             return counts;
         }, {}),
     ).sort((a, b) => b[1] - a[1]);
-    const countries = tally(rows.map(row => row.country_name));
-    const sectors = tally(rows.map(row => row.sector_name));
+    const countries = tally(rows.map(row => displayNames && row.country_code ? displayNames.of(row.country_code) || row.country_name : row.country_name));
+    const sectorNamesPt: Record<string, string> = {
+        'Agriculture & Agribusiness': 'Agricultura e agro-indústria',
+        'Energy & Mining': 'Energia e mineração',
+        'Finance & Investment': 'Finanças e investimento',
+        'Healthcare & Pharma': 'Saúde e indústria farmacêutica',
+        'Infrastructure & Construction': 'Infra-estruturas e construção',
+        'Technology & Innovation': 'Tecnologia e inovação',
+        'Tourism & Hospitality': 'Turismo e hotelaria',
+    };
+    const sectors = tally(rows.map(row => reqLang === 'pt' && row.sector_name ? sectorNamesPt[row.sector_name] || row.sector_name : row.sector_name));
     const sources = tally(rows.map(row => row.source_name));
     const list = (items: Array<[string, number]>) =>
-        items.slice(0, 8).map(([name, count]) => `${name} (${count})`).join(', ') || 'No classified records in this period';
-    const recentTitles = rows.slice(0, 8).map(row => row.title).join('; ');
+        items.slice(0, 8).map(([name, count]) => `${name} (${count})`).join(', ') || (reqLang === 'pt' ? 'Sem registos classificados neste período' : 'No classified records in this period');
+    const recentTitles = rows.slice(0, 8).map(row => reqLang === 'pt' ? normalisePortuguesePortugal1945(row.title) : row.title).join('; ');
+
+    if (reqLang === 'pt') {
+        return c.json([
+            {
+                date: period,
+                tag: 'Registo de publicação',
+                title: `${rows.length} registos revistos nas fontes e publicados nos últimos 14 dias`,
+                body: rows.length
+                    ? `Este é um registo da actividade da plataforma, não uma afirmação sobre impacto no mercado. Os registos publicados mais recentes são: ${recentTitles}. Cada elemento passou pela revisão editorial das fontes antes da publicação.`
+                    : 'Nenhum artigo atingiu o estado de publicado nos últimos 14 dias. O registo apresenta zero em vez de substituir actividade inexistente.',
+            },
+            {
+                date: period,
+                tag: 'Distribuição da cobertura',
+                title: 'Concentração por país e sector',
+                body: `Cobertura por país: ${list(countries)}. Cobertura por sector: ${list(sectors)}. Estas contagens identificam onde se concentra o registo editorial e onde os dados permanecem comparativamente escassos; não são pontuações de desempenho económico.`,
+            },
+            {
+                date: period,
+                tag: 'Registo de fontes',
+                title: 'Publicações representadas no dossiê documental actual',
+                body: `Atribuição das fontes nos registos publicados mais recentes: ${list(sources)}. Para avaliar actualidade, autoridade e limitações, o leitor deve consultar a fonte ligada e a data de observação em cada artigo ou indicador do painel.`,
+            },
+        ]);
+    }
 
     return c.json([
         {

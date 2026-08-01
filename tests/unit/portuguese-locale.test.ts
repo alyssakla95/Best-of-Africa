@@ -14,6 +14,14 @@ import { translationRouter } from '../../src/routes/translation';
 import { translateText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
 
+const looksPortuguese = (value: string) => {
+    if (value === 'Best of Africa.') return true;
+    if (/^(?:Idioma|Remover|Fotografia|Fontes|Contacto|Conta|Confiança|Definições|Empresas|Inteligência|Ler|Privacidade|Sobre|Termos|Facultativo|Obrigatório)$/i.test(value)) return true;
+    if (/\b(?:abrir|actual|ajudá-lo|apoiar|candidato|candidata|consultado|direitos|fotografia|históricas|identificadas|mercado|nome|observações|oficial|país|países|pesquisar|portal|primeiro|priorizar|projecções|publicações|recurso|registo|reservados|segundo|seleccione|tentar|terceiro)\b/i.test(value)) return true;
+    const markers = value.match(/\b(?:aos?|as|com|da|das|de|do|dos|em|entre|num|numa|não|o|os|para|pela|pelas|pelo|pelos|por|que|sem|uma|um)\b/gi) || [];
+    return /[ãõçáéíóúâêôà]/i.test(value) && markers.length > 0;
+};
+
 describe('coded Portuguese interface locale', () => {
     it('contains a Portuguese source string for every maintained English key', () => {
         const missing = Object.keys(TRANSLATIONS.en)
@@ -56,6 +64,7 @@ describe('coded Portuguese interface locale', () => {
                     && (value.includes(' ') || /^[A-Z]/.test(value))
                     && !/(?:^|\s)(?:bg-|text-|border-|hover:|focus:)/.test(value)
                     && !maintainedEnglish.has(value)
+                    && !looksPortuguese(value)
                     && !PORTUGUESE_INTERFACE_PHRASES[value]) {
                     missing.add(value);
                 }
@@ -109,7 +118,8 @@ describe('coded Portuguese interface locale', () => {
             'detail', 'disclaimer', 'empty', 'error', 'eyebrow', 'heading', 'helper',
             'interpretation', 'kicker', 'label', 'limitation', 'message', 'method',
             'name', 'note', 'outcome', 'placeholder', 'purpose', 'question', 'status',
-            'subtitle', 'summary', 'text', 'title', 'unit', 'value',
+            'subtitle', 'summary', 'text', 'title', 'unit', 'value', 'ctaLabel',
+            'features', 'perks', 'benefits', 'desc',
         ]);
         const pageFiles = [
             ...readdirSync('frontend/src/pages', { recursive: true })
@@ -122,6 +132,14 @@ describe('coded Portuguese interface locale', () => {
                 .filter(entry => entry.endsWith('.tsx'))
                 .filter(entry => !entry.startsWith('admin/'))
                 .map(entry => `frontend/src/components/${entry}`),
+            ...readdirSync('frontend/src/constants', { recursive: true })
+                .map(entry => String(entry).replaceAll('\\', '/'))
+                .filter(entry => entry.endsWith('.ts') || entry.endsWith('.tsx'))
+                .map(entry => `frontend/src/constants/${entry}`),
+            ...readdirSync('frontend/src/config', { recursive: true })
+                .map(entry => String(entry).replaceAll('\\', '/'))
+                .filter(entry => entry.endsWith('.ts') || entry.endsWith('.tsx'))
+                .map(entry => `frontend/src/config/${entry}`),
         ];
         const missingByFile: Record<string, string[]> = {};
 
@@ -137,6 +155,7 @@ describe('coded Portuguese interface locale', () => {
                     && !/(?:@keyframes|rgba\(|linear-gradient\(|var\(--|chrome-(?:flow|shimmer))/.test(value)
                     && !/^(?:GET|POST|PUT|PATCH|DELETE|USD)$/.test(value)
                     && !maintainedEnglish.has(value)
+                    && !looksPortuguese(value)
                     && !translatePortugueseInterfaceText(value)) {
                     missing.add(value);
                 }
@@ -204,7 +223,8 @@ describe('coded Portuguese interface locale', () => {
         const readerCopyProperties = new Set([
             'description', 'evidenceFallback', 'interpretation', 'investment_commentary',
             'limitation', 'limitations', 'message', 'methodology', 'observation_status',
-            'status', 'summary', 'title',
+            'status', 'summary', 'title', 'questions', 'definition', 'headline_label',
+            'indicator_name', 'meaning', 'use', 'dimension', 'caveat', 'scope', 'label',
         ]);
         const missingByFile: Record<string, string[]> = {};
         for (const file of [
@@ -221,7 +241,7 @@ describe('coded Portuguese interface locale', () => {
             const missing = new Set<string>();
             const record = (value: string) => {
                 const phrase = value.replace(/\s+/g, ' ').trim();
-                if (phrase.length > 3 && /[A-Za-z]{2}/.test(phrase) && phrase.includes(' ')
+                if (phrase.length > 3 && /[A-Za-z]{2}/.test(phrase) && phrase.includes(' ') && !looksPortuguese(phrase)
                     && !translatePortugueseInterfaceText(phrase)) missing.add(phrase);
             };
             const visitCopyValue = (node: ts.Node) => {

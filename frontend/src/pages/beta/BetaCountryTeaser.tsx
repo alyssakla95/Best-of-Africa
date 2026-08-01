@@ -7,6 +7,7 @@ import { } from '../../components/beta';
 import { api } from '../../services/api';
 import { KO_FI_URL } from '../../constants/beta';
 import { useLanguage } from '@/context/LanguageContext';
+import { readerCountryName } from '@/i18n/pt-country-data';
 import { CountryFlag } from '../../components/CountryFlag';
 import type { Country } from '../../types';
 import { MEMBER_PREVIEW_MODE } from '../../config/flags';
@@ -33,6 +34,7 @@ const CountryCard = ({
   country: Partial<Country>;
 }) => {
   const { language } = useLanguage();
+  const countryName = readerCountryName(country.code, country.name || country.code || '', language);
   const tag = language === 'pt'
     ? 'Dossiê nacional assente em fontes'
     : Array.isArray(country.investment_highlights) && country.investment_highlights.length > 0
@@ -51,13 +53,13 @@ const CountryCard = ({
         className="group relative bg-white rounded-lg overflow-hidden border border-border flex flex-col text-left transition-colors hover:border-accent/60 p-4 block h-full"
       >
         <div className="flex items-center justify-between mb-3">
-          <CountryFlag code={country.code} title={country.name} size={36} />
+          <CountryFlag code={country.code} title={countryName} size={36} />
           <span className="text-[9px] font-bold uppercase tracking-widest text-accent-ink bg-accent/10 px-2 py-1 rounded-full border border-accent/15">
             {country.region}
           </span>
         </div>
         <h3 className="font-serif text-[17px] font-semibold text-primary group-hover:text-accent transition-colors leading-tight mb-1">
-          {country.name}
+          {countryName}
         </h3>
         {tag && (
           <p className="text-[11px] text-primary/70 font-medium leading-tight line-clamp-1">{tag}</p>
@@ -83,7 +85,7 @@ const CountryCardSkeleton = () => (
 export const BetaCountryTeaser = () => {
   const [activeRegion, setActiveRegion] = useState<Region>('All');
   const [search, setSearch] = useState('');
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const { data, isLoading, isError } = useQuery<CountriesApiResponse>({
     queryKey: ['countries'],
@@ -211,11 +213,11 @@ export const BetaCountryTeaser = () => {
               : isError
                 ? (
                   <div className="col-span-full rounded-xl border border-border bg-card px-5 py-10 text-center">
-                    <p className="font-serif text-2xl text-navy">Continue through the continental index</p>
-                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">The directory request did not complete. The continental evidence dashboard and source-linked search remain open.</p>
+                    <p className="font-serif text-2xl text-navy">{language === 'pt' ? 'Continuar pelo índice continental' : 'Continue through the continental index'}</p>
+                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{language === 'pt' ? 'Não foi possível concluir o pedido do directório. O painel continental de dados e a pesquisa ligada às fontes continuam disponíveis.' : 'The directory request did not complete. The continental evidence dashboard and source-linked search remain open.'}</p>
                     <div className="mt-6 grid gap-3 min-[420px]:grid-cols-2">
                       <Link to="/dashboards/overview" className="rounded-md bg-navy px-4 py-3 text-sm font-semibold text-white">Continental dashboard</Link>
-                      <Link to="/search" className="rounded-md border border-border px-4 py-3 text-sm font-semibold text-navy">Search evidence</Link>
+                      <Link to="/search" className="rounded-md border border-border px-4 py-3 text-sm font-semibold text-navy">{language === 'pt' ? 'Pesquisar dados' : 'Search evidence'}</Link>
                     </div>
                   </div>
                 )

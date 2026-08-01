@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface BookingRequestInput {
     guest_name: string;
@@ -20,6 +21,7 @@ interface BookingRequestInput {
 }
 
 export const BetaConcierge: React.FC = () => {
+    const { language } = useLanguage();
     
     // Form State
     const [name, setName] = useState('');
@@ -198,7 +200,7 @@ export const BetaConcierge: React.FC = () => {
                                             <Label htmlFor="serviceType" className="text-foreground/70 text-xs uppercase tracking-widest font-bold">Service Required</Label>
                                             <Select value={serviceType} onValueChange={setServiceType}>
                                                 <SelectTrigger id="serviceType" className="bg-background/50 border-foreground/10 text-foreground focus:border-accent/50 focus:ring-accent/20 h-12 rounded-xl">
-                                                    <SelectValue placeholder="Select service" />
+                                                    <SelectValue placeholder={language === 'pt' ? 'Seleccione o serviço' : 'Select service'} />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-card border-foreground/10 text-foreground">
                                                     <SelectItem value="executive_travel">Executive Travel</SelectItem>
@@ -215,7 +217,7 @@ export const BetaConcierge: React.FC = () => {
                                         <Label htmlFor="destination" className="text-foreground/70 text-xs uppercase tracking-widest font-bold">Primary Destination(s)</Label>
                                         <Input 
                                             id="destination" 
-                                            placeholder="e.g. Lagos, Nigeria & Kigali, Rwanda"
+                                            placeholder={language === 'pt' ? 'por exemplo: Lagos, Nigéria e Kigali, Ruanda' : 'e.g. Lagos, Nigeria & Kigali, Rwanda'}
                                             value={destination} 
                                             onChange={(e) => setDestination(e.target.value)} 
                                             required 
@@ -227,7 +229,7 @@ export const BetaConcierge: React.FC = () => {
                                         <Label htmlFor="details" className="text-foreground/70 text-xs uppercase tracking-widest font-bold">Specific Requirements & Dates</Label>
                                         <Textarea 
                                             id="details" 
-                                            placeholder="Please provide initial details regarding your required travel dates, group size, and primary objectives..."
+                                            placeholder={language === 'pt' ? 'Indique as datas de viagem, a dimensão do grupo e os objectivos principais...' : 'Please provide initial details regarding your required travel dates, group size, and primary objectives...'}
                                             className="min-h-[160px] bg-background/50 border-foreground/10 text-foreground focus:border-accent/50 focus:ring-accent/20 rounded-xl resize-none p-4"
                                             value={details} 
                                             onChange={(e) => setDetails(e.target.value)} 

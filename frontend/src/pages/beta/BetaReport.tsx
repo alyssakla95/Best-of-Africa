@@ -5,6 +5,8 @@ import { SEO } from '../../components/SEO';
 import { EditorialContent } from '../../components/EditorialContent';
 import { api, type GeneratedReportSection } from '../../services/api';
 import { formatReaderDate } from '../../i18n/locale';
+import { useLanguage } from '../../context/LanguageContext';
+import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 
 const reportTypeLabel = (type: string) => ({
   country_brief: 'Country brief',
@@ -65,7 +67,16 @@ const ReportSectionCard = ({ section, index }: { section: GeneratedReportSection
   </section>;
 
 export const BetaReport = () => {
+  const { language } = useLanguage();
   const { id } = useParams<{ id?: string }>();
+  const reportTitle = (title: string) => {
+    if (language !== 'pt') return title;
+    const country = title.match(/^(.*?) Country Brief$/);
+    if (country) return `Síntese nacional — ${translatePortugueseInterfaceText(country[1]) || country[1]}`;
+    const sector = title.match(/^(.*?) Sector Analysis$/);
+    if (sector) return `Análise sectorial — ${translatePortugueseInterfaceText(sector[1]) || sector[1]}`;
+    return translatePortugueseInterfaceText(title) || title;
+  };
 
   const listQuery = useQuery({
     queryKey: ['generated-reports'],
@@ -97,12 +108,12 @@ export const BetaReport = () => {
       <div className="mx-auto mt-10 w-full max-w-[1400px] px-5 sm:px-6 md:mt-14 lg:px-8">
         <main className="page-stack min-w-0">
           {listQuery.isLoading && <section className="grid animate-pulse gap-4 md:grid-cols-2"><div className="h-40 rounded-2xl bg-navy/5"/><div className="h-40 rounded-2xl bg-navy/5"/></section>}
-          {listQuery.isError && <section className="rounded-2xl border border-border bg-white p-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Report request failed</p><h2 className="mt-2 font-serif text-3xl text-navy">The briefing archive could not be loaded.</h2><button onClick={() => listQuery.refetch()} className="mt-6 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">Retry</button></section>}
+          {listQuery.isError && <section className="rounded-2xl border border-border bg-white p-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">{language === 'pt' ? 'Falha no pedido dos relatórios' : 'Report request failed'}</p><h2 className="mt-2 font-serif text-3xl text-navy">{language === 'pt' ? 'Não foi possível carregar o arquivo de sínteses.' : 'The briefing archive could not be loaded.'}</h2><button onClick={() => listQuery.refetch()} className="mt-6 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">{language === 'pt' ? 'Tentar novamente' : 'Retry'}</button></section>}
           {!listQuery.isLoading && !listQuery.isError && !reports.length && <section className="rounded-2xl border border-border bg-white p-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Archive building</p><h2 className="mt-2 font-serif text-3xl text-navy">The first scheduled briefs have not been stored yet.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">Country briefs and sector analyses are produced by the daily reporting worker and appear here once stored.</p></section>}
           {!!reports.length && <section className="grid gap-4 md:grid-cols-2">
             {reports.map(report => <Link key={report.id} to={`/intelligence/reports/${report.id}`} className="group flex flex-col rounded-2xl border border-border bg-white p-5 transition-colors hover:border-navy/40 md:p-6">
               <div className="flex items-center gap-3"><FileText size={16} className="text-navy/65"/><p className="text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground">{reportTypeLabel(report.type)}</p></div>
-              <h2 className="mt-3 font-serif text-2xl leading-tight text-navy">{report.title}</h2>
+              <h2 className="mt-3 font-serif text-2xl leading-tight text-navy">{reportTitle(report.title)}</h2>
               <p className="mt-2 text-xs text-muted-foreground">Prepared {formatDate(report.created_at)}</p>
               <span className="mt-5 inline-flex items-center gap-2 border-t border-border pt-4 text-xs font-semibold text-navy">Open structured report <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5"/></span>
             </Link>)}
@@ -115,13 +126,13 @@ export const BetaReport = () => {
   // ── Detail: one report as a native application page ────────────────────────
   const report = reportQuery.data?.data;
   return <div className="min-h-screen bg-background pb-24 text-foreground">
-    <SEO title={report ? `${report.title} | BOA-Story` : 'Briefing Report | BOA-Story'} description={report?.subtitle || 'Structured briefing report from the BOA evidence desk.'} />
+    <SEO title={report ? `${reportTitle(report.title)} | BOA-Story` : 'Briefing Report | BOA-Story'} description={report?.subtitle || 'Structured briefing report from the BOA evidence desk.'} />
     <header className="border-b border-white/15 bg-navy text-white">
       <div className="mx-auto max-w-[1400px] px-5 py-10 sm:px-6 md:py-14 lg:px-8">
         <Link to="/intelligence/reports" className="inline-flex items-center gap-2 text-xs font-semibold text-white/75 hover:text-white"><ArrowLeft size={14}/> All briefing reports</Link>
         {report && <>
           <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[.18em] text-white/65"><span>{reportTypeLabel(report.type)}</span><span className="h-1 w-1 rounded-full bg-white/40"/><span>Prepared {formatDate(report.generated_at || report.created_at)}</span></div>
-          <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.2rem,5.5vw,4.2rem)] leading-[.95] tracking-[-.04em]">{report.title}</h1>
+          <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.2rem,5.5vw,4.2rem)] leading-[.95] tracking-[-.04em]">{reportTitle(report.title)}</h1>
           {report.subtitle && <p className="mt-6 max-w-3xl text-base leading-7 text-white/75 md:text-lg">{report.subtitle}</p>}
         </>}
       </div>

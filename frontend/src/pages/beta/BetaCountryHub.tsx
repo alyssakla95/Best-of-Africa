@@ -14,6 +14,7 @@ import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { useMember } from '../../context/MemberContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { portugueseCountryDescription, readerCountryName } from '@/i18n/pt-country-data';
 import { useSetBreadcrumb } from '@/context/BreadcrumbContext';
 import { KO_FI_URL } from '../../constants/beta';
 import { CountryFlag } from '../../components/CountryFlag';
@@ -152,7 +153,7 @@ export const BetaCountryHub = () => {
     );
   }
 
-  const countryName = country?.name ?? upperCode;
+  const countryName = readerCountryName(upperCode, country?.name ?? upperCode, language);
   const region = country?.region ?? '';
   const investmentHighlights: string[] = language === 'pt'
     ? ['Registo nacional assente em fontes oficiais e cobertura editorial atribuída']
@@ -219,7 +220,7 @@ export const BetaCountryHub = () => {
                   </div>
                   <h1 className="font-serif text-navy text-[2.75rem] md:text-[4.5rem] leading-[1] tracking-tight mb-4">{countryName}</h1>
                   {country?.description && (
-                    <p className="text-muted-foreground max-w-2xl leading-relaxed text-base md:text-lg">{stripMarkdown(country.description)}</p>
+                    <p className="text-muted-foreground max-w-2xl leading-relaxed text-base md:text-lg">{stripMarkdown(language === 'pt' ? portugueseCountryDescription(upperCode, country.description) : country.description)}</p>
                   )}
                 </motion.div>
               )}
@@ -422,8 +423,8 @@ export const BetaCountryHub = () => {
                   {dossier.trade.current_account_usd !== undefined && <div className="min-w-0 bg-card p-4"><p className="text-xs text-muted-foreground">Current-account balance · {dossier.trade.year} {dossier.trade.period_status === 'estimate_or_projection' ? 'projection' : 'observation'}</p><p className="mt-2 break-words font-serif text-xl text-navy sm:text-2xl">{formatEvidenceValue(dossier.trade.current_account_usd, 'USD')}</p></div>}
                 </div>}
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dossier.freshness.map(source => <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-navy/30"><p className="text-xs font-bold text-navy">{source.provider}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">Observation period: {source.observation_period}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Checked {formatReaderDate(source.checked_at, { dateStyle: 'medium' })}</p></a>)}</div>
-              {provenance && <div className="border-l-2 border-navy pl-5 text-sm leading-relaxed text-muted-foreground"><p>{provenance.methodology}</p><p className="mt-2 text-xs">Sources: {provenance.sources.map(source => source.name).join(' · ')}</p></div>}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{dossier.freshness.map(source => <a key={`${source.provider}-${source.source_url}`} href={source.source_url} target="_blank" rel="noreferrer" className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-navy/30"><p className="text-xs font-bold text-navy">{source.provider}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{language === 'pt' ? 'Período de observação' : 'Observation period'}: {language === 'pt' ? source.observation_period.replace('historical observations and separately labelled projections', 'observações históricas e projecções identificadas separadamente').replace('external-sector record', 'registo do sector externo') : source.observation_period}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{language === 'pt' ? 'Consultado em' : 'Checked'} {formatReaderDate(source.checked_at, { dateStyle: 'medium' })}</p></a>)}</div>
+              {provenance && <div className="border-l-2 border-navy pl-5 text-sm leading-relaxed text-muted-foreground"><p>{provenance.methodology}</p><p className="mt-2 text-xs">{language === 'pt' ? 'Fontes' : 'Sources'}: {provenance.sources.map(source => source.name.replace('external-sector record', language === 'pt' ? 'registo do sector externo' : 'external-sector record').replace('BOA source-linked reporting', language === 'pt' ? 'cobertura da BOA ligada às fontes' : 'BOA source-linked reporting')).join(' · ')}</p></div>}
             </div>}
           </section>
         )}

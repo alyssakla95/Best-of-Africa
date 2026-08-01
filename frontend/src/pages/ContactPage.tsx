@@ -10,10 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { SEO } from '../components/SEO';
+import { useLanguage } from '../context/LanguageContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
 
 export const ContactPage: React.FC = () => {
+    const { language } = useLanguage();
     const { data: config } = useSystemConfig();
     const [searchParams] = useSearchParams();
     const requestedInquiry = searchParams.get('inquiry');
@@ -109,7 +111,7 @@ export const ContactPage: React.FC = () => {
                                             required
                                             value={formData.name}
                                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="Your Name"
+                                            placeholder={language === 'pt' ? 'O seu nome' : 'Your Name'}
                                             className="bg-background text-ink border-border placeholder:text-ink-mute focus-visible:ring-accent"
                                         />
                                     </div>
@@ -119,7 +121,7 @@ export const ContactPage: React.FC = () => {
                                             id="org"
                                             value={formData.organization}
                                             onChange={e => setFormData({ ...formData, organization: e.target.value })}
-                                            placeholder="Company / Institution"
+                                            placeholder={language === 'pt' ? 'Empresa / Instituição' : 'Company / Institution'}
                                             className="bg-background text-ink border-border placeholder:text-ink-mute focus-visible:ring-accent"
                                         />
                                     </div>
@@ -145,7 +147,7 @@ export const ContactPage: React.FC = () => {
                                         onValueChange={(value) => setFormData({ ...formData, inquiry_type: value })}
                                     >
                                         <SelectTrigger id="type" className="bg-background text-ink border-border">
-                                            <SelectValue placeholder="Select Inquiry Type" />
+                                            <SelectValue placeholder={language === 'pt' ? 'Seleccione o tipo de contacto' : 'Select Inquiry Type'} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Market Entry Pilot">Market Entry Pilot</SelectItem>
@@ -167,7 +169,7 @@ export const ContactPage: React.FC = () => {
                                         rows={5}
                                         value={formData.message}
                                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, message: e.target.value })}
-                                        placeholder="How can we assist you?"
+                                        placeholder={language === 'pt' ? 'Como podemos ajudá-lo?' : 'How can we assist you?'}
                                         className="bg-background text-ink border-border placeholder:text-ink-mute focus-visible:ring-accent"
                                     />
                                 </div>

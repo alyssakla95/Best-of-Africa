@@ -56,6 +56,8 @@ describe('coded Portuguese interface locale', () => {
             .toBe('Addis Ababa acolherá a cimeira, uma montra apoiada por coligações. O indicador registou aumento de 48,4% em termos homólogos.');
         expect(normalisePortuguesePortugal1945('A região deve priorizar projectos rumo à indústria.'))
             .toBe('A região deve dar prioridade a projectos no sentido da indústria.');
+        expect(normalisePortuguesePortugal1945('Indo além de commodities, precisamos entender nossas regras, planejar e fortalecer o mercado de câmbio.'))
+            .toBe('Para além de matérias-primas, precisamos compreender as nossas regras, planear e reforçar o mercado cambial.');
         expect(portugueseCountryName('NG', 'Nigeria')).toBe('Nigéria');
         expect(portugueseCountryName('EG', 'Egypt')).toBe('Egipto');
         expect(portugueseSectorName('Finance & Investment')).toBe('Finanças e investimento');

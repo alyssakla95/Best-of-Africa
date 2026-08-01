@@ -95,3 +95,26 @@ export function coverageAdmissionFailure(input: CoverageAdmissionInput): string 
     }
     return null;
 }
+
+/** Preserve editorial order while applying hard reader-facing concentration caps. */
+export function diversifyCoverageRows<T extends { country_code?: string | null; source_title?: string | null }>(
+    rows: T[],
+    limit: number,
+    maxPerCountry = 2,
+    maxPerPublisher = 2,
+): T[] {
+    const picked: T[] = [];
+    const countryCounts = new Map<string, number>();
+    const publisherCounts = new Map<string, number>();
+    for (const row of rows) {
+        if (picked.length >= limit) break;
+        const country = row.country_code || 'continental/unclassified';
+        const publisher = (row.source_title || 'unattributed').trim().toLowerCase();
+        if ((countryCounts.get(country) || 0) >= maxPerCountry) continue;
+        if ((publisherCounts.get(publisher) || 0) >= maxPerPublisher) continue;
+        countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
+        publisherCounts.set(publisher, (publisherCounts.get(publisher) || 0) + 1);
+        picked.push(row);
+    }
+    return picked;
+}

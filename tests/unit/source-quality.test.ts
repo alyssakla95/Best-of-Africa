@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverageAdmissionFailure, sourceQualityProfile, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
+import { coverageAdmissionFailure, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
 
 describe('source quality and coverage admission', () => {
     it('distinguishes authoritative, established, national and aggregator sources', () => {
@@ -29,5 +29,17 @@ describe('source quality and coverage admission', () => {
     it('rejects aggregators and unknown discovery publishers as final evidence sources', () => {
         expect(coverageAdmissionFailure({ total30d: 20, country30d: 0, source30d: 0, countryCode: 'LR', sourceName: 'AllAfrica', qualityTier: 1 }))
             .toContain('source quality gate');
+    });
+
+    it('keeps visible lists diverse without backfilling from dominant publishers', () => {
+        const rows = [
+            { id: 1, country_code: 'NG', source_title: 'Publisher A' },
+            { id: 2, country_code: 'NG', source_title: 'Publisher A' },
+            { id: 3, country_code: 'NG', source_title: 'Publisher A' },
+            { id: 4, country_code: 'ZA', source_title: 'Publisher B' },
+            { id: 5, country_code: 'GH', source_title: 'Publisher B' },
+            { id: 6, country_code: 'KE', source_title: 'Publisher C' },
+        ];
+        expect(diversifyCoverageRows(rows, 6).map(row => row.id)).toEqual([1, 2, 4, 5, 6]);
     });
 });

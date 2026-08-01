@@ -15,6 +15,7 @@ import { verifyJWT } from '../lib/auth';
 import { publisherNameForStoredArticle } from '../lib/source-attribution';
 import { getMedia, putMedia } from '../lib/media';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 // Temporary read-only stakeholder review mode. Keep authenticated actions
 // (including paid TTS generation) protected; only article truncation is lifted.
@@ -182,16 +183,16 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
       a.sector_id, s.name as sector_name,
       a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
       a.published_at, a.engagement_score, a.is_sponsored,
-      a.audio_url, a.audio_duration_seconds
+      a.audio_url, a.audio_duration_seconds, a.source_title
     FROM articles a
     LEFT JOIN countries c ON a.country_code = c.code
     LEFT JOIN sectors s ON a.sector_id = s.id
     ${whereClause}
     ORDER BY a.is_sponsored DESC, ${sortCol} ${sortOrder}, a.id DESC
     LIMIT ? OFFSET ?
-  `).bind(...params, limitNum, offset).all<ArticleListItem>();
+  `).bind(...params, Math.min(200, limitNum * 6), offset).all<ArticleListItem & { source_title?: string | null }>();
 
-        articleResults = await localizeArticleList(c.env, articles.results || [], reqLang);
+        articleResults = await localizeArticleList(c.env, diversifyCoverageRows(articles.results || [], limitNum), reqLang);
     } catch (err) {
         console.error('[articles] list query failed:', err);
         // Return empty paginated response rather than 500
@@ -213,30 +214,9 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Pan-African diversity pass for headline lists. High-volume countries (NG/ZA
-// publish thousands of articles) otherwise monopolize "latest"/"featured" —
-// after the big backlog drain the feed showed five Nigeria stories in a row.
-// Greedily keeps the original (recency/score) order but caps how many times a
-// single country appears; skipped items backfill the tail if the list runs
-// short. Continental stories (no country) are never capped.
-function diversifyByCountry<T extends { country_code?: string | null }>(rows: T[], limit: number, maxPerCountry = 2): T[] {
-    const picked: T[] = [];
-    const skipped: T[] = [];
-    const counts: Record<string, number> = {};
-    for (const row of rows) {
-        if (picked.length >= limit) break;
-        const cc = row.country_code || '';
-        if (cc && (counts[cc] || 0) >= maxPerCountry) { skipped.push(row); continue; }
-        if (cc) counts[cc] = (counts[cc] || 0) + 1;
-        picked.push(row);
-    }
-    for (const row of skipped) {
-        if (picked.length >= limit) break;
-        picked.push(row);
-    }
-    return picked;
-}
-
+// Reader-facing headline lists apply hard country and publisher caps through
+// diversifyCoverageRows. They may deliberately return fewer records instead
+// of filling the tail with one dominant market or source.
 // GET /articles/featured - Get featured/trending articles (CACHED)
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true, lens: true })), async (c) => {
@@ -258,7 +238,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
     // Cache featured articles for 5 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_FEATURED}:${limitNum}:${lens || 'all'}:${reqLang || 'en'}`,
+        `${CACHE_KEYS.ARTICLES_FEATURED}:coverage-v2:${limitNum}:${lens || 'all'}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -268,15 +248,15 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
                   a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
                   a.published_at, a.engagement_score,
                   a.ai_investor_brief, a.ai_push_message, a.ai_social_post,
-                  a.audio_url, a.audio_duration_seconds
+                  a.audio_url, a.audio_duration_seconds, a.source_title
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
                 WHERE a.status = 'published' ${lensWhereClause} ${portugueseOnly}
                 ORDER BY a.curated DESC, ((a.engagement_score + 3.0) / pow((julianday('now') - julianday(a.published_at)) + 2, 1.3)) DESC, a.published_at DESC, a.id DESC
                 LIMIT ?
-            `).bind(...lensParams, limitNum * 4).all();
-            return diversifyByCountry((result.results || []) as Array<{ country_code?: string | null }>, limitNum);
+            `).bind(...lensParams, Math.min(200, limitNum * 8)).all();
+            return diversifyCoverageRows((result.results || []) as Array<{ country_code?: string | null; source_title?: string | null }>, limitNum);
         },
         { ttl: CACHE_TTL.FREQUENT }
     );
@@ -333,7 +313,7 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
     // Cache latest articles for 2 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_LATEST}:${limitNum}:${reqLang || 'en'}`,
+        `${CACHE_KEYS.ARTICLES_LATEST}:coverage-v2:${limitNum}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -341,15 +321,15 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
                   a.country_code, c.name as country_name, c.flag_emoji,
                   a.sector_id, s.name as sector_name,
                   a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
-                  a.published_at, a.audio_url, a.audio_duration_seconds
+                  a.published_at, a.audio_url, a.audio_duration_seconds, a.source_title
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
                  WHERE a.status = 'published' ${portugueseOnly}
                 ORDER BY a.published_at DESC
                 LIMIT ?
-            `).bind(limitNum * 4).all();
-            return diversifyByCountry((result.results || []) as Array<{ country_code?: string | null }>, limitNum);
+            `).bind(Math.min(200, limitNum * 8)).all();
+            return diversifyCoverageRows((result.results || []) as Array<{ country_code?: string | null; source_title?: string | null }>, limitNum);
         },
         { ttl: CACHE_TTL.DYNAMIC }
     );

@@ -8,7 +8,7 @@ import type { Env, Variables, MarketIntelligence } from '../types';
 import { requireApiKey, rateLimit } from '../lib/auth';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
-import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
+import { normalisePortuguesePortugal1945, portugueseCountryName } from '../lib/portuguese';
 import {
     getSectorPerformanceCache,
     refreshSectorPerformance,
@@ -268,7 +268,7 @@ ${evidenceContext}`;
         );
     }
     const briefingCountryName = reqLang === 'pt'
-        ? new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(code) || countryData.name
+        ? portugueseCountryName(code, countryData.name) || countryData.name
         : countryData.name;
     const immediateCountryBriefing = sourceRecords.slice(0, 6).map((record, index) => reqLang === 'pt'
         ? `${index + 1}. ${record.title} (${record.published_at || 'data não registada'}). ${(record.summary || '').slice(0, 420)}`
@@ -528,14 +528,13 @@ router.get('/founder-log', async (c) => {
     `).all<LedgerRow>();
     const rows = recent.results || [];
     const period = new Intl.DateTimeFormat(reqLang === 'pt' ? 'pt-PT' : 'en-US', { month: 'long', year: 'numeric' }).format(new Date());
-    const displayNames = reqLang === 'pt' ? new Intl.DisplayNames(['pt-PT'], { type: 'region' }) : null;
     const tally = (values: Array<string | null>) => Object.entries(
         values.reduce<Record<string, number>>((counts, value) => {
             if (value) counts[value] = (counts[value] || 0) + 1;
             return counts;
         }, {}),
     ).sort((a, b) => b[1] - a[1]);
-    const countries = tally(rows.map(row => displayNames && row.country_code ? displayNames.of(row.country_code) || row.country_name : row.country_name));
+    const countries = tally(rows.map(row => reqLang === 'pt' ? portugueseCountryName(row.country_code, row.country_name) : row.country_name));
     const sectorNamesPt: Record<string, string> = {
         'Agriculture & Agribusiness': 'Agricultura e agro-indústria',
         'Energy & Mining': 'Energia e mineração',

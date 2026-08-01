@@ -55,6 +55,7 @@ describe('coded Portuguese interface locale', () => {
         expect(normalisePortuguesePortugal1945('Addis Ababa sediará a cúpula, uma vitrine apoiada por coalizões. O indicador registrou alta de 48.4% YoY.'))
             .toBe('Addis Ababa acolherá a cimeira, uma montra apoiada por coligações. O indicador registou aumento de 48,4% em termos homólogos.');
         expect(portugueseCountryName('NG', 'Nigeria')).toBe('Nigéria');
+        expect(portugueseCountryName('EG', 'Egypt')).toBe('Egipto');
         expect(portugueseSectorName('Finance & Investment')).toBe('Finanças e investimento');
     });
 

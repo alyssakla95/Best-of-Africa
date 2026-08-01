@@ -62,7 +62,11 @@ export function portugueseCountryDescription(code: string | null | undefined, fa
 export function readerCountryName(code: string | null | undefined, fallback: string, language: string): string {
   if (language !== 'pt' || !code) return fallback;
   try {
-    return new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(code.toUpperCase()) || fallback;
+    const normalizedCode = code.toUpperCase();
+    const preAgreementNames: Readonly<Record<string, string>> = { EG: 'Egipto' };
+    return preAgreementNames[normalizedCode]
+      || new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(normalizedCode)
+      || fallback;
   } catch {
     return fallback;
   }

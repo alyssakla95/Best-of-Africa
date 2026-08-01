@@ -42,6 +42,13 @@ const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
     [/\bse beneficiar de\b/gi, 'beneficiar de'],
     [/\bse beneficiar da\b/gi, 'beneficiar da'],
     [/\bse beneficiar do\b/gi, 'beneficiar do'],
+    [/\ba priorizar\b/gi, 'a dar prioridade a'],
+    [/\bindústrias de processamento\b/gi, 'indústrias de transformação'],
+    [/\bEla citou\b/g, 'Citou'],
+    [/\bEle disse:/g, 'Afirmou:'],
+    [/\brecursos domésticos\b/gi, 'recursos internos'],
+    [/\bestão remodelando\b/gi, 'estão a transformar'],
+    [/\bavançam rumo à\b/gi, 'avançam no sentido da'],
     [/\bsediará/gi, 'acolherá'],
     [/\bsediarão/gi, 'acolherão'],
     [/\bcúpula(s)?\b/gi, 'cimeira$1'],
@@ -136,7 +143,12 @@ export function portugueseCountryName(code: string | null | undefined, fallback:
     if (!fallback && !code) return null;
     if (!code) return fallback || null;
     try {
-        return new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(code.toUpperCase()) || fallback || code;
+        const normalizedCode = code.toUpperCase();
+        const preAgreementNames: Readonly<Record<string, string>> = { EG: 'Egipto' };
+        return preAgreementNames[normalizedCode]
+            || new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(normalizedCode)
+            || fallback
+            || normalizedCode;
     } catch {
         return fallback || code;
     }

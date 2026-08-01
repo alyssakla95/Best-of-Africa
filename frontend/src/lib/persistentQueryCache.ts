@@ -1,8 +1,8 @@
 // Increment when a previously valid cached response can hide newly available
-// reader content. v2 can contain article payloads saved before publisher-image
-// backfilling completed; those payloads omit provenance and prevent the UI from
-// requesting images that are now present on the server.
-const CACHE_NAME = 'boa-reader-data-v3';
+// reader content. v3 can contain article payloads saved before Portuguese
+// metadata and pre-AO90 prose normalization was completed. A new namespace
+// makes corrected copy and source-image metadata visible on the next app open.
+const CACHE_NAME = 'boa-reader-data-v4';
 const CACHE_PREFIX = '/__boa_reader_cache__/';
 
 interface CacheEnvelope<T> {

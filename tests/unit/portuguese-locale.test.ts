@@ -13,7 +13,11 @@ import {
 import { translationRouter } from '../../src/routes/translation';
 import { translateText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
-import { normalisePortuguesePortugal1945 } from '../../src/lib/portuguese';
+import {
+    normalisePortuguesePortugal1945,
+    portugueseCountryName,
+    portugueseSectorName,
+} from '../../src/lib/portuguese';
 
 const looksPortuguese = (value: string) => {
     if (value === 'Best of Africa.') return true;
@@ -48,6 +52,10 @@ describe('coded Portuguese interface locale', () => {
             .toBe('Facturas divulgadas e despesas; regras internas sobre as despesas. Uma justificação na Cidade do Cabo entre Maio e Junho 2026.');
         expect(normalisePortuguesePortugal1945('Desafios socioeconômicos de sua zona numa cerimônia em Liberia.'))
             .toBe('Desafios socioeconómicos da sua zona numa cerimónia em Libéria.');
+        expect(normalisePortuguesePortugal1945('Addis Ababa sediará a cúpula, uma vitrine apoiada por coalizões. O indicador registrou alta de 48.4% YoY.'))
+            .toBe('Addis Ababa acolherá a cimeira, uma montra apoiada por coligações. O indicador registou aumento de 48,4% em termos homólogos.');
+        expect(portugueseCountryName('NG', 'Nigeria')).toBe('Nigéria');
+        expect(portugueseSectorName('Finance & Investment')).toBe('Finanças e investimento');
     });
 
     it('ships source-owned copy for both foreground intelligence products', () => {

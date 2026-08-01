@@ -14,7 +14,7 @@ import { generateAudioNarration } from '../lib/audio';
 import { verifyJWT } from '../lib/auth';
 import { publisherNameForStoredArticle } from '../lib/source-attribution';
 import { getMedia, putMedia } from '../lib/media';
-import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
+import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 
 // Temporary read-only stakeholder review mode. Keep authenticated actions
 // (including paid TTS generation) protected; only article truncation is lifted.
@@ -76,7 +76,7 @@ function sourceImageFailure(status: 404 | 502, message: string): Response {
     );
 }
 
-export async function localizeArticleList<T extends { id?: string }>(env: Env, rows: T[], language: string | undefined): Promise<T[]> {
+export async function localizeArticleList<T extends { id?: string; country_code?: string | null; country_name?: string | null; sector_name?: string | null }>(env: Env, rows: T[], language: string | undefined): Promise<T[]> {
     if (!language || !READER_LANGUAGES.has(language) || !rows.length) return rows;
     const ids = rows.map(row => row.id).filter((id): id is string => !!id);
     if (!ids.length) return rows;
@@ -95,6 +95,8 @@ export async function localizeArticleList<T extends { id?: string }>(env: Env, r
             title: language === 'pt' ? normalisePortuguesePortugal1945(translation.title) : translation.title,
             ...(translation.subtitle ? { subtitle: language === 'pt' ? normalisePortuguesePortugal1945(translation.subtitle) : translation.subtitle } : {}),
             ...(translation.summary ? { summary: language === 'pt' ? normalisePortuguesePortugal1945(translation.summary) : translation.summary } : {}),
+            ...(language === 'pt' && row.country_name ? { country_name: portugueseCountryName(row.country_code, row.country_name) } : {}),
+            ...(language === 'pt' && row.sector_name ? { sector_name: portugueseSectorName(row.sector_name) } : {}),
             title_language: language,
         }];
     });
@@ -630,6 +632,10 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
                 void queueTranslation;
             }
         }
+    }
+    if (reqLang === 'pt') {
+        a.country_name = portugueseCountryName(article.country_code, article.country_name);
+        a.sector_name = portugueseSectorName(article.sector_name);
     }
 
     // Increment view count asynchronously

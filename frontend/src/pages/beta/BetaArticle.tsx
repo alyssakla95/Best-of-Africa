@@ -19,6 +19,8 @@ import type { Article, ArticleListItem, Country } from '../../types';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { formatReaderDate } from '../../i18n/locale';
 import { PhotoCredit } from '../../components/PhotoCredit';
+import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
+import { readerCountryName } from '../../i18n/pt-country-data';
 
 interface ArticleResponse {
   article: Article;
@@ -331,7 +333,11 @@ export const BetaArticle = () => {
   const headerDir: 'rtl' | 'ltr' = article.title_language === 'ar' ? 'rtl' : 'ltr';
   const contentDir: 'rtl' | 'ltr' = article.content_language === 'ar' ? 'rtl' : 'ltr';
   // Category = the sector ("Energy & Mining"), NOT tags[0] which is the country name.
-  const countryLabel = country?.name || article.country_name || article.country_code;
+  const countryLabel = readerCountryName(
+    article.country_code,
+    country?.name || article.country_name || article.country_code,
+    language,
+  );
   // tags may arrive as a JSON string ('["a","b"]'), an array, or be absent —
   // normalise to an array before using .find (a string has no .find → crash).
   const tagList: string[] = Array.isArray(article.tags)
@@ -339,9 +345,12 @@ export const BetaArticle = () => {
     : (typeof article.tags === 'string'
         ? (() => { try { const p = JSON.parse(article.tags as unknown as string); return Array.isArray(p) ? p : []; } catch { return []; } })()
         : []);
-  const categoryLabel = article.sector_name
+  const rawCategoryLabel = article.sector_name
     || tagList.find(t => typeof t === 'string' && t.toLowerCase() !== countryLabel.toLowerCase())
     || '';
+  const categoryLabel = language === 'pt'
+    ? translatePortugueseInterfaceText(rawCategoryLabel) || rawCategoryLabel
+    : rawCategoryLabel;
   // Byline comes from the API: curated stories carry the personal byline,
   // automated briefing coverage is attributed to the desk.
   const authorName = article.author_name || 'BOA Briefing Desk';

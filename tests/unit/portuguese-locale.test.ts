@@ -47,6 +47,7 @@ describe('coded Portuguese interface locale', () => {
         for (const file of [
             'frontend/src/pages/beta/BetaIntelligence.tsx',
             'frontend/src/pages/beta/BetaContinentalOverview.tsx',
+            'frontend/src/components/PageReadingGuide.tsx',
         ]) {
             const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
             const record = (raw: string) => {
@@ -81,6 +82,15 @@ describe('coded Portuguese interface locale', () => {
             visit(source);
         }
         expect([...missing].sort()).toEqual([]);
+    });
+
+    it('translates the continental reading guide as complete Portuguese sentences', () => {
+        expect(translatePortugueseInterfaceText('What exactly is measured, and what part of the economy or sector does it represent?'))
+            .toBe('O que é medido exactamente e que parte da economia ou do sector representa?');
+        expect(translatePortugueseInterfaceText('Is it a dollar total, percentage, percentage-point change, number of people or per-person value?'))
+            .toBe('Trata-se de um total em dólares, de uma percentagem, de uma variação em pontos percentuais, de um número de pessoas ou de um valor por pessoa?');
+        expect(translatePortugueseInterfaceText('How many countries supplied usable data, and could missing countries change the continental picture?'))
+            .toBe('Quantos países forneceram dados utilizáveis e poderiam os países em falta alterar o panorama continental?');
     });
 
     it('covers direct copy across every reader-facing routed page', () => {

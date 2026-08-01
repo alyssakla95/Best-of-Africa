@@ -1444,6 +1444,95 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Summits & Events | BOA-Story': 'Cimeiras e eventos | BOA-Story',
   'Supporter Feed | BOA-Story': 'Área dos apoiantes | BOA-Story',
   'Your Africa Briefing | BOA-Story': 'A sua síntese sobre África | BOA-Story',
+  'Definition': 'Definição',
+  'Value and unit': 'Valor e unidade',
+  'Comparison': 'Comparação',
+  'Coverage': 'Cobertura',
+  'Timing': 'Período',
+  'Boundary': 'Limitação',
+  'Open guide': 'Abrir guia',
+  'Hide guide': 'Ocultar guia',
+  'Median': 'Mediana',
+  'What exactly is measured, and what part of the economy or sector does it represent?':
+    'O que é medido exactamente e que parte da economia ou do sector representa?',
+  'Is it a dollar total, percentage, percentage-point change, number of people or per-person value?':
+    'Trata-se de um total em dólares, de uma percentagem, de uma variação em pontos percentuais, de um número de pessoas ou de um valor por pessoa?',
+  'Is the page comparing countries, periods, a median, a total or a previous observation?':
+    'A página compara países, períodos, uma mediana, um total ou uma observação anterior?',
+  'How many countries supplied usable data, and could missing countries change the continental picture?':
+    'Quantos países forneceram dados utilizáveis e poderiam os países em falta alterar o panorama continental?',
+  'Which years are represented, and do reporting delays limit claims about conditions today?':
+    'Que anos estão representados e os atrasos na publicação limitam as conclusões sobre as condições actuais?',
+  'What can the indicator support, and what requires other evidence or professional diligence?':
+    'Que conclusões permite o indicador e o que exige outros dados ou diligência profissional?',
+  'Three distinctions that prevent misleading conclusions': 'Três distinções que evitam conclusões enganadoras',
+  'Size is not prosperity': 'Dimensão não é prosperidade',
+  'Total GDP describes economic scale. GDP per person answers a different question and still does not directly measure household income or wellbeing.':
+    'O PIB total descreve a dimensão económica. O PIB por pessoa responde a outra questão e continua a não medir directamente o rendimento das famílias nem o bem-estar.',
+  'Nominal is not real': 'Nominal não é real',
+  'Current-dollar values move with prices and exchange rates. Real growth is designed to show changes in output after adjusting for price movements.':
+    'Os valores em dólares correntes variam com os preços e as taxas de câmbio. O crescimento real procura mostrar a evolução da produção depois de descontadas as variações de preços.',
+  'Total is not typical': 'Total não é valor típico',
+  'A continental or regional total can be dominated by large economies. A median describes the middle reporting country instead.':
+    'Um total continental ou regional pode ser dominado pelas grandes economias. A mediana descreve, em alternativa, o país declarante central.',
+  'How the performance framework fits together': 'Como se articula o quadro de desempenho',
+  'The headline indicator captures one observable part of sector performance. Read its scope before treating it as a description of the entire sector.':
+    'O indicador principal capta uma parte observável do desempenho do sector. Leia o seu âmbito antes de o considerar uma descrição de todo o sector.',
+  'Access, cost, capacity, infrastructure and demand help explain operating conditions, but their different units must remain separate.':
+    'O acesso, o custo, a capacidade, as infra-estruturas e a procura ajudam a explicar as condições operacionais, mas as respectivas unidades devem permanecer separadas.',
+  'Country distribution': 'Distribuição por países',
+  'Coverage, breadth and the middle-half range show whether the headline reflects many countries or hides substantial differences.':
+    'A cobertura, a amplitude e o intervalo da metade central mostram se o valor principal reflecte muitos países ou oculta diferenças substanciais.',
+  'How to build a complete sector view': 'Como construir uma visão completa do sector',
+  'Level': 'Nível',
+  'The latest value shows the recorded level for the named measure, not whether the sector is universally strong or weak.':
+    'O valor mais recente mostra o nível registado para o indicador identificado, não se o sector é universalmente forte ou fraco.',
+  'Change': 'Variação',
+  'The comparison shows direction from the previous available observation; it may not represent exactly one calendar year.':
+    'A comparação mostra a direcção desde a observação anterior disponível; pode não corresponder exactamente a um ano civil.',
+  'Context': 'Contexto',
+  'Country range, coverage, supporting indicators and diligence questions explain how much confidence and practical meaning to attach to the result.':
+    'O intervalo entre países, a cobertura, os indicadores complementares e as questões de diligência explicam a confiança e o significado prático que podem ser atribuídos ao resultado.',
+  'The middle country after values are ordered. It is not the total or arithmetic average.':
+    'O país central depois de ordenados os valores. Não é o total nem a média aritmética.',
+  'The share of Africa’s 54 countries with usable observations for that indicator.':
+    'A proporção dos 54 países de África com observações utilizáveis para esse indicador.',
+  'Prior observation': 'Observação anterior',
+  'The previous available value for each country; it may not be exactly one year earlier.':
+    'O valor anterior disponível para cada país; pode não corresponder exactamente ao ano precedente.',
+  'Percentage point (pp)': 'Ponto percentual (pp)',
+  'The direct difference between percentages: 10% to 12% is +2 pp, not +2%.':
+    'A diferença directa entre percentagens: de 10% para 12% são +2 pp, não +2%.',
+  'Continental-data guide': 'Guia dos dados continentais',
+  'Read Africa-wide economic evidence carefully and confidently.':
+    'Leia os dados económicos de toda a África com rigor e confiança.',
+  'This page brings together official economic, population, trade, price, investment and sector measures. Some figures are country totals; others describe the middle reporting country.':
+    'Esta página reúne indicadores oficiais sobre economia, população, comércio, preços, investimento e sectores. Alguns valores são totais nacionais; outros descrevem o país declarante central.',
+  'You should be able to distinguish economic size from living standards, nominal values from real growth, and a regional total from a typical-country reading.':
+    'Deverá conseguir distinguir a dimensão económica do nível de vida, os valores nominais do crescimento real e um total regional do valor de um país típico.',
+  'Start with the indicator name, unit and aggregation method shown on the card.':
+    'Comece pelo nome do indicador, pela unidade e pelo método de agregação apresentados no cartão.',
+  'Check whether the figure is a total, median, percentage or per-person value.':
+    'Confirme se o valor é um total, uma mediana, uma percentagem ou um valor por pessoa.',
+  'Read the number of reporting countries and observation years before calling it continental.':
+    'Leia o número de países declarantes e os anos de observação antes de classificar o valor como continental.',
+  'Compare countries or regions only on the same indicator, unit and reasonably aligned period.':
+    'Compare países ou regiões apenas com base no mesmo indicador, na mesma unidade e em períodos razoavelmente alinhados.',
+  'Use the plain-language interpretation to understand the result, then read the stated caveat.':
+    'Utilize a interpretação em linguagem clara para compreender o resultado e leia depois a ressalva indicada.',
+  'Open the official source before using a figure in a consequential business or policy decision.':
+    'Abra a fonte oficial antes de utilizar um valor numa decisão empresarial ou política com consequências importantes.',
+  'Nominal value': 'Valor nominal',
+  'A value measured in current prices; inflation and exchange rates can affect comparisons over time.':
+    'Um valor medido a preços correntes; a inflação e as taxas de câmbio podem afectar as comparações ao longo do tempo.',
+  'Real growth': 'Crescimento real',
+  'Change after adjusting for price movements, intended to show changes in actual output.':
+    'Variação depois de descontadas as oscilações de preços, destinada a mostrar mudanças na produção real.',
+  'Aggregation': 'Agregação',
+  'The rule used to combine country observations, such as a total or median.':
+    'A regra utilizada para combinar observações nacionais, como um total ou uma mediana.',
+  'The share of Africa’s 54 countries represented by usable observations.':
+    'A proporção dos 54 países de África representada por observações utilizáveis.',
 };
 
 const PHRASE_RULES = Object.entries(PORTUGUESE_INTERFACE_PHRASES)

@@ -267,11 +267,14 @@ ${evidenceContext}`;
             getCached(c.env, evidenceBriefingKey, generateEvidenceBriefing, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
         );
     }
+    const briefingCountryName = reqLang === 'pt'
+        ? new Intl.DisplayNames(['pt-PT'], { type: 'region' }).of(code) || countryData.name
+        : countryData.name;
     const immediateCountryBriefing = sourceRecords.slice(0, 6).map((record, index) => reqLang === 'pt'
         ? `${index + 1}. ${record.title} (${record.published_at || 'data não registada'}). ${(record.summary || '').slice(0, 420)}`
         : `${index + 1}. ${record.title} (${record.published_at || 'date not recorded'}, ${record.sector_name || 'general coverage'}). ${(record.summary || '').slice(0, 420)}`
     ).join('\n\n') || (reqLang === 'pt'
-        ? `A janela documental actual da BOA-Story não contém registos publicados em português para ${countryData.name}. Não é possível sustentar uma conclusão nacional a partir desta janela até existirem registos editoriais adequados.`
+        ? `A janela documental actual da BOA-Story não contém registos publicados em português para ${briefingCountryName}. Não é possível sustentar uma conclusão nacional a partir desta janela até existirem registos editoriais adequados.`
         : `The current BOA-Story evidence window contains zero published records for ${countryData.name}. No country-level inference is supported from this dataset until reporting records enter the window.`);
 
     return c.json({

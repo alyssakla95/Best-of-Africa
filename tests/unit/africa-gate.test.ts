@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect } from 'vitest';
-import { isAfricanContent, isMarketEvidence, mentionsTargetCountry } from '../../src/workers/ingestion';
+import { extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -121,5 +121,18 @@ describe('isMarketEvidence', () => {
 
     it('rejects unrelated high-ranking stories from trusted publishers', () => {
         expect(isMarketEvidence('Liberia burns four tons of cocaine after seizure', 'Police completed the operation.')).toBe(false);
+    });
+});
+
+describe('extractParagraphEvidence', () => {
+    it('retains all substantive paragraphs from nested publisher layouts', () => {
+        const html = `
+            <main><div class="article-body"><div><p>First substantive paragraph about a national investment programme and its financing.</p></div></div>
+            <div><p>Second substantive paragraph explaining the trade mechanism and implementation timetable.</p></div>
+            <footer><p>Short</p></footer></main>`;
+        const evidence = extractParagraphEvidence(html);
+        expect(evidence).toContain('First substantive paragraph');
+        expect(evidence).toContain('Second substantive paragraph');
+        expect(evidence).not.toContain('Short');
     });
 });

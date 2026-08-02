@@ -236,6 +236,22 @@ export async function parseRSS(url: string): Promise<RSSItem[]> {
 // Full Content Scraper
 // Fetches and extracts main content from article URLs
 // ───────────────────────────────────────────────────────────────────────────────
+const decodeBasicEntities = (value: string) => value
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+export function extractParagraphEvidence(html: string): string {
+    return Array.from(html.matchAll(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/gi))
+        .map(match => decodeBasicEntities(match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()))
+        .filter(paragraph => paragraph.length >= 30)
+        .join('\n\n')
+        .trim();
+}
+
 async function scrapeFullContent(url: string): Promise<{ content: string | null; imageUrl: string | null; imageCredit: string | null }> {
     try {
         const controller = new AbortController();
@@ -309,6 +325,12 @@ async function scrapeFullContent(url: string): Promise<{ content: string | null;
             .replace(/\s+/g, ' ')
             .replace(/\n\s*\n/g, '\n\n')
             .trim();
+
+        // Nested layout containers often make the first regex match end at the
+        // first inner </div>, leaving only a teaser. Aggregate semantic
+        // paragraphs across the document and prefer that evidence when fuller.
+        const paragraphEvidence = extractParagraphEvidence(html);
+        if (paragraphEvidence.length > content.length) content = paragraphEvidence;
 
         // Only return if we have substantial content (at least 200 chars)
         return {
@@ -661,6 +683,57 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
         fixedSourcesTask(),
         discoveryTask()
     ]);
+
+    // Recover recent authoritative items that were rejected only because the
+    // earlier scraper captured a teaser. This is deliberately bounded and
+    // marks failed direct fetches terminally so inaccessible paywalls are not
+    // retried every minute.
+    if (scrapeBudget > 0) {
+        const recoveryCandidates = await env.DB.prepare(`
+            SELECT id, source_id, url, publisher_name, publisher_url, content
+            FROM ingested_items
+            WHERE status = 'rejected'
+              AND rejection_reason LIKE 'Insufficient source evidence:%'
+              AND created_at >= datetime('now', '-14 days')
+            ORDER BY created_at DESC
+            LIMIT 8
+        `).all<Record<string, string | null>>();
+        let recoveryAttempts = 0;
+        for (const candidate of recoveryCandidates.results || []) {
+            if (recoveryAttempts >= 2 || scrapeBudget <= 0) break;
+            const profile = sourceQualityProfile(candidate.publisher_name, candidate.publisher_url || candidate.url, 'fixed');
+            if (profile.tier < 3 || !candidate.url) continue;
+            recoveryAttempts++;
+            scrapeBudget--;
+            const scraped = await scrapeFullContent(candidate.url);
+            const recoveredContent = scraped.content || candidate.content || '';
+            if (recoveredContent.replace(/\s+/g, ' ').trim().length >= 3000) {
+                await env.DB.prepare(`
+                    UPDATE ingested_items
+                    SET content = ?, image_url = COALESCE(?, image_url),
+                        image_credit = COALESCE(?, image_credit), status = 'pending', rejection_reason = NULL
+                    WHERE id = ? AND status = 'rejected'
+                `).bind(recoveredContent, scraped.imageUrl, scraped.imageCredit, candidate.id).run();
+                await env.CONTENT_QUEUE.send({
+                    type: 'generate_article',
+                    ingested_item_id: candidate.id,
+                    source_id: candidate.source_id || 'source-recovery',
+                    priority: 'normal',
+                });
+                processed++;
+                queued++;
+            } else {
+                await env.DB.prepare(`
+                    UPDATE ingested_items
+                    SET rejection_reason = ?
+                    WHERE id = ? AND status = 'rejected'
+                `).bind(
+                    `Source recovery unavailable after direct fetch: ${recoveredContent.length} characters; 3000 required.`,
+                    candidate.id,
+                ).run();
+            }
+        }
+    }
 
     console.log(`Ingestion complete: ${processed} processed, ${queued} queued`);
     return { processed, queued };

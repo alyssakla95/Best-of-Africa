@@ -154,24 +154,25 @@ export function coverageAdmissionFailure(input: CoverageAdmissionInput): string 
     }
 
     // National outlets add indispensable local evidence, but they may not
-    // become the platform's default evidence layer. Always allow them to fill
-    // a genuinely thin country; otherwise cap their collective share.
+    // become the platform's default evidence layer. Once their collective
+    // ceiling is reached, only the first record for a completely uncovered
+    // country may pass. A second record must come from a stronger source.
     if (
         input.qualityTier === 2
         && input.total30d >= 24
-        && input.country30d >= 2
+        && input.country30d >= 1
         && (input.tier2Total30d || 0) / input.total30d >= 0.20
     ) {
         return 'source quality mix: verified national reporting has reached its 20% rolling ceiling';
     }
 
-    const countryCap = Math.max(6, Math.ceil(input.total30d * 0.06));
+    const countryCap = Math.max(2, Math.ceil(input.total30d * 0.04));
     if (input.country30d >= countryCap) {
         return `rolling country balance: ${input.countryCode || 'continental/unclassified'} has ${input.country30d} of ${input.total30d} records (cap ${countryCap})`;
     }
 
-    const sourceShare = input.qualityTier === 4 ? 0.12 : input.qualityTier === 3 ? 0.10 : 0.08;
-    const sourceCap = Math.max(8, Math.ceil(input.total30d * sourceShare));
+    const sourceShare = input.qualityTier === 4 ? 0.08 : input.qualityTier === 3 ? 0.06 : 0.04;
+    const sourceCap = Math.max(2, Math.ceil(input.total30d * sourceShare));
     if (input.source30d >= sourceCap) {
         return `rolling source balance: ${input.sourceName} has ${input.source30d} of ${input.total30d} records (cap ${sourceCap})`;
     }
@@ -179,23 +180,30 @@ export function coverageAdmissionFailure(input: CoverageAdmissionInput): string 
 }
 
 /** Preserve editorial order while applying hard reader-facing concentration caps. */
-export function diversifyCoverageRows<T extends { country_code?: string | null; source_title?: string | null }>(
+export function diversifyCoverageRows<T extends { country_code?: string | null; source_title?: string | null; source_quality_tier?: number | null }>(
     rows: T[],
     limit: number,
     maxPerCountry = 2,
-    maxPerPublisher = 2,
+    maxPerPublisher = 1,
 ): T[] {
     const picked: T[] = [];
     const countryCounts = new Map<string, number>();
     const publisherCounts = new Map<string, number>();
+    const maximumNationalSources = Math.max(1, Math.floor(limit * 0.20));
+    let nationalSources = 0;
     for (const row of rows) {
         if (picked.length >= limit) break;
         const country = row.country_code || 'continental/unclassified';
         const publisher = (row.source_title || 'unattributed').trim().toLowerCase();
+        const qualityTier = row.source_quality_tier
+            ?? sourceQualityProfile(row.source_title, null, 'fixed').tier;
+        if (qualityTier <= 1) continue;
+        if (qualityTier === 2 && nationalSources >= maximumNationalSources) continue;
         if ((countryCounts.get(country) || 0) >= maxPerCountry) continue;
         if ((publisherCounts.get(publisher) || 0) >= maxPerPublisher) continue;
         countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
         publisherCounts.set(publisher, (publisherCounts.get(publisher) || 0) + 1);
+        if (qualityTier === 2) nationalSources++;
         picked.push(row);
     }
     return picked;

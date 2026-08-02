@@ -297,7 +297,8 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
             } catch {
                 continue;
             }
-            if (resolved.hostname !== base.hostname || !/\/article\//i.test(resolved.pathname)) continue;
+            const isArticlePath = /\/(?:article|articles|news|pressroom|press-release|press-releases|news-and-events)\//i.test(resolved.pathname);
+            if (resolved.hostname !== base.hostname || !isArticlePath || resolved.pathname === base.pathname) continue;
             resolved.hash = '';
             const articleUrl = resolved.toString();
             if (seen.has(articleUrl)) continue;
@@ -501,7 +502,12 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
       )
     ORDER BY
       CASE
-        WHEN name IN ('UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization', 'African Development Bank Group') THEN 0
+        WHEN name IN (
+          'UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization',
+          'African Development Bank Group', 'African Development Bank News', 'World Bank Africa News',
+          'International Monetary Fund News', 'UN Trade and Development News', 'International Finance Corporation Africa',
+          'International Energy Agency Africa', 'International Renewable Energy Agency News', 'FAO Africa News'
+        ) THEN 0
         WHEN name IN ('BBC Africa', 'Associated Press Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
                       'France 24 Africa', 'Deutsche Welle Africa', 'Al Jazeera', 'The Africa Report',
                       'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
@@ -532,6 +538,17 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
         GROUP BY c.code, c.name
         ORDER BY recent_count ASC, c.name ASC
     `).all<CoverageCountry>();
+
+    const fixedQualityMix = await env.DB.prepare(`
+        SELECT COUNT(*) AS total_30d,
+               SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_30d
+        FROM articles
+        WHERE status IN ('published', 'pending_audit')
+          AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+    `).first<{ total_30d: number; tier2_30d: number }>();
+    const fixedTier2Share = Number(fixedQualityMix?.total_30d || 0) > 0
+        ? Number(fixedQualityMix?.tier2_30d || 0) / Number(fixedQualityMix?.total_30d || 1)
+        : 0;
 
     const recordSourceYield = async (
         sourceId: string,
@@ -586,6 +603,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                     if (sourceProfile.tier <= 1) {
                         await env.DB.prepare(`UPDATE sources SET last_fetched_at = datetime('now') WHERE id = ?`).bind(s.id).run();
                         console.warn(`[ingestion] Skipping non-independent source ${s.name}.`);
+                        return;
+                    }
+                    if (sourceProfile.tier === 2 && fixedTier2Share >= 0.20) {
+                        await env.DB.prepare(`UPDATE sources SET last_fetched_at = datetime('now') WHERE id = ?`).bind(s.id).run();
+                        console.warn(`[ingestion] Pausing national source ${s.name}: the rolling national-source share is ${(fixedTier2Share * 100).toFixed(1)}%.`);
                         return;
                     }
                     let items: Array<{ title: string; url: string; content: string; publishedAt: string; imageUrl: string | null; imageCredit: string | null; publisherName: string | null; publisherUrl: string | null }> = [];
@@ -804,13 +826,13 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         (!targetCountryName || mentionsTargetCountry(item.title, item.description || '', targetCountryName))
                         && isAfricanContent(item.title, item.description || '')
                         && isMarketEvidence(item.title, item.description || '')
-                        && sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery').tier >= 2
+                        && sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery').tier >= 3
                     );
                     for (const item of candidates.slice(0, 12)) {
                         if (discoveryItemBudget <= 0 || acceptedFromQuery >= 1) break;
                         // Discovery results can drift off-topic — enforce the same Africa gate.
                         const publisherProfile = sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery');
-                        if (publisherProfile.tier <= 1) {
+                        if (publisherProfile.tier < 3) {
                             console.warn(`[ingestion] Discovery source rejected: ${item.publisherName || item.publisherUrl || 'unknown publisher'}.`);
                             continue;
                         }

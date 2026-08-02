@@ -183,7 +183,7 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
       a.sector_id, s.name as sector_name,
       a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
       a.published_at, a.engagement_score, a.is_sponsored,
-      a.audio_url, a.audio_duration_seconds, a.source_title
+      a.audio_url, a.audio_duration_seconds, a.source_title, a.source_quality_tier
     FROM articles a
     LEFT JOIN countries c ON a.country_code = c.code
     LEFT JOIN sectors s ON a.sector_id = s.id
@@ -238,7 +238,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
     // Cache featured articles for 5 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_FEATURED}:coverage-v2:${limitNum}:${lens || 'all'}:${reqLang || 'en'}`,
+        `${CACHE_KEYS.ARTICLES_FEATURED}:coverage-v3:${limitNum}:${lens || 'all'}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -248,7 +248,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
                   a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
                   a.published_at, a.engagement_score,
                   a.ai_investor_brief, a.ai_push_message, a.ai_social_post,
-                  a.audio_url, a.audio_duration_seconds, a.source_title
+                  a.audio_url, a.audio_duration_seconds, a.source_title, a.source_quality_tier
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
@@ -313,7 +313,7 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
     // Cache latest articles for 2 minutes
     const articles = await getCached(
         c.env,
-        `${CACHE_KEYS.ARTICLES_LATEST}:coverage-v2:${limitNum}:${reqLang || 'en'}`,
+        `${CACHE_KEYS.ARTICLES_LATEST}:coverage-v3:${limitNum}:${reqLang || 'en'}`,
         async () => {
             const result = await c.env.DB.prepare(`
                 SELECT 
@@ -321,7 +321,7 @@ router.get('/latest', validate('query', ArticleQuerySchema.pick({ limit: true })
                   a.country_code, c.name as country_name, c.flag_emoji,
                   a.sector_id, s.name as sector_name,
                   a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
-                  a.published_at, a.audio_url, a.audio_duration_seconds, a.source_title
+                  a.published_at, a.audio_url, a.audio_duration_seconds, a.source_title, a.source_quality_tier
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id

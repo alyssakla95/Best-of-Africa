@@ -51,9 +51,10 @@ describe('instant reader cache', () => {
 
     it('makes the service worker remove obsolete reader-data caches', async () => {
         const source = await import('node:fs/promises').then(fs => fs.readFile('frontend/public/sw.js', 'utf8'));
-        expect(source).toContain("const CACHE_NAME = 'boa-shell-v5'");
+        expect(source).toContain("const CACHE_NAME = 'boa-shell-v6'");
         expect(source).toContain("name.startsWith('boa-reader-data-')");
         expect(source).toContain("const READER_CACHE_NAME = 'boa-reader-data-v4'");
-        expect(source).toContain('client.navigate(client.url)');
+        expect(source).toContain('self.clients.claim()');
+        expect(source).not.toContain('client.navigate(client.url)');
     });
 });

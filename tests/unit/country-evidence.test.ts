@@ -167,15 +167,19 @@ describe('country evidence integrity', () => {
         vi.stubGlobal('fetch', vi.fn(async () => new Response(`
             <a href="/article/kenya-trade-123"><h2>Kenya opens a regional trade corridor</h2></a>
             <a href="/article/kenya-trade-123">Kenya opens a regional trade corridor</a>
+            <a href="/news/ghana-financing-456"><h2>Ghana secures new infrastructure financing</h2></a>
+            <a href="/pressroom/2026/rwanda-investment-789"><h2>Rwanda investment programme reaches financial close</h2></a>
             <a href="https://outside.example/article/unrelated">Outside article must be excluded</a>
             <a href="/hub/africa">Africa hub navigation</a>
         `, { status: 200 })));
         const items = await parseHTMLListing('https://publisher.example/hub/africa');
-        expect(items).toHaveLength(1);
+        expect(items).toHaveLength(3);
         expect(items[0]).toMatchObject({
             title: 'Kenya opens a regional trade corridor',
             link: 'https://publisher.example/article/kenya-trade-123',
         });
+        expect(items.map(item => item.link)).toContain('https://publisher.example/news/ghana-financing-456');
+        expect(items.map(item => item.link)).toContain('https://publisher.example/pressroom/2026/rwanda-investment-789');
     });
 
     it('ranks qualifying candidates toward the least-covered named country', () => {

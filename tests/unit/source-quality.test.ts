@@ -40,7 +40,7 @@ describe('source quality and coverage admission', () => {
     it('limits lower-tier national reporting after it has filled a country gap', () => {
         expect(coverageAdmissionFailure({
             total30d: 100,
-            country30d: 2,
+            country30d: 1,
             source30d: 2,
             countryCode: 'GH',
             sourceName: 'Ghana Business News',
@@ -60,13 +60,24 @@ describe('source quality and coverage admission', () => {
 
     it('keeps visible lists diverse without backfilling from dominant publishers', () => {
         const rows = [
-            { id: 1, country_code: 'NG', source_title: 'Publisher A' },
-            { id: 2, country_code: 'NG', source_title: 'Publisher A' },
-            { id: 3, country_code: 'NG', source_title: 'Publisher A' },
-            { id: 4, country_code: 'ZA', source_title: 'Publisher B' },
-            { id: 5, country_code: 'GH', source_title: 'Publisher B' },
-            { id: 6, country_code: 'KE', source_title: 'Publisher C' },
+            { id: 1, country_code: 'NG', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 2, country_code: 'NG', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 3, country_code: 'NG', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 4, country_code: 'ZA', source_title: 'The Africa Report', source_quality_tier: 3 },
+            { id: 5, country_code: 'GH', source_title: 'The Africa Report', source_quality_tier: 3 },
+            { id: 6, country_code: 'KE', source_title: 'Associated Press', source_quality_tier: 4 },
         ];
-        expect(diversifyCoverageRows(rows, 6).map(row => row.id)).toEqual([1, 2, 4, 5, 6]);
+        expect(diversifyCoverageRows(rows, 6).map(row => row.id)).toEqual([1, 4, 6]);
+    });
+
+    it('limits verified-national sources to one fifth of a reader-facing list', () => {
+        const rows = [
+            { id: 1, country_code: 'GH', source_title: 'Ghana Business News', source_quality_tier: 2 },
+            { id: 2, country_code: 'RW', source_title: 'The New Times Rwanda', source_quality_tier: 2 },
+            { id: 3, country_code: 'KE', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 4, country_code: 'ZA', source_title: 'Financial Times', source_quality_tier: 4 },
+            { id: 5, country_code: 'MA', source_title: 'The Africa Report', source_quality_tier: 3 },
+        ];
+        expect(diversifyCoverageRows(rows, 5).map(row => row.id)).toEqual([1, 3, 4, 5]);
     });
 });

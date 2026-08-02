@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
+import { sourceQualityProfile } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env }>();
 
@@ -358,24 +359,35 @@ router.get('/health/deep', async (c) => {
     const acquisitionStart = Date.now();
     try {
         const acquisition = await c.env.DB.prepare(`
-            SELECT
-                (SELECT COUNT(*) FROM sources WHERE is_active = 1 AND type IN ('rss', 'html', 'newsapi')) AS active_sources,
-                COUNT(*) AS measured_sources,
-                SUM(CASE WHEN y.last_fetched_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END) AS measured_24h,
-                SUM(CASE WHEN y.last_qualified_found > 0 THEN 1 ELSE 0 END) AS qualifying_latest,
-                SUM(CASE WHEN y.last_productive_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS productive_30d,
-                SUM(CASE WHEN y.last_error IS NOT NULL THEN 1 ELSE 0 END) AS errors_latest,
-                SUM(y.total_queued) AS total_queued
-            FROM source_acquisition_yield y
-            JOIN sources s ON s.id = y.source_id
-            WHERE s.is_active = 1
-        `).first<Record<string, number | null>>();
-        const activeSources = Number(acquisition?.active_sources || 0);
-        const measured24h = Number(acquisition?.measured_24h || 0);
-        const productive30d = Number(acquisition?.productive_30d || 0);
+            SELECT s.name, s.url, y.last_fetched_at, y.last_qualified_found,
+                   y.last_productive_at, y.last_error, y.total_queued
+            FROM sources s
+            LEFT JOIN source_acquisition_yield y ON y.source_id = s.id
+            WHERE s.is_active = 1 AND s.type IN ('rss', 'html', 'newsapi')
+        `).all<Record<string, string | number | null>>();
+        const acquisitionRows = acquisition.results || [];
+        const activeSources = acquisitionRows.length;
+        const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+        const cutoff30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        const isRecent = (value: string | number | null | undefined, cutoff: number) => {
+            const timestamp = typeof value === 'string' ? Date.parse(value.endsWith('Z') ? value : `${value}Z`) : NaN;
+            return Number.isFinite(timestamp) && timestamp >= cutoff;
+        };
+        const measuredSources = acquisitionRows.filter(row => row.last_fetched_at).length;
+        const measured24h = acquisitionRows.filter(row => isRecent(row.last_fetched_at, cutoff24h)).length;
+        const qualifyingLatest = acquisitionRows.filter(row => Number(row.last_qualified_found || 0) > 0).length;
+        const productiveRows = acquisitionRows.filter(row => isRecent(row.last_productive_at, cutoff30d));
+        const productive30d = productiveRows.length;
+        const primaryProductive30d = productiveRows.filter(row => sourceQualityProfile(String(row.name || ''), String(row.url || ''), 'fixed').tier === 4).length;
+        const highQualityProductive30d = productiveRows.filter(row => sourceQualityProfile(String(row.name || ''), String(row.url || ''), 'fixed').tier >= 3).length;
+        const minimumProductive = Math.min(20, Math.ceil(activeSources * 0.25));
+        const minimumPrimaryProductive = Math.min(8, Math.ceil(activeSources * 0.10));
+        const minimumHighQualityProductive = Math.min(15, Math.ceil(activeSources * 0.25));
         const healthy = activeSources > 0
             && measured24h >= Math.ceil(activeSources * 0.9)
-            && productive30d >= Math.min(20, Math.ceil(activeSources * 0.25));
+            && productive30d >= minimumProductive
+            && primaryProductive30d >= minimumPrimaryProductive
+            && highQualityProductive30d >= minimumHighQualityProductive;
         checks.push({
             name: 'source_acquisition',
             status: healthy ? 'healthy' : 'degraded',
@@ -383,15 +395,19 @@ router.get('/health/deep', async (c) => {
             message: healthy ? undefined : 'The active source network has not yet demonstrated sufficient recent, qualifying production.',
             details: {
                 activeSources,
-                measuredSources: Number(acquisition?.measured_sources || 0),
+                measuredSources,
                 measured24h,
-                qualifyingLatest: Number(acquisition?.qualifying_latest || 0),
+                qualifyingLatest,
                 productive30d,
-                errorsLatest: Number(acquisition?.errors_latest || 0),
-                totalQueued: Number(acquisition?.total_queued || 0),
+                primaryProductive30d,
+                highQualityProductive30d,
+                errorsLatest: acquisitionRows.filter(row => row.last_error).length,
+                totalQueued: acquisitionRows.reduce((sum, row) => sum + Number(row.total_queued || 0), 0),
                 healthyThresholds: {
                     minimumMeasuredShare24h: 0.9,
-                    minimumProductiveSources30d: Math.min(20, Math.ceil(activeSources * 0.25)),
+                    minimumProductiveSources30d: minimumProductive,
+                    minimumPrimaryProductiveSources30d: minimumPrimaryProductive,
+                    minimumHighQualityProductiveSources30d: minimumHighQualityProductive,
                 },
             },
         });

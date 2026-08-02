@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isCountryEvidenceStale, refreshCountryEvidence, worldBankTradeFallback, type CountryEvidenceSnapshot } from '../../src/lib/country-evidence';
 import { aggregateTradeTotal, getTradeBalance } from '../../src/lib/trade-data';
 import { publisherNameForArticle, publisherNameForStoredArticle } from '../../src/lib/source-attribution';
-import { parseRSS } from '../../src/workers/ingestion';
+import { parseHTMLListing, parseRSS, rankCandidatesForCoverage } from '../../src/workers/ingestion';
 import { createMockEnv } from '../mocks/env';
 
 const worldBankProfile = {
@@ -150,5 +150,47 @@ describe('country evidence integrity', () => {
             link: 'https://publisher.example/story',
             pubDate: '2026-07-18T10:00:00Z',
         });
+    });
+
+    it('accepts RSS 1.0 items with attributes and dc:date', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(`<?xml version="1.0"?><rdf:RDF><item rdf:about="https://publisher.example/story"><title>Uganda investment market expands</title><link>https://publisher.example/story</link><description>Uganda expands infrastructure investment.</description><dc:date>2026-08-01T08:54:00Z</dc:date></item></rdf:RDF>`, { status: 200 })));
+        const items = await parseRSS('https://publisher.example/feed.rdf');
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: 'Uganda investment market expands',
+            link: 'https://publisher.example/story',
+            pubDate: '2026-08-01T08:54:00Z',
+        });
+    });
+
+    it('extracts unique same-publisher articles from a direct HTML listing', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(`
+            <a href="/article/kenya-trade-123"><h2>Kenya opens a regional trade corridor</h2></a>
+            <a href="/article/kenya-trade-123">Kenya opens a regional trade corridor</a>
+            <a href="https://outside.example/article/unrelated">Outside article must be excluded</a>
+            <a href="/hub/africa">Africa hub navigation</a>
+        `, { status: 200 })));
+        const items = await parseHTMLListing('https://publisher.example/hub/africa');
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: 'Kenya opens a regional trade corridor',
+            link: 'https://publisher.example/article/kenya-trade-123',
+        });
+    });
+
+    it('ranks qualifying candidates toward the least-covered named country', () => {
+        const items = [
+            { title: 'Nigeria investment expands', content: 'Nigeria market update' },
+            { title: 'Djibouti port investment expands', content: 'Djibouti trade update' },
+            { title: 'Africa trade outlook', content: 'Continental market update' },
+        ];
+        expect(rankCandidatesForCoverage(items, [
+            { name: 'Nigeria', recent_count: 50 },
+            { name: 'Djibouti', recent_count: 0 },
+        ]).map(item => item.title)).toEqual([
+            'Djibouti port investment expands',
+            'Nigeria investment expands',
+            'Africa trade outlook',
+        ]);
     });
 });

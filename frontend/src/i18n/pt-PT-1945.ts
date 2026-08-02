@@ -2370,6 +2370,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'The rolling evidence window remains too concentrated by country or publisher.': 'A janela documental móvel continua demasiado concentrada por país ou entidade editora.',
   'Coverage diversity check failed': 'A verificação da diversidade da cobertura falhou',
   'The rolling evidence window has not yet met the all-country, publisher and global-source quality standard.': 'A janela documental móvel ainda não atingiu o padrão de qualidade exigido para a cobertura de todos os países, a diversidade de entidades editoras e as fontes mundiais.',
+  'The active source network has not yet demonstrated sufficient recent, qualifying production.': 'A rede activa de fontes ainda não demonstrou produção recente e qualificada em quantidade suficiente.',
+  'Source acquisition yield check failed': 'A verificação do rendimento da aquisição de fontes falhou',
 };
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {

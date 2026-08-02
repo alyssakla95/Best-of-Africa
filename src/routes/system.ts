@@ -341,6 +341,59 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    // A configured source is not counted as operational until acquisition has
+    // observed it and it has supplied qualifying evidence. This prevents a
+    // large catalogue of broken or inaccessible URLs from masquerading as a
+    // broad source network.
+    const acquisitionStart = Date.now();
+    try {
+        const acquisition = await c.env.DB.prepare(`
+            SELECT
+                (SELECT COUNT(*) FROM sources WHERE is_active = 1 AND type IN ('rss', 'html', 'newsapi')) AS active_sources,
+                COUNT(*) AS measured_sources,
+                SUM(CASE WHEN y.last_fetched_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END) AS measured_24h,
+                SUM(CASE WHEN y.last_qualified_found > 0 THEN 1 ELSE 0 END) AS qualifying_latest,
+                SUM(CASE WHEN y.last_productive_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS productive_30d,
+                SUM(CASE WHEN y.last_error IS NOT NULL THEN 1 ELSE 0 END) AS errors_latest,
+                SUM(y.total_queued) AS total_queued
+            FROM source_acquisition_yield y
+            JOIN sources s ON s.id = y.source_id
+            WHERE s.is_active = 1
+        `).first<Record<string, number | null>>();
+        const activeSources = Number(acquisition?.active_sources || 0);
+        const measured24h = Number(acquisition?.measured_24h || 0);
+        const productive30d = Number(acquisition?.productive_30d || 0);
+        const healthy = activeSources > 0
+            && measured24h >= Math.ceil(activeSources * 0.9)
+            && productive30d >= Math.min(20, Math.ceil(activeSources * 0.25));
+        checks.push({
+            name: 'source_acquisition',
+            status: healthy ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - acquisitionStart,
+            message: healthy ? undefined : 'The active source network has not yet demonstrated sufficient recent, qualifying production.',
+            details: {
+                activeSources,
+                measuredSources: Number(acquisition?.measured_sources || 0),
+                measured24h,
+                qualifyingLatest: Number(acquisition?.qualifying_latest || 0),
+                productive30d,
+                errorsLatest: Number(acquisition?.errors_latest || 0),
+                totalQueued: Number(acquisition?.total_queued || 0),
+                healthyThresholds: {
+                    minimumMeasuredShare24h: 0.9,
+                    minimumProductiveSources30d: Math.min(20, Math.ceil(activeSources * 0.25)),
+                },
+            },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'source_acquisition',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - acquisitionStart,
+            message: error instanceof Error ? error.message : 'Source acquisition yield check failed',
+        });
+    }
+
     const emailConfigured = Boolean(
         c.env.EMAIL_FROM && (c.env.EMAIL?.send || c.env.RESEND_API_KEY)
     );

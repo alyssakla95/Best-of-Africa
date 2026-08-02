@@ -71,7 +71,7 @@ export const BetaGlobalPlayer = () => {
                     <div className="overflow-y-auto p-2 scrollbar-thin">
                         {playlist.map((track, idx) => (
                             <div
-                                key={idx}
+                                key={track.audioUrl || track.slug || idx}
                                 className={`flex items-center gap-3 p-2.5 rounded-xl transition-all ${idx === currentIndex ? 'bg-background/10 border border-primary/20 shadow-sm' : 'hover:bg-muted/50 border border-transparent cursor-pointer'}`}
                             >
                                 <div className="text-xs font-mono text-muted-foreground w-5 flex justify-center">
@@ -125,7 +125,14 @@ export const BetaGlobalPlayer = () => {
                 <div className="flex items-center gap-2 px-3 pb-3 pt-1">
 
                     {/* Track Info */}
-                    <div className="flex flex-col min-w-0 flex-1 cursor-pointer" onClick={() => setShowQueue(!showQueue)}>
+                    <div
+                        className="flex flex-col min-w-0 flex-1 cursor-pointer"
+                        onClick={() => setShowQueue(!showQueue)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Toggle play queue"
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowQueue(!showQueue); } }}
+                    >
                         <div className="text-[13px] font-bold text-foreground truncate leading-tight">
                             {stripMarkdown(currentTrack.title)}
                         </div>

@@ -88,7 +88,7 @@ export const CommandMenu = () => {
                 <div className="flex items-center border-b border-border px-4 py-2">
                     <MagnifyingGlassIcon className="mr-2 h-5 w-5 shrink-0 opacity-50" />
                     <Input
-                        className="flex h-12 w-full rouned-md bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-none focus-visible:ring-0 shadow-none text-foreground"
+                        className="flex h-12 w-full rounded-md bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-none focus-visible:ring-0 shadow-none text-foreground"
                         placeholder="Search stories, countries, topics..."
                         value={query}
                         onChange={(e) => {
@@ -109,45 +109,23 @@ export const CommandMenu = () => {
                 <div className="max-h-[500px] overflow-y-auto p-2">
                     {results.length === 0 && query.length === 0 && (
                         <div className="py-8 px-4">
-                            <div className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-background opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-background"></span>
-                                </span>
-                                Latest Updates
-                            </div>
-                            <div
-                                onClick={() => { setOpen(false); navigate('/admin'); }}
-                                className="relative flex cursor-default select-none items-center rounded-md px-4 py-3 text-sm outline-none transition-colors text-foreground hover:bg-muted/50"
-                            >
-                                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background">
-                                    <div className="h-4 w-4 bg-background/20 rounded-full" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-bold">Open Analyst Console</div>
-                                    <div className="text-xs opacity-50">Story Updates</div>
-                                </div>
-                                <ArrowRightIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </div>
-                            <div className="grid gap-2 mt-4">
-                                {[
-                                    { label: "New stories published", type: "UPDATE", time: "Just now" },
-                                    { label: "Regional briefing updated", type: "EVENT", time: "Recently" },
-                                    { label: "Strategic briefing ready", type: "RISK", time: "Today" },
-                                ].map((signal, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-transparent hover:border-primary/20 hover:bg-muted/40 cursor-default transition-all group">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border",
-                                                    signal.type === 'OPPORTUNITY' ? 'bg-accent/10 text-accent border-accent/20' :
-                                                        signal.type === 'RISK' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                                        'bg-background/10 text-primary border-primary/20')}>
-                                                {signal.type}
-                                            </div>
-                                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{signal.label}</span>
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground font-mono">{signal.time}</span>
+                            {localStorage.getItem('boa_admin_token') && (
+                                <div
+                                    onClick={() => { setOpen(false); navigate('/admin'); }}
+                                    className="relative flex cursor-default select-none items-center rounded-md px-4 py-3 text-sm outline-none transition-colors text-foreground hover:bg-muted/50"
+                                >
+                                    <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background">
+                                        <div className="h-4 w-4 bg-background/20 rounded-full" />
                                     </div>
-                                ))}
+                                    <div className="flex-1">
+                                        <div className="font-bold">Open Analyst Console</div>
+                                        <div className="text-xs opacity-50">Administration</div>
+                                    </div>
+                                    <ArrowRightIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </div>
+                            )}
+                            <div className="py-6 text-center text-sm text-muted-foreground">
+                                Search stories, countries and sectors.
                             </div>
                         </div>
                     )}
@@ -160,7 +138,7 @@ export const CommandMenu = () => {
 
                     {results.map((item, index) => (
                         <div
-                            key={index}
+                            key={`${item.type}:${item.text}`}
                             onClick={() => handleSelect(item)}
                             className={cn(
                                 "relative flex cursor-default select-none items-center rounded-md px-4 py-3 text-sm outline-none transition-colors",

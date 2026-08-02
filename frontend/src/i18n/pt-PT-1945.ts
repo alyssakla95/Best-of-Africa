@@ -2444,6 +2444,23 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Introductory pricing while BOA-Story earns its track record. Every paid tier receives the same complete reader product; choose a higher level only if you want to support broader coverage.': 'Preços introdutórios enquanto a BOA-Story constrói o seu historial. Todos os níveis pagos recebem o mesmo produto completo; escolha um nível superior apenas se pretender apoiar uma cobertura mais ampla.',
   'Member content is temporarily open during preview. Pricing is shown now so the eventual offer is clear before payment is required.': 'O conteúdo para membros está temporariamente aberto durante a pré-visualização. Os preços são apresentados desde já para que a oferta futura seja clara antes de qualquer pagamento.',
   'Become a founding member to keep reading every story in full.': 'Torne-se membro leitor para continuar a ler todas as histórias na íntegra.',
+  'Administration': 'Administração',
+  'Search stories, countries and sectors.': 'Pesquisar histórias, países e sectores.',
+  'Notifications unavailable': 'Notificações indisponíveis',
+  'Could not reach the service. It will retry automatically.': 'Não foi possível contactar o serviço. A tentativa será repetida automaticamente.',
+  'Access renews in': 'O acesso renova-se em',
+  'days': 'dias',
+  'African Countries': 'Países Africanos',
+  'Source-grounded country records across all 54 African markets: reporting, official market evidence and national context.': 'Registos nacionais assentes em fontes para os 54 mercados africanos: reportagem, evidência oficial de mercado e contexto nacional.',
+  'A valid email address is required': 'É necessário um endereço de correio electrónico válido',
+  'Submission exceeds allowed field lengths': 'A submissão excede os comprimentos de campo permitidos',
+  'Enter': 'Enter',
+  'Open the analyst chat': 'Abrir o assistente de análise',
+  'Close the analyst chat': 'Fechar o assistente de análise',
+  'Send question': 'Enviar pergunta',
+  'Toggle play queue': 'Mostrar ou ocultar a fila de reprodução',
+  '6-digit verification code': 'Código de verificação de 6 dígitos',
+  'Membership email address': 'Endereço de correio electrónico da adesão',
 };
 
 export function translatePortugueseInterfaceText(value: string): string | undefined {

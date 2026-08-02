@@ -43,14 +43,15 @@ export const BetaMemberAccess = () => {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
+      const expired = msg.toLowerCase().includes('expired');
       setErrorMsg(msg.includes('404') || msg.includes('No active')
         ? 'No active membership found for this email.'
-        : msg.includes('expired')
+        : expired
         ? 'Your membership has expired. Please renew on Ko-fi to restore access.'
         : msg
       );
       setIsSubmitting(false);
-      setPhase('error');
+      setPhase(expired ? 'expired' : 'error');
     }
   };
 
@@ -240,6 +241,7 @@ export const BetaMemberAccess = () => {
                         value={otp}
                         onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         placeholder="0 0 0 0 0 0"
+                        aria-label="6-digit verification code"
                         required
                         pattern="\d*"
                         maxLength={6}
@@ -309,6 +311,7 @@ export const BetaMemberAccess = () => {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         placeholder="founder@company.com"
+                        aria-label="Membership email address"
                         required
                         disabled={isSubmitting}
                         className="w-full bg-background/50 border border-foreground/10 rounded-2xl pl-12 pr-4 py-5 text-foreground placeholder:text-foreground/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50 font-medium text-lg"

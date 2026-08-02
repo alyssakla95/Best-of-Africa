@@ -167,11 +167,12 @@ export const AiChatSchema = z.object({
     message: z.string().min(2).max(1000),
 });
 
-/** AI Reframe Schema */
+/** AI Reframe Schema — `targetAudience` accepted as a legacy alias for `lens` */
 export const AiReframeSchema = z.object({
     articleId: z.string().uuid(),
-    lens: z.string().refine(val => (['investor', 'government', 'explorer'] as string[]).includes(val), 'Invalid lens'),
-});
+    lens: z.string().refine(val => (['investor', 'government', 'explorer'] as string[]).includes(val), 'Invalid lens').optional(),
+    targetAudience: z.string().refine(val => (['investor', 'government', 'explorer'] as string[]).includes(val), 'Invalid lens').optional(),
+}).refine(data => data.lens || data.targetAudience, { message: 'lens is required' });
 
 /** AI Reformat Schema */
 export const AiReformatSchema = z.object({

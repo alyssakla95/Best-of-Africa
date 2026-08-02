@@ -457,7 +457,8 @@ Aim for 3,200-4,800 words when evidence is sufficiently rich. Include an evidenc
 // DEEP PERSONALIZATION: Now injects country/sector context
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/reframe', validate('json', AiReframeSchema), async (c) => {
-  const { articleId, lens } = (c.req as any).valid('json');
+  const { articleId, lens: rawLens, targetAudience } = (c.req as any).valid('json');
+  const lens = rawLens || targetAudience;
 
   // 1. Fetch Article with Context (Country + Sector)
   const article = await c.env.DB.prepare(`

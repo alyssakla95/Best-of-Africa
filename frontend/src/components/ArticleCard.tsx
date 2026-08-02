@@ -76,7 +76,9 @@ export const ArticleCard: React.FC<{ article: ArticleListItem; featured?: boolea
 
                 <div className="mt-auto flex items-center justify-between border-t border-foreground/8 pt-3 text-[11px] font-medium text-foreground/70">
                     <span className="flex items-center gap-2">
-                        {article.reading_time_minutes || 5} min read
+                        {article.reading_time_minutes != null && (
+                            <span>{article.reading_time_minutes} min read</span>
+                        )}
                         {article.published_at && (
                             <>
                                 <span className="text-foreground/20">·</span>
@@ -104,6 +106,7 @@ export const ArticleCard: React.FC<{ article: ArticleListItem; featured?: boolea
                             }}
                             className="text-foreground/40 transition-colors hover:text-accent"
                             title="Add to Audio Queue"
+                            aria-label="Add to Audio Queue"
                         >
                             <ListMusic size={15} />
                         </button>
@@ -115,6 +118,7 @@ export const ArticleCard: React.FC<{ article: ArticleListItem; featured?: boolea
                             }}
                             className="text-foreground/40 transition-colors hover:text-accent"
                             title="Save for Later"
+                            aria-label="Save for Later"
                         >
                             <Bookmark size={15} />
                         </button>

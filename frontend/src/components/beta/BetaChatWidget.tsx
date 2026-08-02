@@ -79,6 +79,7 @@ export const BetaChatWidget = () => {
     <>
       {/* Floating Action Button */}
       <motion.button
+        aria-label="Open the analyst chat"
         className="fixed bottom-[calc(4.65rem+env(safe-area-inset-bottom))] right-3 z-50 p-3 sm:right-6 sm:p-4 lg:bottom-6 bg-background text-foreground rounded-full shadow-lg border border-primary/20 hover:bg-background/90 hover:scale-105 transition-all flex items-center justify-center"
         onClick={() => setIsOpen(true)}
         initial={{ scale: 0 }}
@@ -108,6 +109,7 @@ export const BetaChatWidget = () => {
                 </div>
               </div>
               <button 
+                aria-label="Close the analyst chat"
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-foreground/10 rounded-full transition-colors text-foreground/60 hover:text-foreground"
               >
@@ -176,6 +178,7 @@ export const BetaChatWidget = () => {
                 />
                 <button
                   type="submit"
+                  aria-label="Send question"
                   disabled={!input.trim() || isLoading}
                   className="absolute right-1 p-2 bg-background text-foreground rounded-full hover:bg-background/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

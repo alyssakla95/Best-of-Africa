@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Link, useNavigate } from 'react-router-dom';
 import { LockClosedIcon, PersonIcon, CheckCircledIcon, UpdateIcon, ChevronRightIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
@@ -22,6 +22,11 @@ export const LoginPage: React.FC = () => {
     const [otp, setOtp] = useState('');
     const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'ERROR'>('IDLE');
     const [error, setError] = useState<string | null>(null);
+
+    const successTimer = useRef<number | null>(null);
+    useEffect(() => () => {
+        if (successTimer.current !== null) window.clearTimeout(successTimer.current);
+    }, []);
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -72,13 +77,10 @@ export const LoginPage: React.FC = () => {
                     tier: res.tier,
                     expires_at: res.expires_at,
                 }));
-                localStorage.setItem('boa_client_tier', res.tier);
 
                 setStep('SUCCESS');
                 
-                setTimeout(() => {
-                    navigate('/feed');
-                }, 1500);
+                successTimer.current = window.setTimeout(() => navigate('/feed'), 1500);
             }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Verification failed');

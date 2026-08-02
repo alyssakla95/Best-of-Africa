@@ -66,6 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user: null,
             token: null,
         });
+        localStorage.removeItem('boa_client_info');
+        localStorage.removeItem('boa_client_tier');
+        // Let MemberContext (and any other listener) clear its session state too.
+        window.dispatchEvent(new Event('boa:auth:unauthorized'));
     }, []);
 
     // Listen for 401 unauthorized events from the API layer and log out globally.

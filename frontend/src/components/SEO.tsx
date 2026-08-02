@@ -18,8 +18,8 @@ export const SEO: React.FC<SEOProps> = ({
     author = 'Mailles Cortes | BOA-Story'
 }) => {
     useEffect(() => {
-        // Update Title
-        document.title = `${title} | BOA-Story`;
+        // Update Title (callers historically append "| BOA-Story" themselves — strip it to avoid duplication)
+        document.title = `${title.replace(/\s*\|\s*BOA-Story\s*$/i, '')} | BOA-Story`;
 
         // Helper to update meta tags
         const updateMeta = (name: string, content: string, attribute = 'name') => {
@@ -52,14 +52,21 @@ export const SEO: React.FC<SEOProps> = ({
         updateMeta('og:type', type, 'property');
         updateMeta('og:title', title, 'property');
         updateMeta('og:description', description || '', 'property');
-        updateMeta('og:image', image || '', 'property');
         updateMeta('og:site_name', 'BOA-Story', 'property');
 
         // Twitter
-        updateMeta('twitter:card', 'summary_large_image');
         updateMeta('twitter:title', title);
         updateMeta('twitter:description', description || '');
-        updateMeta('twitter:image', image || '');
+
+        if (image) {
+            updateMeta('og:image', image, 'property');
+            updateMeta('twitter:image', image);
+            updateMeta('twitter:card', 'summary_large_image');
+        } else {
+            document.querySelector('meta[property="og:image"]')?.remove();
+            document.querySelector('meta[name="twitter:image"]')?.remove();
+            updateMeta('twitter:card', 'summary');
+        }
 
         // Article Specific
         if (publishedTime) {

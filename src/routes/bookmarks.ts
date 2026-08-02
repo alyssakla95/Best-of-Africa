@@ -26,6 +26,9 @@ router.post('/', async (c) => {
     const { article_id } = await c.req.json();
     if (!article_id) return c.json({ error: 'validation_error', message: 'article_id required' }, 400);
 
+    const article = await c.env.DB.prepare(`SELECT id FROM articles WHERE id = ?`).bind(article_id).first();
+    if (!article) return c.json({ error: 'not_found', message: 'Article not found' }, 404);
+
     const id = crypto.randomUUID();
     await c.env.DB.prepare(`
         INSERT OR IGNORE INTO bookmarks (id, session_id, article_id, created_at)

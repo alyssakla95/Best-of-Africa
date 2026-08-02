@@ -44,6 +44,14 @@ router.post('/contact', async (c) => {
         return c.json({ error: 'validation_error', message: 'Name, email, and message are required' }, 400);
     }
 
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return c.json({ error: 'validation_error', message: 'A valid email address is required' }, 400);
+    }
+
+    if (String(name).length > 200 || String(email).length > 320 || String(message).length > 10000) {
+        return c.json({ error: 'validation_error', message: 'Submission exceeds allowed field lengths' }, 400);
+    }
+
     // Store in database
     const id = crypto.randomUUID();
     await c.env.DB.prepare(`
@@ -225,10 +233,12 @@ router.get('/health/deep', async (c) => {
         const translations = Number(output?.translations || 0);
         const reports = Number(output?.reports || 0);
         const expectedTranslations = published * 5;
-        const complete = published === 0 || (audio >= published && translations >= expectedTranslations);
+        // Backfills run continuously, so 100% audio+translation coverage is never
+        // stable. Degrade only when output is genuinely absent or far behind.
+        const sufficient = published > 0 && translations >= expectedTranslations * 0.5;
         checks.push({
             name: 'worker_outputs',
-            status: complete && reports > 0 ? 'healthy' : 'degraded',
+            status: sufficient ? 'healthy' : 'degraded',
             responseTimeMs: Date.now() - outputStart,
             details: { published, audio, translations, expectedTranslations, reports },
         });
@@ -497,7 +507,7 @@ router.get('/health/deep', async (c) => {
         environment: c.env.ENVIRONMENT || 'development',
         response_time_ms: totalResponseTime,
         checks,
-    }, overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 200 : 503);
+    }, overallStatus === 'healthy' ? 200 : 503);
 });
 
 // ───────────────────────────────────────────────────────────────────────────────

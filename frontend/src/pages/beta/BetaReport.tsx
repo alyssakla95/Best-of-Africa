@@ -44,7 +44,7 @@ const SectionData = ({ data }: { data: unknown }) => {
           <tr>{keys.map(key => <th key={key} className="border-b border-border bg-navy px-4 py-3 text-[11px] font-bold uppercase tracking-[.08em] text-white">{key.replace(/_/g, ' ')}</th>)}</tr>
         </thead>
         <tbody>
-          {data.map((item, index) => <tr key={index} className="odd:bg-navy/[.03]">
+          {data.map((item) => <tr key={JSON.stringify(item)} className="odd:bg-navy/[.03]">
             {keys.map(key => <td key={key} data-label={key.replace(/_/g, ' ')} className="border-b border-border px-4 py-3 align-top leading-6 text-navy/85 last:border-b-0">{formatCell(item[key])}</td>)}
           </tr>)}
         </tbody>

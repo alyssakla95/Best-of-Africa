@@ -510,16 +510,6 @@ export const api = {
             body: JSON.stringify({ articleId })
         }),
 
-    getPremiumCountryReport: (code: string) => readerRequest<{
-        country: Country;
-        article_count: number;
-        top_sectors: { sector: Sector; count: number }[];
-        recent_articles: ArticleListItem[];
-        evidence_profile: { published_articles: number; sectors_represented: number; source_records_reviewed: number; latest_reported_at: string };
-        methodology: string;
-        narrative_gaps: string[];
-        recommendations: string[];
-    }>(`/intel/country/${code}/report`),
     getSectorTrends: (id: string) => readerRequest<{
         sector: Sector;
         market_performance: SectorMarketPerformance;

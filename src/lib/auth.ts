@@ -122,7 +122,7 @@ export async function requireApiKey(c: AppContext, next: Next) {
 // Middleware: Rate Limiting (KV-based)
 // ───────────────────────────────────────────────────────────────────────────────
 export async function rateLimit(c: AppContext, next: Next) {
-    const clientId = c.get('clientId') as string;
+    const clientId = (c.get('clientId') as string) || `ip:${c.req.header('CF-Connecting-IP') || 'unknown'}`; // anonymous callers share one bucket without an IP key
     const limit = c.get('rateLimit') as number || 100;
 
     const key = `rate:${clientId}:${getCurrentHour()}`;

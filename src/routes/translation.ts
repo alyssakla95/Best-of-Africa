@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
 import { extractAIText, MODELS } from '../lib/ai';
+import { throttle } from '../lib/ratelimit';
 
 const router = new Hono<{ Bindings: Env }>();
 // Portuguese is a code-owned editorial locale. It is intentionally excluded
@@ -50,6 +51,8 @@ async function translateWithFallback(env: Env, language: string, text: string): 
 }
 
 router.post('/interface', async c => {
+    const limited = await throttle(c, 'translate-interface');
+    if (limited) return limited;
     const body: { language?: string; texts?: unknown[] } = await c.req.json<{ language?: string; texts?: unknown[] }>().catch(() => ({}));
     const language = body.language || '';
     if (!TARGETS.has(language)) return c.json({ error: 'unsupported_language' }, 400);

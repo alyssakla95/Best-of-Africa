@@ -121,6 +121,9 @@ export const MissionControl: React.FC = () => {
                                                 format === f && "bg-accent/10 text-accent border-accent/50"
                                             )}
                                             onClick={() => setFormat(f)}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFormat(f); } }}
                                         >
                                             {f === 'audio' && <SpeakerLoudIcon className="mr-1 h-3 w-3" />}
                                             {f}
@@ -143,6 +146,9 @@ export const MissionControl: React.FC = () => {
                                                 key={c.code}
                                                 variant="outline"
                                                 onClick={() => toggleCountry(c.code)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCountry(c.code); } }}
                                                 className={cn(
                                                     "cursor-pointer text-[10px] border-border/50 bg-foreground/40 transition-all text-foreground",
                                                     focus.countries.includes(c.code)
@@ -164,6 +170,9 @@ export const MissionControl: React.FC = () => {
                                                 key={s.id}
                                                 variant="outline"
                                                 onClick={() => toggleSector(s.id)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSector(s.id); } }}
                                                 className={cn(
                                                     "cursor-pointer text-[10px] border-border/50 bg-foreground/40 transition-all text-foreground",
                                                     focus.sectors.includes(s.id)

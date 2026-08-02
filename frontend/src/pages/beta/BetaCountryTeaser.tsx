@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { } from '../../components/beta';
 import { api } from '../../services/api';
+import { SEO } from '../../components/SEO';
 import { KO_FI_URL } from '../../constants/beta';
 import { useLanguage } from '@/context/LanguageContext';
 import { readerCountryName } from '@/i18n/pt-country-data';
@@ -130,6 +131,7 @@ export const BetaCountryTeaser = () => {
 
   return (
     <div className="selection:bg-accent selection:text-primary">
+      <SEO title="African Countries" description="Source-grounded country records across all 54 African markets: reporting, official market evidence and national context." />
       
 
       <div className="max-w-7xl mx-auto px-5 py-12 sm:px-6 md:py-16">

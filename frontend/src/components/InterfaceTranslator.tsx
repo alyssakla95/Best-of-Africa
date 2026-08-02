@@ -66,13 +66,26 @@ export function InterfaceTranslator() {
       while ((node = walker.nextNode())) {
         const text = node as Text;
         const original = originalText.get(text);
-        if (original !== undefined) text.data = original;
+        // Skip no-op writes: setting characterData re-triggers the observer.
+        if (original !== undefined && text.data !== original) text.data = original;
       }
       document.querySelectorAll('[placeholder],[aria-label],[title],[alt]').forEach(element => {
         const originals = originalAttributes.get(element);
-        originals?.forEach((value, name) => element.setAttribute(name, value));
+        originals?.forEach((value, name) => {
+          if (element.getAttribute(name) !== value) element.setAttribute(name, value);
+        });
       });
     };
+
+    // English is the source language: there is nothing to translate and any
+    // earlier translation was already restored by the previous effect's
+    // cleanup. Mounting the observer here only re-walks the whole DOM on
+    // every mutation, so for English this effect does nothing at all.
+    if (language === 'en') {
+      document.documentElement.dataset.translationState = 'source';
+      setStatus('source');
+      return () => { delete document.documentElement.dataset.translationState; };
+    }
 
     const collect = () => {
       const items: Array<{ value: string; apply: (translated: string) => void }> = [];
@@ -92,7 +105,11 @@ export function InterfaceTranslator() {
         const text = node as Text;
         if (!originalText.has(text)) originalText.set(text, text.data);
         const value = originalText.get(text)!;
-        items.push({ value: value.trim(), apply: translated => { text.data = value.replace(value.trim(), translated); } });
+        items.push({ value: value.trim(), apply: translated => {
+          // Skip no-op writes: setting characterData re-triggers the observer.
+          const next = value.replace(value.trim(), translated);
+          if (text.data !== next) text.data = next;
+        } });
       }
       document.querySelectorAll('[placeholder],[aria-label],[title],[alt]').forEach(element => {
         if (element.closest(SKIP)) return;
@@ -107,7 +124,9 @@ export function InterfaceTranslator() {
           if (language === 'pt' && !ENGLISH_TEXT.test(current) && !translatePortugueseInterfaceText(current)) continue;
           if (!originals.has(name)) originals.set(name, current);
           const value = originals.get(name)!;
-          items.push({ value, apply: translated => element.setAttribute(name, translated) });
+          items.push({ value, apply: translated => {
+            if (element.getAttribute(name) !== translated) element.setAttribute(name, translated);
+          } });
         }
       });
       return items;
@@ -129,7 +148,6 @@ export function InterfaceTranslator() {
 
     const translate = async () => {
       if (cancelled) return;
-      if (language === 'en') { restore(); document.documentElement.dataset.translationState = 'source'; setStatus('source'); return; }
       document.documentElement.dataset.translationState = 'translating';
       setStatus('translating');
       const items = collect();

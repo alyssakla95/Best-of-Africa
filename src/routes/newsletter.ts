@@ -15,7 +15,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // POST /newsletter/subscribe
 // ───────────────────────────────────────────────────────────────────────────────
 router.post('/subscribe', async (c) => {
-    // Rate limit: 5 subscribe attempts per minute per IP
+    // Rate limit: 20 subscribe attempts per minute per IP (free tier)
     const ip = c.req.header('CF-Connecting-IP') || 'unknown';
     const rl = await checkRateLimit(c.env, `newsletter:${ip}`, 'free');
     Object.entries(rateLimitHeaders(rl)).forEach(([k, v]) => c.header(k, v));
@@ -63,7 +63,8 @@ router.post('/subscribe', async (c) => {
          VALUES (?, ?, ?, 1, ?)`
     ).bind(id, email.toLowerCase(), frequency, new Date().toISOString()).run();
 
-    const unsubscribeUrl = `https://api.boastory.com/api/v1/newsletter/unsubscribe?token=${id}`;
+    const apiBase = c.env.PUBLIC_API_URL || new URL(c.req.url).origin;
+    const unsubscribeUrl = `${apiBase}/api/v1/newsletter/unsubscribe?token=${id}`;
 
     // Send Welcome Email
     const htmlEmail = `

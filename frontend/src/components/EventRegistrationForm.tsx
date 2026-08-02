@@ -58,7 +58,7 @@ export function EventRegistrationForm({ eventId, onSuccess }: EventRegistrationF
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/services/events/${eventId}/register`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1'}/services/events/${eventId}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),

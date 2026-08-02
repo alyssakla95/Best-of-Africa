@@ -113,42 +113,6 @@ export async function throttle(
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Get User Tier from API Key or Session
-// ───────────────────────────────────────────────────────────────────────────────
-export async function getUserTier(
-    env: Env,
-    apiKey?: string,
-    sessionId?: string
-): Promise<{ tier: SubscriptionTier; userId: string | null }> {
-    // Check API key first
-    if (apiKey) {
-        const client = await env.DB.prepare(`
-            SELECT id, subscription_tier FROM clients WHERE api_key = ?
-        `).bind(apiKey).first<{ id: string; subscription_tier: SubscriptionTier }>();
-
-        if (client) {
-            return { tier: client.subscription_tier || 'free', userId: client.id };
-        }
-    }
-
-    // Check session
-    if (sessionId) {
-        const pref = await env.DB.prepare(`
-            SELECT up.id, c.subscription_tier
-            FROM user_preferences up
-            LEFT JOIN clients c ON up.client_id = c.id
-            WHERE up.session_id = ?
-        `).bind(sessionId).first<{ id: string; subscription_tier: SubscriptionTier | null }>();
-
-        if (pref) {
-            return { tier: pref.subscription_tier || 'free', userId: pref.id };
-        }
-    }
-
-    return { tier: 'free', userId: null };
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
 // Rate Limit Headers
 // ───────────────────────────────────────────────────────────────────────────────
 export function rateLimitHeaders(result: RateLimitResult): Record<string, string> {
@@ -183,41 +147,4 @@ export function rateLimitResponse(result: RateLimitResult): Response {
             },
         }
     );
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
-// Middleware Function
-// ───────────────────────────────────────────────────────────────────────────────
-export async function rateLimitMiddleware(
-    request: Request,
-    env: Env
-): Promise<{ proceed: boolean; response?: Response; headers: Record<string, string> }> {
-    // Get identifier (API key or IP)
-    const apiKey = request.headers.get('X-API-Key') || request.headers.get('Authorization')?.replace('Bearer ', '');
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const identifier = apiKey || ip;
-
-    // Get session from cookie
-    const cookies = request.headers.get('Cookie') || '';
-    const sessionMatch = cookies.match(/session_id=([^;]+)/);
-    const sessionId = sessionMatch?.[1];
-
-    // Determine tier
-    const { tier } = await getUserTier(env, apiKey || undefined, sessionId);
-
-    // Check rate limit
-    const result = await checkRateLimit(env, identifier, tier);
-
-    if (!result.allowed) {
-        return {
-            proceed: false,
-            response: rateLimitResponse(result),
-            headers: rateLimitHeaders(result),
-        };
-    }
-
-    return {
-        proceed: true,
-        headers: rateLimitHeaders(result),
-    };
 }

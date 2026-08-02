@@ -163,7 +163,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             return next;
         });
         if (currentIndex === index) {
-            nextTrack();
+            // The following track shifts into the current slot — keep the index
+            // (no nextTrack(), which would skip it), clamp when the removed
+            // track was last, and reset when the queue empties.
+            setCurrentIndex(prev => {
+                const remaining = playlist.length - 1;
+                if (remaining <= 0) return -1;
+                return Math.min(prev, remaining - 1);
+            });
         } else if (currentIndex > index) {
             setCurrentIndex(prev => prev - 1);
         }

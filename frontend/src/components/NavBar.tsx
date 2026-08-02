@@ -183,7 +183,7 @@ export const NavBar: React.FC = () => {
                     <div className="hidden lg:block w-px h-6 bg-border mx-2" />
 
                     <Button size="sm" asChild className="hidden h-10 rounded-md bg-navy px-5 text-[11px] font-bold uppercase tracking-widest text-white shadow-none transition-colors hover:bg-navy-mid lg:flex xl:px-7">
-                        <Link to="/login">{isAuthenticated ? t('nav.account', 'Account') : t('nav.signin', 'Sign In')}</Link>
+                        <Link to={isAuthenticated ? '/settings' : '/login'}>{isAuthenticated ? t('nav.account', 'Account') : t('nav.signin', 'Sign In')}</Link>
                     </Button>
 
                     {/* Mobile: compact Sign In + Hamburger */}

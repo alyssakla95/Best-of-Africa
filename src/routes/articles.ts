@@ -195,7 +195,7 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
         articleResults = await localizeArticleList(c.env, diversifyCoverageRows(articles.results || [], limitNum), reqLang);
     } catch (err) {
         console.error('[articles] list query failed:', err);
-        // Return empty paginated response rather than 500
+        return c.json({ error: 'internal_error', message: 'Failed to load articles' }, 500);
     }
 
     const response: PaginatedResponse<ArticleListItem> = {

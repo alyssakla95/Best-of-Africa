@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useMember } from '../context/MemberContext';
 import { SEO } from '../components/SEO';
 import { toast } from 'sonner';
 
@@ -22,25 +23,26 @@ const AVAILABLE_SECTORS = [
 ];
 
 export const SettingsPage: React.FC = () => {
-    const { logout, isAuthenticated } = useAuth();
+    const { logout, isAuthenticated, user: authUser } = useAuth();
+    const { memberData } = useMember();
     const [user, setUser] = useState(() => {
         const saved = localStorage.getItem('boa_client_info');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
                 return {
-                    name: parsed.name || 'Guest User',
-                    email: parsed.email || 'guest@example.com',
-                    role: parsed.organization || 'Viewer',
-                    tier: parsed.tier || 'Basic',
+                    name: parsed.name || '',
+                    email: parsed.email || authUser?.email || '',
+                    role: parsed.organization || '',
+                    tier: parsed.tier || authUser?.tier || 'free',
                 };
             } catch (e) { console.error('Failed to parse user info', e); }
         }
         return {
-            name: 'Guest User',
-            email: 'guest@example.com',
-            role: 'Viewer',
-            tier: 'Basic',
+            name: '',
+            email: authUser?.email || '',
+            role: '',
+            tier: authUser?.tier || 'free',
         };
     });
 
@@ -241,7 +243,9 @@ export const SettingsPage: React.FC = () => {
                                         <Badge variant="secondary" className="bg-background/10 text-primary hover:bg-background/20 mr-2">
                                             {user.tier}
                                         </Badge>
-                                        <span className="text-sm text-muted-foreground">Access valid until Dec 2026</span>
+                                        {memberData?.expires_in_days != null && (
+                                            <span className="text-sm text-muted-foreground">Access renews in {memberData.expires_in_days} days</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -355,23 +359,6 @@ export const SettingsPage: React.FC = () => {
 
                     {/* SECURITY & DANGER ZONE */}
                     <div className="grid gap-6 md:grid-cols-2">
-                        <Card className="border-border shadow-sm">
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <LockClosedIcon className="h-5 w-5 text-primary" />
-                                    <CardTitle className="text-base font-bold text-foreground">Security</CardTitle>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Button variant="outline" className="w-full justify-start border-border" disabled>
-                                    Change Password
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start border-border" disabled>
-                                    Two-Factor Authentication
-                                </Button>
-                            </CardContent>
-                        </Card>
-
                         <Card className="border-destructive/20 bg-destructive/5 shadow-sm">
                             <CardHeader>
                                 <div className="flex items-center gap-2">

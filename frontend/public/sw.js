@@ -1,4 +1,4 @@
-const CACHE_NAME = 'boa-shell-v5';
+const CACHE_NAME = 'boa-shell-v6';
 const READER_CACHE_NAME = 'boa-reader-data-v4';
 const SHELL_URLS = ['/', '/index.html', '/manifest.json'];
 
@@ -38,6 +38,12 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
+        // Clean up superseded caches and take control. Do NOT force-navigate
+        // open clients here: the forced navigation can stall indefinitely,
+        // which suspends the page's JS runtime and leaves a visually intact
+        // but unresponsive zombie tab. Stale payloads are already handled by
+        // the network-first navigation handler above and the app's
+        // lazy-chunk reload recovery.
         Promise.all([
             caches.keys().then((names) => Promise.all(
                 names
@@ -46,13 +52,6 @@ self.addEventListener('activate', (event) => {
                     .map((name) => caches.delete(name))
             )),
             self.clients.claim(),
-        ]).then(() => self.clients.matchAll({ type: 'window' }))
-          .then((clients) => Promise.all(clients.map((client) => {
-              // One activation-only navigation moves a tab that was initially
-              // rendered by an older worker onto the new reader-cache version.
-              // Without it, that tab can keep showing its pre-backfill payload
-              // until the reader manually reloads a second time.
-              return 'navigate' in client ? client.navigate(client.url) : undefined;
-          })))
+        ])
     );
 });

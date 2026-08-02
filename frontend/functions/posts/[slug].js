@@ -87,7 +87,6 @@ export async function onRequest(context) {
 
   try {
     const origin = new URL(request.url).origin;
-    const DEFAULT_IMG = `${origin}/og-default.jpg`;
     const slug = params.slug;
     const r = await fetch(`${apiBase}/articles/${encodeURIComponent(slug)}`, {
       headers: { accept: 'application/json' },
@@ -99,20 +98,22 @@ export async function onRequest(context) {
       if (a && a.title) {
         const title = `${strip(a.title)} | BOA-Story`;
         const desc = strip(a.summary || a.subtitle || 'Real, grounded stories about African lives, cities, and ideas.').slice(0, 200);
-        const img = a.hero_image_url || DEFAULT_IMG;
         const url = `${origin}/posts/${slug}`;
 
         html = html.replace(/<title>[^<]*<\/title>/i, `<title>${esc(title)}</title>`);
         html = setMeta(html, 'property', 'og:type', 'article');
         html = setMeta(html, 'property', 'og:title', title);
         html = setMeta(html, 'property', 'og:description', desc);
-        html = setMeta(html, 'property', 'og:image', img);
         html = setMeta(html, 'property', 'og:url', url);
         html = setMeta(html, 'name', 'twitter:title', title);
         html = setMeta(html, 'name', 'twitter:description', desc);
-        html = setMeta(html, 'name', 'twitter:image', img);
         html = setMeta(html, 'name', 'twitter:url', url);
         html = setMeta(html, 'name', 'description', desc);
+
+        if (a.hero_image_url) {
+          html = setMeta(html, 'property', 'og:image', a.hero_image_url);
+          html = setMeta(html, 'name', 'twitter:image', a.hero_image_url);
+        }
 
         // Prerendered fold: preload the hero from <head> (the scanner issues
         // the request at parse time, well before React), and inject the static

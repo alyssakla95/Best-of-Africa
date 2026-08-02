@@ -18,7 +18,7 @@ const PROVIDER_DEFAULTS: Record<ProviderName, { model: string; label: string; ba
     openai:     { model: 'gpt-4o',                         label: 'OpenAI',              base_url: 'https://api.openai.com/v1' },
     anthropic:  { model: 'claude-sonnet-4-6',               label: 'Anthropic',           base_url: 'https://api.anthropic.com' },
     gemini:     { model: 'gemini-2.5-pro',                  label: 'Google Gemini',       base_url: 'https://generativelanguage.googleapis.com/v1beta' },
-    openrouter: { model: 'anthropic/claude-sonnet-4-6',     label: 'OpenRouter',          base_url: 'https://openrouter./api/v1' },
+    openrouter: { model: 'anthropic/claude-sonnet-4-6',     label: 'OpenRouter',          base_url: 'https://openrouter.ai/api/v1' },
     moonshot:   { model: 'moonshot-v1-32k',                 label: 'Moonshot AI (Kimi)',  base_url: 'https://api.moonshot.cn/v1' },
     workers_ai: { model: MODELS.TEXT_GENERATION,             label: 'Cloudflare Workers AI' },
 };

@@ -61,8 +61,10 @@ ${content.slice(0, 1000)}`;
 // GET /admin/articles - List all articles (including drafts)
 router.get('/articles', async (c) => {
     const { page = '1', limit = '20', status } = c.req.query();
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, parseInt(limit));
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const pageNum = Math.max(1, Number.isNaN(parsedPage) ? 1 : parsedPage);
+    const limitNum = Math.min(100, Number.isNaN(parsedLimit) ? 20 : parsedLimit);
     const offset = (pageNum - 1) * limitNum;
 
     let whereClause = '';

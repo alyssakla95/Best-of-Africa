@@ -11,7 +11,7 @@ export const NotificationBell: React.FC = () => {
     const [open, setOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
-    const { data } = useQuery({
+    const { data, isError } = useQuery({
         queryKey: ['reader-notifications'],
         queryFn: api.getNotifications,
         refetchInterval: 60_000,
@@ -80,7 +80,13 @@ export const NotificationBell: React.FC = () => {
                         </div>
 
                         <div className="max-h-80 overflow-y-auto divide-y divide-primary/5">
-                            {notifications.length === 0 ? (
+                            {isError ? (
+                                <div className="py-10 text-center text-primary/40">
+                                    <BellOffIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">Notifications unavailable</p>
+                                    <p className="text-xs mt-1">Could not reach the service. It will retry automatically.</p>
+                                </div>
+                            ) : notifications.length === 0 ? (
                                 <div className="py-10 text-center text-primary/40">
                                     <BellOffIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
                                     <p className="text-sm">No notifications yet</p>

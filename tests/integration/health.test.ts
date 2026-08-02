@@ -37,9 +37,9 @@ describe('Health Check Endpoints', () => {
             const req = new Request('http://localhost/health/deep');
             const res = await app.fetch(req, env);
 
-            expect(res.status).toBe(200);
-            
             const body = await res.json();
+            // Degraded states must surface as 503 so external monitors notice.
+            expect(res.status).toBe(body.status === 'healthy' ? 200 : 503);
             expect(body.status).toBeDefined();
             expect(body.timestamp).toBeDefined();
             expect(body.version).toBeDefined();

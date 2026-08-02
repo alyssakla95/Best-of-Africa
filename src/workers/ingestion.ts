@@ -382,7 +382,9 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     ORDER BY
       CASE
         WHEN name IN ('UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization', 'African Development Bank Group') THEN 0
-        WHEN name IN ('BBC Africa', 'The Africa Report', 'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
+        WHEN name IN ('BBC Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
+                      'France 24 Africa', 'Deutsche Welle Africa', 'Al Jazeera', 'The Africa Report',
+                      'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
         WHEN name LIKE 'AllAfrica%' THEN 3
         ELSE 2
       END,
@@ -678,6 +680,12 @@ export const DEFAULT_SOURCES = [
     { name: 'AllAfrica', type: 'rss', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf', sector_id: null, country_code: null },
     { name: 'CNBC Africa', type: 'rss', url: 'https://www.cnbcafrica.com/feed/', sector_id: 'finance', country_code: null },
     { name: 'BBC Africa', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/africa/rss.xml', sector_id: null, country_code: null },
+    { name: 'Financial Times Africa', type: 'rss', url: 'https://www.ft.com/world/africa?format=rss', sector_id: 'finance', country_code: null },
+    { name: 'The Economist Africa', type: 'rss', url: 'https://www.economist.com/middle-east-and-africa/rss.xml', sector_id: 'finance', country_code: null },
+    { name: 'The Guardian Africa', type: 'rss', url: 'https://www.theguardian.com/world/africa/rss', sector_id: null, country_code: null },
+    { name: 'France 24 Africa', type: 'rss', url: 'https://www.france24.com/en/africa/rss', sector_id: null, country_code: null },
+    { name: 'Deutsche Welle Africa', type: 'rss', url: 'https://rss.dw.com/rdf/rss-en-africa', sector_id: null, country_code: null },
+    { name: 'Al Jazeera', type: 'rss', url: 'https://www.aljazeera.com/xml/rss/all.xml', sector_id: null, country_code: null },
     { name: 'African Arguments', type: 'rss', url: 'https://africanarguments.org/feed/', sector_id: null, country_code: null },
     { name: 'Africa News', type: 'rss', url: 'https://www.africanews.com/rss', sector_id: null, country_code: null },
     { name: 'The Continent', type: 'rss', url: 'https://www.thecontinent.org/feed/', sector_id: null, country_code: null },

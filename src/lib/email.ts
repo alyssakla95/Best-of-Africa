@@ -184,7 +184,7 @@ export async function sendRegistrationConfirmation(env: EmailEnv | undefined, {
  * Convenience method to send the standardized Member Welcome Email.
  */
 export async function sendWelcomeEmail(env: EmailEnv | undefined, email: string, name: string, tier: string): Promise<boolean> {
-    const tierDisplay = tier === 'enterprise' ? 'Founding Patron' : tier === 'premium' ? 'Founding Member' : 'Supporter';
+    const tierDisplay = tier === 'enterprise' ? 'Founding Backer' : tier === 'premium' ? 'Sustaining Member' : 'Reader Member';
     
     const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, \`Segoe UI\`, Roboto, Helvetica, Arial, sans-serif; background-color: #0A0F1E; padding: 40px 20px; color: #ffffff;">

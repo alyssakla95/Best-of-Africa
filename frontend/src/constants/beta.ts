@@ -8,6 +8,7 @@ import type { ArticleListItem } from '../types';
 // ─── External links ───────────────────────────────────────────────────────────
 
 export const KO_FI_URL = 'https://ko-fi.com/maillescortes';
+export const KO_FI_MEMBERSHIP_URL = `${KO_FI_URL}/tiers`;
 
 // ─── Country flag emoji map (all 54 African nations) ─────────────────────────
 
@@ -35,6 +36,7 @@ export interface MembershipTier {
   id: string;
   name: string;
   price: string;
+  summary: string;
   features: string[];
   ctaLabel: string;
   recommended?: boolean;
@@ -43,93 +45,96 @@ export interface MembershipTier {
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: 'supporter',
-    name: 'Supporter',
-    price: '$5',
+    name: 'Reader Member',
+    price: '$4',
+    summary: 'The complete reader product at an accessible launch price.',
     features: [
-      'Access to all published stories',
-      'Behind-the-scenes creator updates',
-      'Early supporter badge on your profile',
+      'Every published story and evidence brief in full',
+      'Country, sector and continental intelligence pages',
+      'Article audio, available translations and personal library',
     ],
-    ctaLabel: 'Become a Supporter',
+    ctaLabel: 'Choose Reader Member',
   },
   {
     id: 'founding',
-    name: 'Founding Member',
-    price: '$15',
+    name: 'Sustaining Member',
+    price: '$9',
+    summary: 'The same complete access, with more support for evidence production.',
     features: [
-      'Everything in Supporter',
-      'Vote on the next story topic via monthly poll',
-      'Early access to new drafts',
+      'Everything in Reader Member',
+      'Supports deeper country and sector evidence updates',
+      'Early-member recognition while the product is being proven',
     ],
-    ctaLabel: 'Become a Founding Member',
+    ctaLabel: 'Choose Sustaining Member',
     recommended: true,
   },
   {
     id: 'partner',
-    name: 'Founding Patron',
-    price: '$50',
+    name: 'Founding Backer',
+    price: '$19',
+    summary: 'For readers who want to underwrite affordable access for others.',
     features: [
-      'Everything in Founding Member',
-      'Monthly 1-on-1 chat about the project',
-      'Credited as a core sponsor in every published report',
+      'Everything in Sustaining Member',
+      'Optional founding-backer recognition on your profile',
+      'Helps fund broader country coverage and source acquisition',
     ],
-    ctaLabel: 'Become a Patron',
+    ctaLabel: 'Become a Founding Backer',
   },
 ];
 
 export const TIER_LABELS: Record<string, { title: string; desc: string; perks: string[] }> = {
   basic: {
-    title: 'Supporter',
-    desc: 'Access to stories and creator updates.',
+    title: 'Reader Member',
+    desc: 'Complete reader access at the introductory price.',
     perks: [
-      'Access to all published stories',
-      'Behind-the-scenes creator updates',
-      'Early supporter badge on your profile',
+      'Every published story and evidence brief in full',
+      'Country, sector and continental intelligence pages',
+      'Article audio, available translations and personal library',
     ],
   },
   premium: {
-    title: 'Founding Member',
-    desc: 'Direct input on future story coverage.',
+    title: 'Sustaining Member',
+    desc: 'Complete access with more support for evidence production.',
     perks: [
-      'Everything in Supporter',
-      'Vote on the next story topic via monthly poll',
-      'Early access to new drafts',
+      'Everything in Reader Member',
+      'Supports deeper country and sector evidence updates',
+      'Early-member recognition while the product is being proven',
     ],
   },
   enterprise: {
-    title: 'Founding Patron',
-    desc: 'Name credited on the platform as a core sponsor.',
+    title: 'Founding Backer',
+    desc: 'Complete access while underwriting affordable reader membership.',
     perks: [
-      'Everything in Founding Member',
-      'Monthly 1-on-1 chat about the project',
-      'Credited as a core sponsor in every published report',
+      'Everything in Sustaining Member',
+      'Optional founding-backer recognition on your profile',
+      'Helps fund broader country coverage and source acquisition',
     ],
   },
   supporter: {
-    title: 'Supporter',
-    desc: 'Access to stories and creator updates.',
+    title: 'Reader Member',
+    desc: 'Complete reader access at the introductory price.',
     perks: [
-      'Access to all published stories',
-      'Behind-the-scenes creator updates',
-      'Early supporter badge on your profile',
+      'Every published story and evidence brief in full',
+      'Country, sector and continental intelligence pages',
+      'Article audio, available translations and personal library',
     ],
   },
   founding: {
-    title: 'Founding Member',
-    desc: 'Direct input on future story coverage.',
+    title: 'Sustaining Member',
+    desc: 'Complete access with more support for evidence production.',
     perks: [
-      'Everything in Supporter',
-      'Vote on the next story topic via monthly poll',
-      'Early access to new drafts',
+      'Everything in Reader Member',
+      'Supports deeper country and sector evidence updates',
+      'Early-member recognition while the product is being proven',
     ],
   },
   partner: {
-    title: 'Founding Patron',
-    desc: 'Name credited on the platform as a core sponsor.',
+    title: 'Founding Backer',
+    desc: 'Complete access while underwriting affordable reader membership.',
     perks: [
-      'Everything in Founding Member',
-      'Monthly 1-on-1 chat about the project',
-      'Credited as a core sponsor in every published report',
+      'Everything in Sustaining Member',
+      'Optional founding-backer recognition on your profile',
+      'Helps fund broader country coverage and source acquisition',
     ],
   },
 };

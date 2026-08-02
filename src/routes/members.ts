@@ -13,10 +13,15 @@ const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 // ───────────────────────────────────────────────────────────────────────────────
 // Tier mapping: Ko-fi amount → BoA member tier
 // ───────────────────────────────────────────────────────────────────────────────
-function tierFromAmount(amount: number): string {
-    if (amount >= 50) return 'enterprise';   // Founding Patron ($50+)
-    if (amount >= 15) return 'premium';       // Founding Member ($15+)
-    return 'basic';                           // Supporter ($5+)
+export function tierFromPayment(amount: number, levelName = ''): string {
+    const level = levelName.toLowerCase();
+    if (level.includes('founding backer')) return 'enterprise';
+    if (level.includes('sustaining member')) return 'premium';
+    if (level.includes('reader member')) return 'basic';
+
+    if (amount >= 19) return 'enterprise';   // $19 monthly
+    if (amount >= 9) return 'premium';       // $9 monthly
+    return 'basic';                          // $4 monthly
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -60,7 +65,13 @@ router.post('/kofi-webhook', async (c) => {
     }
 
     const amount = parseFloat(payload.amount || '0');
-    const tier = tierFromAmount(amount);
+    const levelName = String(
+        payload.tier_name
+        || payload.membership_level_name
+        || payload.shop_items?.[0]?.variation_name
+        || '',
+    );
+    const tier = tierFromPayment(amount, levelName);
     const name = (payload.from_name as string) || 'BoA Member';
     const isSubscription = type === 'Subscription';
 

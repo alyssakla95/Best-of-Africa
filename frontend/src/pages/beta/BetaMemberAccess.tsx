@@ -175,7 +175,7 @@ export const BetaMemberAccess = () => {
     <div className="selection:bg-accent selection:text-primary flex flex-col min-h-screen bg-background text-foreground">
       <SEO 
         title="Member Access | BOA-Story" 
-        description="Access your Founding Member benefits and premium stories."
+        description="Access your Reader Member account and complete reader product."
       />
       
       {visiblePhase === 'success' && memberData ? (
@@ -204,7 +204,7 @@ export const BetaMemberAccess = () => {
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
                     <div className="inline-flex items-center gap-3 bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold uppercase tracking-widest px-5 py-2 rounded-full mb-8 backdrop-blur-md">
                         <Lock size={14} />
-                        Founding Members
+                        Reader Members
                     </div>
                     <h1 className="text-[4rem] font-serif leading-[0.9] tracking-tighter mb-6 text-white drop-shadow-2xl">
                         Unrestricted <br/><span className="text-accent italic">Intelligence.</span>

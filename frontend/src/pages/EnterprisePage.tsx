@@ -72,10 +72,43 @@ const measures = [
   },
 ];
 
+const commercialPackages: Array<{
+  name: string;
+  price: string;
+  timing: string;
+  description: string;
+  inclusions: string[];
+  recommended?: boolean;
+}> = [
+  {
+    name: 'Focused market brief',
+    price: '$750',
+    timing: '10 business days',
+    description: 'A lower-risk first engagement for one defined question in one country and one sector.',
+    inclusions: ['One-country evidence file', 'Decision brief and source ledger', 'Priority diligence questions', '45-minute findings review'],
+  },
+  {
+    name: 'Comparative entry pilot',
+    price: '$1,800',
+    timing: 'Four weeks',
+    description: 'The complete design-partner pilot for a team choosing between as many as three markets.',
+    inclusions: ['Up to three candidate countries', 'All six published pilot deliverables', 'One consolidated revision', '60-minute closeout review'],
+    recommended: true,
+  },
+  {
+    name: 'Monitoring extension',
+    price: '$300',
+    timing: 'per month',
+    description: 'Post-pilot monitoring of the assumptions and signals recorded in the completed decision file.',
+    inclusions: ['Weekly source monitoring', 'Monthly change memorandum', 'Material-signal alerts', 'Cancel before the next month'],
+  },
+];
+
 const sectionLinks = [
   ['Who it is for', 'fit'],
   ['Decision workflow', 'workflow'],
   ['Pilot scope', 'pilot'],
+  ['Introductory pricing', 'pricing'],
   ['Success measures', 'measures'],
   ['Commercial status', 'status'],
 ] as const;
@@ -217,8 +250,8 @@ export const EnterprisePage = () => (
             <div className="mt-8 rounded-2xl border border-white/20 p-5">
               <p className="text-sm font-bold text-white">Commercial terms</p>
               <p className="mt-2 text-sm leading-7 text-white/70">
-                Fixed scope and fixed fee are proposed after discovery. No public price, SLA or outcome guarantee is claimed
-                until the service model has been validated with design partners.
+                Introductory design-partner pricing is published below. Applying is free; suitable work proceeds only after
+                a written scope, evidence-access check and signed agreement. No outcome, forecast or acceptance is guaranteed.
               </p>
             </div>
           </div>
@@ -232,6 +265,46 @@ export const EnterprisePage = () => (
             ))}
           </div>
         </div>
+      </div>
+    </section>
+
+    <section id="pricing" className="scroll-mt-40 border-b border-border bg-white">
+      <div className="page-container py-14 md:py-20">
+        <div className="grid gap-7 lg:grid-cols-[1fr_.72fr] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-navy/60">Introductory design-partner pricing</p>
+            <h2 className="mt-3 font-serif text-4xl text-navy md:text-5xl">A defined decision, a visible fee and limited buyer risk.</h2>
+            <p className="mt-5 text-lg leading-8 text-navy/70">
+              BOA-Story does not yet claim verified client outcomes or an independent commercial track record. These prices
+              reflect that stage while preserving a professional, tightly bounded research engagement.
+            </p>
+          </div>
+          <div className="rounded-3xl border border-navy/15 bg-navy/[0.03] p-6 text-sm leading-7 text-navy/70">
+            <p className="font-bold text-navy">Payment terms</p>
+            <p className="mt-2">No application fee. Fixed-scope work is billed 50% at commencement and 50% on delivery. Taxes, paid datasets, travel and external specialist advice are excluded unless separately agreed.</p>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          {commercialPackages.map(plan => (
+            <article key={plan.name} className={`relative flex h-full flex-col rounded-3xl border p-7 md:p-8 ${plan.recommended ? 'border-navy bg-navy text-white' : 'border-navy/15 bg-white text-navy'}`}>
+              {plan.recommended && <span className="absolute right-5 top-5 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy">Recommended first pilot</span>}
+              <p className={`text-xs font-bold uppercase tracking-[0.14em] ${plan.recommended ? 'text-white/60' : 'text-navy/55'}`}>{plan.timing}</p>
+              <h3 className={`mt-4 font-serif text-3xl ${plan.recommended ? 'text-white' : 'text-navy'}`}>{plan.name}</h3>
+              <p className="mt-5 font-serif text-5xl">{plan.price}</p>
+              <p className={`mt-5 text-sm leading-7 ${plan.recommended ? 'text-white/70' : 'text-navy/65'}`}>{plan.description}</p>
+              <ul className={`mt-7 flex-1 space-y-3 text-sm ${plan.recommended ? 'text-white/85' : 'text-navy/70'}`}>
+                {plan.inclusions.map(item => <li key={item} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0" />{item}</li>)}
+              </ul>
+              <Link to="/enterprise/apply" className={`mt-8 inline-flex min-h-12 items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition-colors ${plan.recommended ? 'bg-white text-navy hover:bg-white/90' : 'border border-navy text-navy hover:bg-navy hover:text-white'}`}>
+                Define the scope
+              </Link>
+            </article>
+          ))}
+        </div>
+        <p className="mt-6 text-sm leading-7 text-navy/60">
+          Introductory prices apply only to the stated scope and may change after the design-partner phase. Any different scope receives a written quotation before commitment.
+        </p>
       </div>
     </section>
 

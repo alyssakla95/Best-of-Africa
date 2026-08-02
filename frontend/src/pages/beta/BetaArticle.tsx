@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Twitter, Linkedin, Link2, Check, Loader2, Bookmark } from 'lucide-react';
+import { ArrowLeft, Twitter, Linkedin, Link2, Check, Bookmark } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BetaAudioPlayer } from '../../components/beta';
 import { ScrollReveal } from '../../components/beta/ScrollReveal';
@@ -220,10 +220,6 @@ export const BetaArticle = () => {
   const { isMember } = useMember();
   const { t, language } = useLanguage();
 
-  const [lens, setLens] = useState<'original' | 'investor' | 'government' | 'explorer'>('original');
-  const [isReframing, setIsReframing] = useState(false);
-  const [reframedContent, setReframedContent] = useState<Record<string, string>>({});
-
   // Refetch when the UI language changes — the API overlays a stored fr/ar/pt
   // translation when one exists for this article.
   const { data, isLoading, isError } = useQuery<ArticleResponse>({
@@ -361,24 +357,6 @@ export const BetaArticle = () => {
 
   // Content is whatever the API returned, full for members, truncated for guests
   const articleContent = article.content || '';
-
-  const activeContent = lens === 'original' ? articleContent : (reframedContent[lens] || articleContent);
-
-  const handleLensChange = async (newLens: 'original' | 'investor' | 'government' | 'explorer') => {
-    setLens(newLens);
-    if (newLens === 'original' || reframedContent[newLens]) return;
-    
-    setIsReframing(true);
-    try {
-      const res = await api.reframeArticle(slug!, newLens);
-      setReframedContent(prev => ({...prev, [newLens]: res.content}));
-    } catch(e) {
-      console.error(e);
-      setLens('original');
-    } finally {
-      setIsReframing(false);
-    }
-  };
 
   const relatedArticles: ArticleListItem[] = (featuredData?.data || [])
     .filter((a: ArticleListItem) => a.slug !== slug)
@@ -542,31 +520,9 @@ export const BetaArticle = () => {
 
 
         <article className="relative pb-32">
-          {/* Lens Switcher for Members */}
-          {isMember && !isPaywalled && articleContent.length > 0 && (
-            <div className="mb-8 flex items-center gap-2 p-1.5 bg-secondary border border-primary/10 rounded-full w-fit">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40 pl-3 pr-2">{t('article.read_as', 'Read as:')}</span>
-              {(['original', 'investor', 'government', 'explorer'] as const).map(l => (
-                <button
-                  key={l}
-                  onClick={() => handleLensChange(l)}
-                  disabled={isReframing && lens === l}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 ${
-                    lens === l 
-                      ? 'bg-background text-primary shadow-sm' 
-                      : 'text-primary/50 hover:text-primary hover:bg-foreground/50'
-                  }`}
-                >
-                  {isReframing && lens === l && <Loader2 size={12} className="animate-spin" />}
-                  {t('article.lens_' + l, l)}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Article content */}
-          <div data-source-language={lens === 'original' ? article.content_language : 'en'} dir={contentDir} className={`transition-opacity duration-500 ${isReframing ? 'opacity-50' : 'opacity-100'}`}>
-            <ArticleContent content={activeContent} />
+          <div data-source-language={article.content_language} dir={contentDir}>
+            <ArticleContent content={articleContent} />
             {/* End mark — the classic editorial "story ends here" slug. */}
             {!isPaywalled && (
               <div aria-hidden="true" className="mt-2 flex items-center gap-3">
@@ -664,14 +620,14 @@ export const BetaArticle = () => {
                     {t('article.paywall_desc', 'Back independent African coverage and unlock full stories, audio and personalized reading tools.')}
                   </p>
                   <ul className="text-left space-y-2.5 mb-7 max-w-xs mx-auto text-[15px] text-white/85">
-                    {[t('article.bullet_full', 'Every story & report, in full'), t('article.bullet_bts', 'Behind-the-scenes founder updates'), t('article.bullet_vote', 'Founding members vote on what we cover next')].map(b => (
+                    {[t('article.bullet_full', 'Every story & report, in full'), t('article.bullet_bts', 'Article audio, available translations and personal library'), t('article.bullet_vote', 'Country, sector and continental intelligence')].map(b => (
                       <li key={b} className="flex items-start gap-3">
                         <span className="text-accent mt-0.5 shrink-0">✓</span>{b}
                       </li>
                     ))}
                   </ul>
                   <div className="mb-5 flex items-baseline justify-center gap-2">
-                    <span className="font-serif text-[2.75rem] leading-none text-white">$5</span>
+                    <span className="font-serif text-[2.75rem] leading-none text-white">$4</span>
                     <span className="text-white/60 text-sm">{t('article.per_month_start', '/month to start')}</span>
                   </div>
                   <a
@@ -737,7 +693,7 @@ export const BetaArticle = () => {
               <span className="inline-flex items-center gap-2 text-accent font-bold uppercase tracking-[0.16em] text-[11px] mb-4">{t('article.indep_journalism', 'Independent coverage')}</span>
               <p className="font-serif text-white text-2xl md:text-[1.75rem] mb-3">{t('article.enjoyed', 'Enjoyed this story?')}</p>
               <p className="text-white/70 text-[15px] mb-7 max-w-md mx-auto leading-relaxed">
-                {t('article.enjoyed_desc', 'BOA-Story is reader-funded and independent. Founding members keep these stories coming, and help decide what we cover next.')}
+                {t('article.enjoyed_desc', 'BOA-Story is reader-funded. Paid members support broader country coverage, source acquisition and deeper evidence briefs.')}
               </p>
               <a
                 href={KO_FI_URL}
@@ -745,9 +701,9 @@ export const BetaArticle = () => {
                 rel="noopener noreferrer"
                 className="inline-block bg-accent text-navy font-bold uppercase tracking-[0.06em] text-[12px] px-8 py-4 rounded-full hover:bg-gold-italic transition-all hover:-translate-y-0.5"
               >
-                {t('article.become_member', 'Become a Founding Member')}
+                {t('article.become_member', 'Become a Reader Member')}
               </a>
-              <p className="mt-4 text-[11px] text-white/70 uppercase tracking-widest">{t('article.from_5_cancel', 'From $5/month · cancel anytime')}</p>
+              <p className="mt-4 text-[11px] text-white/70 uppercase tracking-widest">{t('article.from_4_cancel', 'From $4/month · cancel anytime')}</p>
             </ScrollReveal>
           )}
         </article>

@@ -146,7 +146,7 @@ export const BetaCountryTeaser = () => {
           <p className="text-base md:text-lg text-primary/70 max-w-2xl leading-relaxed">
             {MEMBER_PREVIEW_MODE
               ? 'From the Atlantic to the Indian Ocean, open every country hub and move directly into its reporting record.'
-              : t('countries.subtitle', 'From the Atlantic to the Indian Ocean, narrative deep-dives for every African nation, coming to Founding Members.')}
+              : t('countries.subtitle', 'From the Atlantic to the Indian Ocean, evidence-led country coverage for Reader Members.')}
           </p>
         </header>
 
@@ -250,14 +250,14 @@ export const BetaCountryTeaser = () => {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-primary/70 text-sm mb-5">{t('countries.cta_note', 'Full country story hubs unlock for Founding Members')}</p>
+            <p className="text-primary/70 text-sm mb-5">{t('countries.cta_note', 'Full country hubs unlock for Reader Members')}</p>
             <a
               href={KO_FI_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-accent text-navy font-semibold font-sans px-10 py-4 rounded-xl shadow-[0_4px_24px_rgba(15,31,61,0.3)] hover:brightness-110 transition-all hover:-translate-y-0.5"
             >
-              {t('countries.cta_btn', 'Unlock All 54 Country Hubs, Join as a Founding Member')}
+              {t('countries.cta_btn', 'Unlock all country hubs as a Reader Member')}
             </a>
           </div>
         )}

@@ -39,52 +39,36 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export const BetaMembership = () => {
-  const [isAnnual, setIsAnnual] = useState(true);
   const { t } = useLanguage();
 
   const faqItems = [
-    { q: t('landing.faq1_q', 'Is this finished?'), a: t('landing.faq1_a', 'No. The platform is currently in prototype and pre-launch stage. I am building this iteratively in public. Your early support makes the full launch possible.') },
+    { q: t('membership.access_q', 'Do higher tiers unlock more reader features?'), a: t('membership.access_a', 'No. Every paid tier receives the complete reader product. Higher levels are voluntary support choices, not artificial feature restrictions.') },
     { q: t('landing.faq2_q', 'Can I cancel?'), a: t('landing.faq2_a', 'Yes, you can cancel at any time from your Ko-fi dashboard, no lock-in periods.') },
-    { q: t('landing.faq3_q', 'Why now?'), a: t('landing.faq3_a', 'Because the continent deserves better stories than headlines about crisis and chaos. The real day-to-day energy deserves a platform built for it, and it needs independent backing to stay authentic.') },
+    { q: t('membership.proof_q', 'What is proven today?'), a: t('membership.proof_a', 'The deployed product, published material and source links can be inspected now. BOA-Story does not present unverified subscriber numbers, testimonials or independent outcome claims.') },
   ];
 
   return (
     <div className="selection:bg-accent selection:text-primary">
       <SEO 
         title="Membership | BOA-Story" 
-        description="Become a Founding Member to support this independent narrative project."
+        description="Complete BOA-Story reader access from $4 per month at transparent introductory pricing."
       />
       
 
       {/* Tiers */}
       <section className="py-12 md:py-16 px-6 max-w-6xl mx-auto">
         <div className="app-hero mb-12 max-w-4xl rounded-lg p-6 text-left sm:p-8 md:p-10">
-          <h1 className="font-serif text-[32px] md:text-[44px] leading-tight mb-4">{t('mem.title', 'Join before the official launch')}</h1>
+          <h1 className="font-serif text-[32px] md:text-[44px] leading-tight mb-4">{t('membership.title', 'Complete reader access from $4 a month')}</h1>
           <p className="text-base md:text-lg text-primary/70 max-w-2xl leading-relaxed mb-8">
-            {t('mem.subtitle', 'Your support right now covers domains, tools, and the time to report and ship.')}
+            {t('membership.subtitle', 'Introductory pricing while BOA-Story earns its track record. Every paid tier receives the same complete reader product; choose a higher level only if you want to support broader coverage.')}
           </p>
 
-          {/* Billing Toggle */}
-          <div className="inline-flex items-center p-1 bg-background border border-primary/8 rounded-full shadow-sm">
-            <button
-              onClick={() => setIsAnnual(false)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                !isAnnual ? 'bg-white text-navy shadow-sm' : 'text-primary/70 hover:text-primary'
-              }`}
-            >
-              {t('mem.monthly', 'Monthly')}
-            </button>
-            <button
-              onClick={() => setIsAnnual(true)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                isAnnual ? 'bg-white text-navy shadow-sm' : 'text-primary/70 hover:text-primary'
-              }`}
-            >
-              {t('mem.annual', 'Annual')} <span className="text-[10px] bg-accent/20 text-accent-ink px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{t('mem.free_badge', '~2 mo free')}</span>
-            </button>
-          </div>
+          <p className="text-sm font-semibold text-navy/65">{t('membership.billing', 'Simple monthly billing · cancel at any time')}</p>
         </div>
-        <MembershipTiersGrid isAnnual={isAnnual} />
+        <MembershipTiersGrid />
+        <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-7 text-navy/60">
+          {t('membership.preview_note', 'Member content is temporarily open during preview. Pricing is shown now so the eventual offer is clear before payment is required.')}
+        </p>
       </section>
 
     {/* One-off tip */}

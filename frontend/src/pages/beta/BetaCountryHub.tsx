@@ -500,7 +500,7 @@ export const BetaCountryHub = () => {
                       <ScrollReveal className="flex flex-col items-center" intensity={0.6}>
                         <Lock size={24} className="text-accent mb-3" />
                         <p className="text-sm font-bold uppercase tracking-widest text-foreground text-center px-4">
-                          {t('landing.members_only', 'Founding Members Only')}
+                          {t('landing.members_only', 'Reader Members Only')}
                         </p>
                       </ScrollReveal>
                     </div>
@@ -533,7 +533,7 @@ export const BetaCountryHub = () => {
               rel="noopener noreferrer"
               className="inline-block bg-accent text-navy font-semibold px-10 py-4 rounded-xl shadow-[0_4px_24px_rgba(15,31,61,0.3)] hover:brightness-110 transition-all hover:-translate-y-0.5"
             >
-              {t('article.become_member', 'Become a Founding Member')}
+              {t('article.become_member', 'Become a Reader Member')}
             </a>
           </ScrollReveal>
         )}

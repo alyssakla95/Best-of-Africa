@@ -213,9 +213,9 @@ export const EnterprisePilotPage = () => {
           <div className="rounded-3xl border border-navy bg-white p-6 md:p-7">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-navy/55">Published introductory pricing</p>
             <div className="mt-5 space-y-4">
-              <div><p className="font-bold text-navy">Focused market brief</p><p className="mt-1 text-sm text-navy/65">$750 fixed · one country · 10 business days</p></div>
+              <div><p className="font-bold text-navy">Focused market brief</p><p className="mt-1 text-sm text-navy/65">US$750 fixed · one country · 10 business days</p></div>
               <div className="h-px bg-navy/10" />
-              <div><p className="font-bold text-navy">Comparative entry pilot</p><p className="mt-1 text-sm text-navy/65">$1,800 fixed · up to three countries · four weeks</p></div>
+              <div><p className="font-bold text-navy">Comparative entry pilot</p><p className="mt-1 text-sm text-navy/65">US$1,800 fixed · up to three countries · four weeks</p></div>
               <div className="h-px bg-navy/10" />
               <p className="text-xs leading-6 text-navy/55">No fee to apply. Suitable work proceeds only after a written scope and agreement.</p>
             </div>

@@ -51,14 +51,14 @@ export const BetaMembership = () => {
     <div className="selection:bg-accent selection:text-primary">
       <SEO 
         title="Membership | BOA-Story" 
-        description="Complete BOA-Story reader access from $4 per month at transparent introductory pricing."
+        description="Complete BOA-Story reader access from US$4 per month at transparent introductory pricing."
       />
       
 
       {/* Tiers */}
       <section className="py-12 md:py-16 px-6 max-w-6xl mx-auto">
         <div className="app-hero mb-12 max-w-4xl rounded-lg p-6 text-left sm:p-8 md:p-10">
-          <h1 className="font-serif text-[32px] md:text-[44px] leading-tight mb-4">{t('membership.title', 'Complete reader access from $4 a month')}</h1>
+          <h1 className="font-serif text-[32px] md:text-[44px] leading-tight mb-4">{t('membership.title', 'Complete reader access from US$4 a month')}</h1>
           <p className="text-base md:text-lg text-primary/70 max-w-2xl leading-relaxed mb-8">
             {t('membership.subtitle', 'Introductory pricing while BOA-Story earns its track record. Every paid tier receives the same complete reader product; choose a higher level only if you want to support broader coverage.')}
           </p>

@@ -84,6 +84,24 @@ describe('coded Portuguese interface locale', () => {
         expect(enterprisePricingCopy.filter(value => !translatePortugueseInterfaceText(value))).toEqual([]);
     });
 
+    it('covers every membership-card benefit and credibility statement', () => {
+        const membershipCopy = [
+            'Every published story and evidence brief in full',
+            'Country, sector and continental intelligence pages',
+            'Article audio, available translations and personal library',
+            'Everything in Reader Member',
+            'Supports deeper country and sector evidence updates',
+            'Early-member recognition while the product is being proven',
+            'Everything in Sustaining Member',
+            'Optional founding-backer recognition on your profile',
+            'Helps fund broader country coverage and source acquisition',
+            'Do higher tiers unlock more reader features?',
+            'What is proven today?',
+        ];
+
+        expect(membershipCopy.filter(value => !translatePortugueseInterfaceText(value))).toEqual([]);
+    });
+
     it('covers every direct interface phrase on the two foreground intelligence pages', () => {
         const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
         const missing = new Set<string>();

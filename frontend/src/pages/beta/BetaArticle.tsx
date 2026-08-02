@@ -627,7 +627,7 @@ export const BetaArticle = () => {
                     ))}
                   </ul>
                   <div className="mb-5 flex items-baseline justify-center gap-2">
-                    <span className="font-serif text-[2.75rem] leading-none text-white">$4</span>
+                    <span className="font-serif text-[2.75rem] leading-none text-white">US$4</span>
                     <span className="text-white/60 text-sm">{t('article.per_month_start', '/month to start')}</span>
                   </div>
                   <a
@@ -703,7 +703,7 @@ export const BetaArticle = () => {
               >
                 {t('article.become_member', 'Become a Reader Member')}
               </a>
-              <p className="mt-4 text-[11px] text-white/70 uppercase tracking-widest">{t('article.from_4_cancel', 'From $4/month · cancel anytime')}</p>
+              <p className="mt-4 text-[11px] text-white/70 uppercase tracking-widest">{t('article.from_4_cancel', 'From US$4/month · cancel anytime')}</p>
             </ScrollReveal>
           )}
         </article>

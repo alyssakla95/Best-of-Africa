@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { tierFromPayment } from '../../src/routes/members';
+import { MEMBERSHIP_TIERS } from '../../frontend/src/constants/beta';
 
 describe('membership payment tier mapping', () => {
+    it('labels every displayed reader price explicitly as US dollars', () => {
+        expect(MEMBERSHIP_TIERS.map(tier => tier.price)).toEqual(['US$4', 'US$9', 'US$19']);
+    });
+
     it('maps the published monthly prices to the correct access tier', () => {
         expect(tierFromPayment(4)).toBe('basic');
         expect(tierFromPayment(9)).toBe('premium');

@@ -120,13 +120,7 @@ const PRICE_LOCALES = {
 
 export const EnterprisePage = () => {
   const { language } = useLanguage();
-  const priceFormatter = new Intl.NumberFormat(PRICE_LOCALES[language] || 'en-US', {
-    style: 'currency',
-    currency: 'USD',
-    currencyDisplay: 'symbol',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  const priceFormatter = new Intl.NumberFormat(PRICE_LOCALES[language] || 'en-US', { maximumFractionDigits: 0 });
 
   return (
   <div className="bg-white text-navy">
@@ -306,7 +300,7 @@ export const EnterprisePage = () => {
               {plan.recommended && <span className="absolute right-5 top-5 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy">Recommended first pilot</span>}
               <p className={`text-xs font-bold uppercase tracking-[0.14em] ${plan.recommended ? 'text-white/60' : 'text-navy/55'}`}>{plan.timing}</p>
               <h3 className={`mt-4 font-serif text-3xl ${plan.recommended ? 'text-white' : 'text-navy'}`}>{plan.name}</h3>
-              <p className="mt-5 font-serif text-5xl" data-no-translate>{priceFormatter.format(plan.price)}</p>
+              <p className="mt-5 font-serif text-5xl" data-no-translate>US${priceFormatter.format(plan.price)}</p>
               <p className={`mt-5 text-sm leading-7 ${plan.recommended ? 'text-white/70' : 'text-navy/65'}`}>{plan.description}</p>
               <ul className={`mt-7 flex-1 space-y-3 text-sm ${plan.recommended ? 'text-white/85' : 'text-navy/70'}`}>
                 {plan.inclusions.map(item => <li key={item} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0" />{item}</li>)}

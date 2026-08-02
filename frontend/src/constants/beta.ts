@@ -46,7 +46,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: 'supporter',
     name: 'Reader Member',
-    price: '$4',
+    price: 'US$4',
     summary: 'The complete reader product at an accessible launch price.',
     features: [
       'Every published story and evidence brief in full',
@@ -58,7 +58,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: 'founding',
     name: 'Sustaining Member',
-    price: '$9',
+    price: 'US$9',
     summary: 'The same complete access, with more support for evidence production.',
     features: [
       'Everything in Reader Member',
@@ -71,7 +71,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
     id: 'partner',
     name: 'Founding Backer',
-    price: '$19',
+    price: 'US$19',
     summary: 'For readers who want to underwrite affordable access for others.',
     features: [
       'Everything in Sustaining Member',

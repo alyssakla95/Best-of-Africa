@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect } from 'vitest';
-import { isAfricanContent } from '../../src/workers/ingestion';
+import { isAfricanContent, mentionsTargetCountry } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -87,5 +87,28 @@ describe('isAfricanContent', () => {
                 'Analysts cite weaker demand; even Lagos-bound routes saw declines.'
             )).toBe(false);
         });
+    });
+});
+
+describe('mentionsTargetCountry', () => {
+    it('rejects trusted-domain results that ignore the requested country', () => {
+        expect(mentionsTargetCountry(
+            "Congo's Ebola outbreak is second-largest on record",
+            'Health officials published new figures.',
+            'Liberia',
+        )).toBe(false);
+    });
+
+    it('finds the requested country beyond the first-ranked general stories', () => {
+        expect(mentionsTargetCountry(
+            'Liberia expands investment and trade programme',
+            'The World Bank published the procurement plan.',
+            'Liberia',
+        )).toBe(true);
+    });
+
+    it('supports official and common country-name variants', () => {
+        expect(mentionsTargetCountry('Ivory Coast cocoa exports rise', '', "Côte d'Ivoire")).toBe(true);
+        expect(mentionsTargetCountry('DRC revises its mining code', '', 'Democratic Republic of Congo')).toBe(true);
     });
 });

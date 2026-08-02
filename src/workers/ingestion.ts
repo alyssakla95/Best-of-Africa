@@ -111,6 +111,30 @@ export function isAfricanContent(title: string, content = ''): boolean {
     return false;
 }
 
+const COUNTRY_DISCOVERY_ALIASES: Record<string, string[]> = {
+    'cabo verde': ['cape verde'],
+    "cote d'ivoire": ['ivory coast'],
+    'democratic republic of congo': ['democratic republic of the congo', 'dr congo', 'drc', 'congo-kinshasa'],
+    'democratic republic of the congo': ['democratic republic of congo', 'dr congo', 'drc', 'congo-kinshasa'],
+    'republic of the congo': ['republic of congo', 'congo-brazzaville'],
+    'eswatini': ['swaziland'],
+    'sao tome and principe': ['sao tome'],
+};
+
+const normalizedDiscoveryText = (value: string) => value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’]/g, "'");
+
+/** Google can ignore a quoted country when several site filters are ORed. */
+export function mentionsTargetCountry(title: string, content: string, countryName: string): boolean {
+    const haystack = normalizedDiscoveryText(`${title} ${content}`);
+    const normalizedName = normalizedDiscoveryText(countryName);
+    const aliases = COUNTRY_DISCOVERY_ALIASES[normalizedName] || [];
+    return [normalizedName, ...aliases.map(normalizedDiscoveryText)].some(name => haystack.includes(name));
+}
+
 export async function parseRSS(url: string): Promise<RSSItem[]> {
     try {
         const response = await fetch(url, {
@@ -515,12 +539,13 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             console.log(`PRIORITY COUNTRIES (underserved): ${targetCountries.map(country => country.name).join(', ')}`);
 
-            const queries: Array<{ query: string; targetCountryCode?: string }> = [
+            const queries: Array<{ query: string; targetCountryCode?: string; targetCountryName?: string }> = [
                 ...targetCountries.map((country, index) => {
                     const domains = domainWindow(countryPool, (minute + index * 7) % countryPool.length);
                     return {
                         query: `(${domains.map(domain => `site:${domain}`).join(' OR ')}) "${country.name}" (economy OR business OR trade OR investment OR infrastructure) when:30d`,
                         targetCountryCode: country.code,
+                        targetCountryName: country.name,
                     };
                 }),
                 ...(targetSector ? [{
@@ -531,14 +556,18 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             console.log(`Aggregating topics: ${queries.map(item => item.query).join(' | ')}`);
 
-            await Promise.all(queries.map(async ({ query, targetCountryCode }) => {
+            await Promise.all(queries.map(async ({ query, targetCountryCode, targetCountryName }) => {
                 try {
                     const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
                     const items = await parseRSS(googleNewsUrl);
 
                     let acceptedFromQuery = 0;
-                    for (const item of items.slice(0, MAX_ITEMS_PER_SOURCE)) {
+                    // Inspect beyond the first few results because Google often
+                    // ranks general domain stories ahead of the quoted country.
+                    // Country-targeted queries must actually mention that country.
+                    for (const item of items.slice(0, 20)) {
                         if (discoveryItemBudget <= 0 || acceptedFromQuery >= 1) break;
+                        if (targetCountryName && !mentionsTargetCountry(item.title, item.description || '', targetCountryName)) continue;
                         // Discovery results can drift off-topic — enforce the same Africa gate.
                         if (!isAfricanContent(item.title, item.description || '')) continue;
                         const publisherProfile = sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery');
@@ -551,11 +580,26 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
                         discoveryItemBudget--;
                         acceptedFromQuery++;
+                        let fullContent = item.description || '';
+                        let imageUrl = item.imageUrl;
+                        let imageCredit = item.imageCredit;
+                        if (fullContent.length < 500 && item.link && scrapeBudget > 0) {
+                            scrapeBudget--;
+                            try {
+                                const scraped = await scrapeFullContent(item.link);
+                                if (scraped.content) fullContent = scraped.content;
+                                imageUrl ||= scraped.imageUrl;
+                                imageCredit ||= scraped.imageCredit;
+                            } catch (error) {
+                                console.warn(`[ingestion] Discovery scrape failed for ${item.link}.`, error);
+                            }
+                        }
+
                         const itemId = crypto.randomUUID();
                         await env.DB.prepare(`
                             INSERT INTO ingested_items (id, source_id, external_id, title, content, url, published_at, image_url, image_credit, image_source_url, publisher_name, publisher_url, status)
                             VALUES (?, 'google-news-aggregator', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-                        `).bind(itemId, item.link, item.title, item.description || '', item.link, item.pubDate || new Date().toISOString(), item.imageUrl, item.imageUrl ? (item.imageCredit || item.publisherName || 'Original reporting source') : null, item.imageUrl ? item.link : null, item.publisherName || 'Original reporting source', item.publisherUrl || item.link).run();
+                        `).bind(itemId, item.link, item.title, fullContent, item.link, item.pubDate || new Date().toISOString(), imageUrl, imageUrl ? (imageCredit || item.publisherName || 'Original reporting source') : null, imageUrl ? item.link : null, item.publisherName || 'Original reporting source', item.publisherUrl || item.link).run();
 
                         await env.CONTENT_QUEUE.send({
                             type: 'generate_article', ingested_item_id: itemId, source_id: 'google-news-aggregator', priority: 'normal',

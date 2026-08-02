@@ -125,6 +125,8 @@ describe('isMarketEvidence', () => {
         expect(isMarketEvidence('Sudan civil war: drones strike a classroom', 'Attacks hit civilian infrastructure.')).toBe(false);
         expect(isMarketEvidence('Refugee policy changes', 'Families seek entry after a humanitarian crisis.')).toBe(false);
         expect(isMarketEvidence('West Bank raids continue', 'Police reported further arrests.')).toBe(false);
+        expect(isMarketEvidence('Cartels export meth through Nigeria', 'Police disrupted the illicit drug trade.')).toBe(false);
+        expect(isMarketEvidence('Ebola outbreak grows in DR Congo', 'Health infrastructure is under pressure.')).toBe(false);
     });
 
     it('requires explicit economic context for ambiguous market words', () => {

@@ -158,8 +158,12 @@ const CONTEXTUAL_MARKET_EVIDENCE = [
     /\b(?:commercial|container|export|logistics|shipping|trade) ports?\b/,
 ];
 
+const CORE_ECONOMIC_SIGNAL = /\b(?:business(?:es)?|econom(?:y|ic|ics)|earnings|financ(?:e|es|ial|ing)|gdp|inflation|invest(?:ment|ments|or|ors|ing)|markets?|profits?|revenues?|tax(?:es|ation)?)\b/;
+const NON_MARKET_DOMINANT_CONTEXT = /\b(?:arms|cartels?|cocaine|crime|criminal|disease|drugs?|ebola|epidemic|fighting|humanitarian|meth|migrants?|outbreak|police|refugees?|trafficking|violence|war)\b/;
+
 export function isMarketEvidence(title: string, content: string): boolean {
     const haystack = normalizedDiscoveryText(`${title} ${content}`);
+    if (NON_MARKET_DOMINANT_CONTEXT.test(haystack) && !CORE_ECONOMIC_SIGNAL.test(haystack)) return false;
     return [...STRONG_MARKET_EVIDENCE, ...CONTEXTUAL_MARKET_EVIDENCE].some(pattern => pattern.test(haystack));
 }
 

@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect } from 'vitest';
-import { isAfricanContent, mentionsTargetCountry } from '../../src/workers/ingestion';
+import { isAfricanContent, isMarketEvidence, mentionsTargetCountry } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -110,5 +110,16 @@ describe('mentionsTargetCountry', () => {
     it('supports official and common country-name variants', () => {
         expect(mentionsTargetCountry('Ivory Coast cocoa exports rise', '', "Côte d'Ivoire")).toBe(true);
         expect(mentionsTargetCountry('DRC revises its mining code', '', 'Democratic Republic of Congo')).toBe(true);
+    });
+});
+
+describe('isMarketEvidence', () => {
+    it('accepts economic, investment and infrastructure evidence', () => {
+        expect(isMarketEvidence('Liberia expands investment and trade programme', '')).toBe(true);
+        expect(isMarketEvidence('New procurement plan', 'The infrastructure project includes port logistics.')).toBe(true);
+    });
+
+    it('rejects unrelated high-ranking stories from trusted publishers', () => {
+        expect(isMarketEvidence('Liberia burns four tons of cocaine after seizure', 'Police completed the operation.')).toBe(false);
     });
 });

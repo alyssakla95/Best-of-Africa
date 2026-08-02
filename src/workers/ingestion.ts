@@ -135,6 +135,19 @@ export function mentionsTargetCountry(title: string, content: string, countryNam
     return [normalizedName, ...aliases.map(normalizedDiscoveryText)].some(name => haystack.includes(name));
 }
 
+const MARKET_EVIDENCE_TERMS = [
+    'economy', 'economic', 'business', 'trade', 'export', 'import', 'investment', 'investor',
+    'market', 'finance', 'financial', 'bank', 'banking', 'company', 'companies', 'industry',
+    'infrastructure', 'energy', 'mining', 'agriculture', 'tourism', 'technology', 'telecom',
+    'manufacturing', 'currency', 'inflation', 'gdp', 'growth', 'debt', 'tax', 'regulation',
+    'policy', 'project', 'procurement', 'employment', 'jobs', 'logistics', 'port', 'rail',
+];
+
+export function isMarketEvidence(title: string, content: string): boolean {
+    const haystack = normalizedDiscoveryText(`${title} ${content}`);
+    return MARKET_EVIDENCE_TERMS.some(term => new RegExp(`\\b${term}`).test(haystack));
+}
+
 export async function parseRSS(url: string): Promise<RSSItem[]> {
     try {
         const response = await fetch(url, {
@@ -576,14 +589,17 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                     const items = await parseRSS(googleNewsUrl);
 
                     let acceptedFromQuery = 0;
-                    // Inspect beyond the first few results because Google often
-                    // ranks general domain stories ahead of the quoted country.
-                    // Country-targeted queries must actually mention that country.
-                    for (const item of items.slice(0, 20)) {
+                    // Filter the full fetched set in memory before spending D1
+                    // dedup calls on qualified country and market evidence.
+                    const candidates = items.filter(item =>
+                        (!targetCountryName || mentionsTargetCountry(item.title, item.description || '', targetCountryName))
+                        && isAfricanContent(item.title, item.description || '')
+                        && isMarketEvidence(item.title, item.description || '')
+                        && sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery').tier >= 2
+                    );
+                    for (const item of candidates.slice(0, 12)) {
                         if (discoveryItemBudget <= 0 || acceptedFromQuery >= 1) break;
-                        if (targetCountryName && !mentionsTargetCountry(item.title, item.description || '', targetCountryName)) continue;
                         // Discovery results can drift off-topic — enforce the same Africa gate.
-                        if (!isAfricanContent(item.title, item.description || '')) continue;
                         const publisherProfile = sourceQualityProfile(item.publisherName, item.publisherUrl || item.link, 'discovery');
                         if (publisherProfile.tier <= 1) {
                             console.warn(`[ingestion] Discovery source rejected: ${item.publisherName || item.publisherUrl || 'unknown publisher'}.`);

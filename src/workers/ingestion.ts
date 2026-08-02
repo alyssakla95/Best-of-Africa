@@ -135,17 +135,32 @@ export function mentionsTargetCountry(title: string, content: string, countryNam
     return [normalizedName, ...aliases.map(normalizedDiscoveryText)].some(name => haystack.includes(name));
 }
 
-const MARKET_EVIDENCE_TERMS = [
-    'economy', 'economic', 'business', 'trade', 'export', 'import', 'investment', 'investor',
-    'market', 'finance', 'financial', 'bank', 'banking', 'company', 'companies', 'industry',
-    'infrastructure', 'energy', 'mining', 'agriculture', 'tourism', 'technology', 'telecom',
-    'manufacturing', 'currency', 'inflation', 'gdp', 'growth', 'debt', 'tax', 'regulation',
-    'policy', 'project', 'procurement', 'employment', 'jobs', 'logistics', 'port', 'rail',
+const STRONG_MARKET_EVIDENCE = [
+    /\beconom(?:y|ic|ics)\b/, /\bbusiness(?:es)?\b/, /\bexports?\b/, /\bimports?\b/,
+    /\binvest(?:ment|ments|or|ors|ing)\b/, /\bmarkets?\b/, /\bfinanc(?:e|es|ial|ing)\b/,
+    /\bbanking\b/, /\bcompan(?:y|ies)\b/, /\bindustr(?:y|ies|ial)\b/, /\bmining\b/,
+    /\bagricultur(?:e|al)\b/, /\btourism\b/, /\btechnolog(?:y|ies|ical)\b/, /\btelecom(?:s|munications)?\b/,
+    /\bmanufactur(?:e|er|ers|ing)\b/, /\bcurrenc(?:y|ies)\b/, /\binflation\b/, /\bgdp\b/,
+    /\bdebts?\b/, /\btax(?:es|ation)?\b/, /\bregulat(?:ion|ions|ory)\b/, /\bprocurement\b/,
+    /\bemploy(?:ment|er|ers)\b/, /\bjobs?\b/, /\blogistics\b/, /\brevenues?\b/,
+    /\bprofits?\b/, /\bearnings\b/, /\boutput\b/, /\bproductivity\b/,
+];
+
+const CONTEXTUAL_MARKET_EVIDENCE = [
+    /\b(?:bilateral|continental|cross-border|export|goods|import|international|regional|services) trade\b/,
+    /\btrade (?:agreement|balance|corridor|data|deal|deficit|figures|finance|flows?|pact|policy|route|surplus|tariffs?|volumes?)\b/,
+    /\b(?:central|commercial|development|investment|reserve) banks?\b/,
+    /\binfrastructure (?:finance|financing|investment|market|plan|plans|programme|programmes|project|projects|spending)\b/,
+    /\benergy (?:capacity|finance|financing|investment|market|prices?|project|projects|sector|supply)\b/,
+    /\b(?:economic|industrial|market|revenue|trade) growth\b/,
+    /\b(?:economic|fiscal|industrial|investment|monetary|trade) policy\b/,
+    /\b(?:infrastructure|investment|power|rail|road|solar|transport) projects?\b/,
+    /\b(?:commercial|container|export|logistics|shipping|trade) ports?\b/,
 ];
 
 export function isMarketEvidence(title: string, content: string): boolean {
     const haystack = normalizedDiscoveryText(`${title} ${content}`);
-    return MARKET_EVIDENCE_TERMS.some(term => new RegExp(`\\b${term}`).test(haystack));
+    return [...STRONG_MARKET_EVIDENCE, ...CONTEXTUAL_MARKET_EVIDENCE].some(pattern => pattern.test(haystack));
 }
 
 export async function parseRSS(url: string): Promise<RSSItem[]> {

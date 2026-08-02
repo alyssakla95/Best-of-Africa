@@ -121,6 +121,16 @@ describe('isMarketEvidence', () => {
 
     it('rejects unrelated high-ranking stories from trusted publishers', () => {
         expect(isMarketEvidence('Liberia burns four tons of cocaine after seizure', 'Police completed the operation.')).toBe(false);
+        expect(isMarketEvidence('Fighting erupts in Tigray as both sides trade blame', 'A fragile peace deal is under threat.')).toBe(false);
+        expect(isMarketEvidence('Sudan civil war: drones strike a classroom', 'Attacks hit civilian infrastructure.')).toBe(false);
+        expect(isMarketEvidence('Refugee policy changes', 'Families seek entry after a humanitarian crisis.')).toBe(false);
+        expect(isMarketEvidence('West Bank raids continue', 'Police reported further arrests.')).toBe(false);
+    });
+
+    it('requires explicit economic context for ambiguous market words', () => {
+        expect(isMarketEvidence('Regional trade corridor opens', 'Exports will move through a new logistics route.')).toBe(true);
+        expect(isMarketEvidence('Solar sector secures financing', 'The energy project attracted institutional investors.')).toBe(true);
+        expect(isMarketEvidence('Central bank changes monetary policy', 'Inflation remains above target.')).toBe(true);
     });
 });
 

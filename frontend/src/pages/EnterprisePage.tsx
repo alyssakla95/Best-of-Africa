@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
+import { useLanguage } from '@/context/LanguageContext';
 
 const workflow = [
   {
@@ -74,7 +75,7 @@ const measures = [
 
 const commercialPackages: Array<{
   name: string;
-  price: string;
+  price: number;
   timing: string;
   description: string;
   inclusions: string[];
@@ -82,14 +83,14 @@ const commercialPackages: Array<{
 }> = [
   {
     name: 'Focused market brief',
-    price: '$750',
+    price: 750,
     timing: '10 business days',
     description: 'A lower-risk first engagement for one defined question in one country and one sector.',
     inclusions: ['One-country evidence file', 'Decision brief and source ledger', 'Priority diligence questions', '45-minute findings review'],
   },
   {
     name: 'Comparative entry pilot',
-    price: '$1,800',
+    price: 1800,
     timing: 'Four weeks',
     description: 'The complete design-partner pilot for a team choosing between as many as three markets.',
     inclusions: ['Up to three candidate countries', 'All six published pilot deliverables', 'One consolidated revision', '60-minute closeout review'],
@@ -97,7 +98,7 @@ const commercialPackages: Array<{
   },
   {
     name: 'Monitoring extension',
-    price: '$300',
+    price: 300,
     timing: 'per month',
     description: 'Post-pilot monitoring of the assumptions and signals recorded in the completed decision file.',
     inclusions: ['Weekly source monitoring', 'Monthly change memorandum', 'Material-signal alerts', 'Cancel before the next month'],
@@ -113,7 +114,21 @@ const sectionLinks = [
   ['Commercial status', 'status'],
 ] as const;
 
-export const EnterprisePage = () => (
+const PRICE_LOCALES = {
+  en: 'en-US', fr: 'fr-FR', pt: 'pt-PT', ar: 'ar', de: 'de-DE', zh: 'zh-CN', hi: 'hi-IN',
+} as const;
+
+export const EnterprisePage = () => {
+  const { language } = useLanguage();
+  const priceFormatter = new Intl.NumberFormat(PRICE_LOCALES[language] || 'en-US', {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'symbol',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  return (
   <div className="bg-white text-navy">
     <SEO
       title="African Market-Entry Intelligence for Global Organizations"
@@ -291,7 +306,7 @@ export const EnterprisePage = () => (
               {plan.recommended && <span className="absolute right-5 top-5 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy">Recommended first pilot</span>}
               <p className={`text-xs font-bold uppercase tracking-[0.14em] ${plan.recommended ? 'text-white/60' : 'text-navy/55'}`}>{plan.timing}</p>
               <h3 className={`mt-4 font-serif text-3xl ${plan.recommended ? 'text-white' : 'text-navy'}`}>{plan.name}</h3>
-              <p className="mt-5 font-serif text-5xl">{plan.price}</p>
+              <p className="mt-5 font-serif text-5xl" data-no-translate>{priceFormatter.format(plan.price)}</p>
               <p className={`mt-5 text-sm leading-7 ${plan.recommended ? 'text-white/70' : 'text-navy/65'}`}>{plan.description}</p>
               <ul className={`mt-7 flex-1 space-y-3 text-sm ${plan.recommended ? 'text-white/85' : 'text-navy/70'}`}>
                 {plan.inclusions.map(item => <li key={item} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0" />{item}</li>)}
@@ -353,6 +368,7 @@ export const EnterprisePage = () => (
       </div>
     </section>
   </div>
-);
+  );
+};
 
 export default EnterprisePage;

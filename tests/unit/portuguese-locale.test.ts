@@ -70,6 +70,20 @@ describe('coded Portuguese interface locale', () => {
             .toBe('A economia africana num registo verificável.');
     });
 
+    it('covers every enterprise pricing-card label and deliverable', () => {
+        const enterprisePricingCopy = [
+            '10 business days', 'Four weeks', 'per month',
+            'One-country evidence file', 'Decision brief and source ledger',
+            'Priority diligence questions', '45-minute findings review',
+            'Up to three candidate countries', 'All six published pilot deliverables',
+            'One consolidated revision', '60-minute closeout review',
+            'Weekly source monitoring', 'Monthly change memorandum',
+            'Material-signal alerts', 'Cancel before the next month',
+        ];
+
+        expect(enterprisePricingCopy.filter(value => !translatePortugueseInterfaceText(value))).toEqual([]);
+    });
+
     it('covers every direct interface phrase on the two foreground intelligence pages', () => {
         const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
         const missing = new Set<string>();

@@ -326,7 +326,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
             } else if (result && typeof result === 'object') {
                 const output = result as Record<string, unknown>;
                 const seen = output.reviewed ?? output.checked ?? output.processed ?? output.tasks_seen;
-                const done = output.published ?? output.recovered ?? output.completed ?? output.tasks_done;
+                const done = output.published ?? output.recovered ?? output.completed ?? output.queued ?? output.tasks_done;
                 if (typeof seen === 'number') tasksSeen = Math.max(0, seen);
                 if (typeof done === 'number') tasksDone = Math.max(0, done);
             }
@@ -545,7 +545,7 @@ async function queue(batch: MessageBatch, env: Env) {
 async function runIngestion(env: Env) {
     // Implemented in workers/ingestion.ts
     const { ingestNews } = await import('./workers/ingestion');
-    await ingestNews(env);
+    return ingestNews(env);
 }
 
 // Roll any event whose date has fully passed forward by one year (these are

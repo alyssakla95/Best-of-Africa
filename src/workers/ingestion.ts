@@ -527,9 +527,15 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
             `).bind(country.code).run()));
             const sectorList = (sectors.results || []).map((s: any) => s.name);
             const targetSector = sectorList[minute % Math.max(1, sectorList.length)];
-            const countryPool = discoveryCatalog.filter(source =>
-                ['global-news', 'primary-evidence', 'markets', 'multilingual'].includes(source.lane)
-            );
+            const sourcesForLanes = (lanes: string[]) => {
+                const configured = discoveryCatalog.filter(source => lanes.includes(source.lane));
+                if (configured.length) return configured;
+                return TRUSTED_DISCOVERY_CATALOG.filter(source => lanes.includes(source.lane));
+            };
+            const countryPool = sourcesForLanes(['global-news', 'primary-evidence', 'markets', 'multilingual']);
+            const globalNewsPool = sourcesForLanes(['global-news']);
+            const primaryEvidencePool = sourcesForLanes(['primary-evidence']);
+            const countryContextPool = sourcesForLanes(['markets', 'multilingual', 'africa-specialist']);
             const sectorPool = discoveryCatalog.filter(source =>
                 ['sector-evidence', 'primary-evidence', 'markets'].includes(source.lane)
             );
@@ -541,7 +547,15 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             const queries: Array<{ query: string; targetCountryCode?: string; targetCountryName?: string }> = [
                 ...targetCountries.map((country, index) => {
-                    const domains = domainWindow(countryPool, (minute + index * 7) % countryPool.length);
+                    // Each country search combines a global newsroom, a primary
+                    // institution and a regional/market specialist. This avoids
+                    // three adjacent catalogue entries representing one evidence
+                    // type and gives every market triangulated acquisition paths.
+                    const domains = [
+                        globalNewsPool[(minute + index) % globalNewsPool.length].domain,
+                        primaryEvidencePool[(minute + index * 3) % primaryEvidencePool.length].domain,
+                        countryContextPool[(minute + index * 5) % countryContextPool.length].domain,
+                    ];
                     return {
                         query: `(${domains.map(domain => `site:${domain}`).join(' OR ')}) "${country.name}" (economy OR business OR trade OR investment OR infrastructure) when:30d`,
                         targetCountryCode: country.code,

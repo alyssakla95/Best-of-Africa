@@ -607,12 +607,11 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
                 a.content_language = reqLang;
             }
         }
-        // Missing Portuguese is an editorial backlog, never a generation job.
-        if (reqLang !== 'pt' && (!tr || tr.quality !== 1 || !tr.content)) {
+        if (!tr || tr.quality !== 1 || !tr.content) {
             const queueTranslation = enqueueArticleTranslation(
                 c.env,
                 article.id,
-                targetLanguage as 'fr' | 'ar' | 'de' | 'hi' | 'zh',
+                targetLanguage,
             );
             try {
                 c.executionCtx.waitUntil(queueTranslation);

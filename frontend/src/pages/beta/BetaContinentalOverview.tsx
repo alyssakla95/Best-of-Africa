@@ -16,8 +16,8 @@ const compact = (value: number, digits = 1) => new Intl.NumberFormat(activeLocal
 }).format(value);
 
 const formatValue = (value: number, unit: string) => {
-  if (unit === 'current US$') return `$${compact(value)}`;
-  if (unit === 'current US$ per person') return `$${compact(value)}`;
+  if (unit === 'current US$') return `US$ ${compact(value)}`;
+  if (unit === 'current US$ per person') return `US$ ${compact(value)}`;
   if (unit === 'people') return compact(value);
   return `${compact(value)}${unit === '%' ? '%' : ` ${unit}`}`;
 };

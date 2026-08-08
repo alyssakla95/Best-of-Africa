@@ -189,6 +189,9 @@ describe('coded Portuguese interface locale', () => {
         expect(translatePortugueseInterfaceText('Return to Nigéria hub')).toBe('Voltar ao dossiê de Nigéria');
         expect(translatePortugueseInterfaceText('Middle reading from 31 countries · 2024'))
             .toBe('Leitura mediana de 31 países · 2024');
+        expect(translatePortugueseInterfaceText('% of GDP')).toBe('% do PIB');
+        expect(translatePortugueseInterfaceText('% of merchandise exports')).toBe('% das exportações de mercadorias');
+        expect(translatePortugueseInterfaceText('percentage points')).toBe('pontos percentuais');
     });
 
     it('localises preview identity, document titles and discovery metadata with the coded catalogue', () => {
@@ -435,9 +438,13 @@ describe('coded Portuguese interface locale', () => {
         expect(await response.json()).toEqual({ error: 'unsupported_language' });
     });
 
-    it('rejects Portuguese even if an untyped caller reaches the generated text helper', async () => {
-        const env = createMockEnv();
-        await expect(translateText(env, 'Market performance', 'pt' as never))
-            .rejects.toThrow('Portuguese is a source-owned editorial locale');
+    it('normalises generated publication copy into Portuguese pre-1990 orthography', async () => {
+        const env = createMockEnv({
+            AI: {
+                run: async () => ({ translated_text: 'O setor atual definiu um novo projeto e objetivo.' }),
+            } as unknown as Ai,
+        });
+        await expect(translateText(env, 'The current sector defined a new project and objective.', 'pt'))
+            .resolves.toBe('O sector actual definiu um novo projecto e objectivo.');
     });
 });

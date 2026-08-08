@@ -54,7 +54,7 @@ describe('Portuguese publication locale', () => {
         expect(await localizeArticleList(env, rows, 'en')).toEqual(rows);
     });
 
-    it('requests Portuguese content from reader endpoints while keeping generation disabled', async () => {
+    it('requests Portuguese content from every reader endpoint', async () => {
         const fs = await import('node:fs/promises');
         const source = await fs.readFile('frontend/src/services/api.ts', 'utf8');
         const articleRoute = await fs.readFile('src/routes/articles.ts', 'utf8');

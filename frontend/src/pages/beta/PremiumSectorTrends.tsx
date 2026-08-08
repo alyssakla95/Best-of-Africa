@@ -15,12 +15,12 @@ const number = (value: number) => new Intl.NumberFormat(activeReaderLocale()).fo
 const compact = (value: number) => new Intl.NumberFormat(activeReaderLocale(), {
   notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1,
 }).format(value);
-const valueWithUnit = (value: number, unit: string) => unit === 'current US$' ? `$${compact(value)}` : `${compact(value)} ${unit}`;
-const changeWithUnit = (value: number, unit: string) => {
+const valueWithUnit = (value: number, unit: string, translatedUnit: string) => unit === 'current US$' ? `US$ ${compact(value)}` : `${compact(value)} ${translatedUnit}`;
+const changeWithUnit = (value: number, unit: string, translatedUnit: string) => {
   const sign = value > 0 ? '+' : '';
-  if (unit === 'percentage points') return `${sign}${value.toFixed(1)} pp`;
-  if (unit === 'current US$') return `${sign}$${compact(value)}`;
-  return `${sign}${compact(value)} ${unit}`;
+  if (unit === 'percentage points') return `${sign}${compact(value)} pp`;
+  if (unit === 'current US$') return `${sign}US$ ${compact(value)}`;
+  return `${sign}${compact(value)} ${translatedUnit}`;
 };
 const period = (start: number, end: number) => start === end ? String(end) : `${start}–${end}`;
 
@@ -39,8 +39,8 @@ export const PremiumSectorTrends: React.FC = () => {
 
   const { sector, market_performance: performance, methodology, updated_at } = query.data;
   const kpis = [
-    { label: text(performance.headline_label), value: valueWithUnit(performance.headline_value, text(performance.headline_unit)), detail: language === 'pt' ? `leitura mediana dos países · ${period(performance.period_start,performance.period_end)}` : `middle country reading · ${period(performance.period_start,performance.period_end)}`, Icon: TrendingUp },
-    { label: text('Change in the middle reading'), value: changeWithUnit(performance.comparison_value, text(performance.comparison_unit)), detail: text('versus each country’s previous available value'), Icon: FileSearch },
+    { label: text(performance.headline_label), value: valueWithUnit(performance.headline_value, performance.headline_unit, text(performance.headline_unit)), detail: language === 'pt' ? `leitura mediana dos países · ${period(performance.period_start,performance.period_end)}` : `middle country reading · ${period(performance.period_start,performance.period_end)}`, Icon: TrendingUp },
+    { label: text('Change in the middle reading'), value: changeWithUnit(performance.comparison_value, performance.comparison_unit, text(performance.comparison_unit)), detail: text('versus each country’s previous available value'), Icon: FileSearch },
     { label: text('Countries reading higher'), value: `${performance.improving_markets_pct.toFixed(0)}%`, detail: text('higher does not automatically mean better'), Icon: TrendingUp },
     { label: text('Countries with usable data'), value: number(performance.countries_reported), detail: language === 'pt' ? `${performance.continent_coverage_pct.toFixed(0)}% dos 54 países de África` : `${performance.continent_coverage_pct.toFixed(0)}% of Africa’s 54 countries`, Icon: Globe2 },
   ];
@@ -93,9 +93,9 @@ export const PremiumSectorTrends: React.FC = () => {
         <div className="mt-7 grid gap-5 lg:grid-cols-3">
           {performance.dimensions.map(item => <article key={item.indicator_code} className="flex flex-col rounded-2xl border border-border bg-white p-5 md:p-6">
             <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-navy/60">{text(item.label)}</p><h3 className="mt-2 text-base font-bold leading-6 text-navy">{text(item.indicator_name)}</h3></div><span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-navy">{text(item.movement)}</span></div>
-            <p className="mt-6 font-serif text-4xl leading-none text-navy">{valueWithUnit(item.value,item.unit)}</p>
+            <p className="mt-6 font-serif text-4xl leading-none text-navy">{valueWithUnit(item.value,item.unit,text(item.unit))}</p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">Middle reading from {item.countries_reported} countries · {period(item.period_start,item.period_end)}</p>
-            <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border bg-border text-center"><div className="bg-white p-3"><strong className="block text-sm text-navy">{changeWithUnit(item.comparison_value,item.comparison_unit)}</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">change</span></div><div className="bg-white p-3"><strong className="block text-sm text-navy">{item.markets_rising_pct.toFixed(0)}%</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">countries higher</span></div><div className="bg-white p-3"><strong className="block text-sm text-navy">{item.coverage_pct.toFixed(0)}%</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">countries covered</span></div></div>
+            <div className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border bg-border text-center"><div className="bg-white p-3"><strong className="block text-sm text-navy">{changeWithUnit(item.comparison_value,item.comparison_unit,text(item.comparison_unit))}</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">change</span></div><div className="bg-white p-3"><strong className="block text-sm text-navy">{item.markets_rising_pct.toFixed(0)}%</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">countries higher</span></div><div className="bg-white p-3"><strong className="block text-sm text-navy">{item.coverage_pct.toFixed(0)}%</strong><span className="mt-1 block text-[8px] uppercase text-muted-foreground">countries covered</span></div></div>
             <p className="mt-5 text-sm leading-6 text-navy/80"><strong>What this means:</strong> {text(item.interpretation)}</p>
             <p className="mt-4 border-l-2 border-navy/20 pl-3 text-xs leading-5 text-muted-foreground"><strong className="text-navy">What it cannot prove:</strong> {text(item.caveat)}</p>
             <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="mt-auto pt-5 text-xs font-semibold text-navy underline decoration-navy/25 underline-offset-4">Official series {item.indicator_code}</a>
@@ -104,7 +104,7 @@ export const PremiumSectorTrends: React.FC = () => {
       </section>
 
       <section className="mt-10 grid overflow-hidden rounded-2xl border border-border bg-white lg:grid-cols-2">
-        <div className="p-6 md:p-8"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-navy/60">What the evidence establishes</p><h2 className="mt-2 font-serif text-3xl text-navy">The result in plain language</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-navy/80"><li><strong className="text-navy">Typical reporting country:</strong> the middle value is {performance.headline_value.toFixed(1)} {performance.headline_unit}; its change from the previous available value is {changeWithUnit(performance.comparison_value,performance.comparison_unit)}.</li><li><strong className="text-navy">How countries differ:</strong> half of reporting countries sit between {performance.dispersion_low.toFixed(1)} and {performance.dispersion_high.toFixed(1)} {performance.headline_unit}.</li><li><strong className="text-navy">How widespread the direction is:</strong> {performance.improving_markets_pct.toFixed(0)}% of comparable countries recorded a higher value, using {performance.countries_reported} country series.</li><li><strong className="text-navy">Important caution:</strong> each supporting measure keeps its own unit, date and coverage. A higher reading is not always favourable.</li></ul></div>
+        <div className="p-6 md:p-8"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-navy/60">What the evidence establishes</p><h2 className="mt-2 font-serif text-3xl text-navy">The result in plain language</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-navy/80"><li><strong className="text-navy">Typical reporting country:</strong> the middle value is {number(performance.headline_value)} {text(performance.headline_unit)}; its change from the previous available value is {changeWithUnit(performance.comparison_value,performance.comparison_unit,text(performance.comparison_unit))}.</li><li><strong className="text-navy">How countries differ:</strong> half of reporting countries sit between {number(performance.dispersion_low)} and {number(performance.dispersion_high)} {text(performance.headline_unit)}.</li><li><strong className="text-navy">How widespread the direction is:</strong> {performance.improving_markets_pct.toFixed(0)}% of comparable countries recorded a higher value, using {performance.countries_reported} country series.</li><li><strong className="text-navy">Important caution:</strong> each supporting measure keeps its own unit, date and coverage. A higher reading is not always favourable.</li></ul></div>
         <div className="border-t border-border bg-navy/[.025] p-6 md:p-8 lg:border-l lg:border-t-0"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-navy/60">What to investigate next</p><h2 className="mt-2 font-serif text-3xl text-navy">Questions the numbers cannot answer alone</h2><ol className="mt-6 space-y-4">{performance.diligence_questions.map((question,index) => <li key={question} className="grid grid-cols-[2rem_1fr] gap-3 text-sm leading-6 text-navy/80"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{index+1}</span><span>{text(question)}</span></li>)}</ol></div>
       </section>
 

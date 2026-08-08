@@ -4,11 +4,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { Env } from '../types';
+import { normalisePortuguesePortugal1945 } from './portuguese';
 
 // Supported target languages for African audiences
 export type SupportedLanguage = 'en' | 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh';
-export type GeneratedTranslationLanguage = Exclude<SupportedLanguage, 'pt'>;
-export type ReaderTranslationLanguage = Exclude<GeneratedTranslationLanguage, 'en'>;
+export type GeneratedTranslationLanguage = Exclude<SupportedLanguage, 'en'>;
+export type ReaderTranslationLanguage = GeneratedTranslationLanguage;
 
 export const LANGUAGE_CONFIG: Record<SupportedLanguage, { name: string; regions: string[] }> = {
     en: { name: 'English', regions: ['Southern', 'East', 'West'] },
@@ -40,9 +41,6 @@ export async function translateText(
     targetLang: GeneratedTranslationLanguage,
     sourceLang: SupportedLanguage = 'en'
 ): Promise<string> {
-    if ((targetLang as string) === 'pt') {
-        throw new Error('Portuguese is a source-owned editorial locale');
-    }
     if (sourceLang === targetLang) return text;
     if (!text || text.trim().length === 0) return text;
 
@@ -54,7 +52,8 @@ export async function translateText(
             target_lang: targetLang,
         });
 
-        return (response as Record<string, any>).translated_text || text;
+        const translated = String((response as Record<string, any>).translated_text || text);
+        return targetLang === 'pt' ? (normalisePortuguesePortugal1945(translated) || translated) : translated;
     } catch (error) {
         console.error(`Translation failed (${sourceLang} → ${targetLang}):`, error);
         return text; // Return original on failure
@@ -177,8 +176,12 @@ export async function getTranslation(
 
 const LANG_NAMES: Record<string, string> = {
     fr: 'French', ar: 'Modern Standard Arabic',
+    pt: 'European Portuguese (Portugal), using the orthography preceding the 1990 Orthographic Agreement',
     de: 'German', hi: 'Hindi', zh: 'Simplified Chinese',
 };
+
+const normaliseTranslationOutput = (value: string, targetLang: ReaderTranslationLanguage): string =>
+    targetLang === 'pt' ? (normalisePortuguesePortugal1945(value) || value) : value;
 
 /** Max recurrence of any 24-char window (sampled every 12 chars). */
 function maxWindowRepeat(text: string): number {
@@ -260,7 +263,9 @@ async function llmTranslateBatch(
         if (!parsed) return null;
         // A structurally valid batch can still smuggle model commentary into a
         // translation string; reject the whole batch rather than publish it.
-        return parsed.some(value => hasProcessLeakage(value)) ? null : parsed;
+        return parsed.some(value => hasProcessLeakage(value))
+            ? null
+            : parsed.map(value => normaliseTranslationOutput(value, targetLang));
     } catch (e) {
         console.error('[translate] llm batch failed:', e);
         return undefined;
@@ -303,7 +308,7 @@ async function llmTranslateBatchResilient(
                 && !/^(translation|translated text|here is)\s*:/i.test(repaired)
                 && !(repaired.length < 200 && /\b(json|translation|translated|request|cannot|unable)\b/i.test(repaired))
             ) {
-                return [repaired];
+                return [normaliseTranslationOutput(repaired, targetLang)];
             }
         } catch (error) {
             console.error('[translate] single-text repair failed:', error);
@@ -450,7 +455,7 @@ export interface ArticleTranslationQueueMessage {
 }
 
 const READER_TRANSLATION_LANGUAGES: readonly ReaderTranslationLanguage[] = [
-    'fr', 'ar', 'de', 'hi', 'zh',
+    'pt', 'fr', 'ar', 'de', 'hi', 'zh',
 ];
 
 function queuedTranslationKey(articleId: string, language: ReaderTranslationLanguage): string {
@@ -569,19 +574,26 @@ export async function processArticleTranslationJob(
  * legacy rows and the coverage gap are exhausted.
  */
 export async function backfillTranslations(env: Env, batch = 2): Promise<number> {
+    const portugueseDone = await backfillMissingPortugueseTranslations(env, batch);
+    const remainingBatch = batch - portugueseDone;
+    if (remainingBatch <= 0) {
+        console.log(`[translate] Generated ${portugueseDone} Portuguese translation(s).`);
+        return portugueseDone;
+    }
+
     const rows = await env.DB.prepare(`
         SELECT t.id AS tid, t.article_id AS aid, t.language, a.title, a.subtitle, a.summary, a.content
         FROM article_translations t
         JOIN articles a ON a.id = t.article_id
-        WHERE t.language <> 'pt' AND (
+        WHERE (
             t.quality = 0
             OR (t.quality = -1 AND t.created_at < datetime('now', '-6 hours'))
         ) AND a.status = 'published'
         ORDER BY a.published_at DESC
         LIMIT ?
-    `).bind(batch).all<{ tid: string; aid: string; language: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
+    `).bind(remainingBatch).all<{ tid: string; aid: string; language: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 
-    let done = 0;
+    let done = portugueseDone;
     for (const r of rows.results || []) {
         try {
             const ok = await ensureArticleTranslation(
@@ -602,10 +614,41 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         }
     }
 
-    const spare = batch - (rows.results?.length || 0);
+    const spare = remainingBatch - (rows.results?.length || 0);
     if (spare > 0) done += await backfillMissingTranslations(env, spare);
 
     if (done) console.log(`[translate] Regenerated ${done} translation(s).`);
+    return done;
+}
+
+/** Restore Portuguese publication continuity before lower-priority archive work. */
+async function backfillMissingPortugueseTranslations(env: Env, batch: number): Promise<number> {
+    const DONE_FLAG = 'translate:portuguese-publication:v1:coverage_done';
+    if (await env.CACHE.get(DONE_FLAG)) return 0;
+
+    const missing = await env.DB.prepare(`
+        SELECT a.id AS aid, a.title, a.subtitle, a.summary, a.content
+        FROM articles a
+        WHERE a.status = 'published'
+          AND NOT EXISTS (
+              SELECT 1 FROM article_translations t
+              WHERE t.article_id = a.id AND t.language = 'pt'
+          )
+        ORDER BY a.published_at DESC, a.view_count DESC
+        LIMIT ?
+    `).bind(batch).all<{ aid: string; title: string; subtitle: string | null; summary: string | null; content: string }>();
+
+    if (!(missing.results || []).length) {
+        await env.CACHE.put(DONE_FLAG, '1', { expirationTtl: 60 * 60 });
+        return 0;
+    }
+
+    let done = 0;
+    for (const article of missing.results || []) {
+        const complete = await ensureArticleTranslation(env, article.aid, article, 'pt');
+        if (!complete) break;
+        done++;
+    }
     return done;
 }
 
@@ -615,20 +658,20 @@ async function backfillMissingTranslations(env: Env, batch: number): Promise<num
     // article and finds nothing — every minute, forever. Park the sweep for
     // 6h whenever it comes back empty; new articles are translated at
     // enrichment time anyway, so the backfill only needs occasional passes.
-    const DONE_FLAG = 'translate:all-reader-locales:v2:coverage_done';
+    const DONE_FLAG = 'translate:all-reader-locales:v3:coverage_done';
     if (await env.CACHE.get(DONE_FLAG)) return 0;
 
     const missing = await env.DB.prepare(`
         SELECT a.id AS aid, l.lang, a.title, a.subtitle, a.summary, a.content
         FROM articles a
         -- json_each avoids a compound SELECT (D1 rejects UNION ALL chains).
-        CROSS JOIN (SELECT value AS lang FROM json_each('["fr","ar","de","hi","zh"]')) l
+        CROSS JOIN (SELECT value AS lang FROM json_each('["pt","fr","ar","de","hi","zh"]')) l
         WHERE a.status = 'published'
           AND NOT EXISTS (
               SELECT 1 FROM article_translations t
               WHERE t.article_id = a.id AND t.language = l.lang
           )
-        ORDER BY a.published_at DESC, a.view_count DESC, l.lang ASC
+        ORDER BY CASE l.lang WHEN 'pt' THEN 0 ELSE 1 END, a.published_at DESC, a.view_count DESC, l.lang ASC
         LIMIT ?
     `).bind(batch).all<{ aid: string; lang: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 

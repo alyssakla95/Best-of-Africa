@@ -77,7 +77,7 @@ router.post('/test-translate', devAuthGuard, async (c) => {
     const row = await c.env.DB.prepare(`
         SELECT t.id tid, t.language, a.title, a.content
         FROM article_translations t JOIN articles a ON a.id = t.article_id
-        WHERE t.quality = 0 AND t.language <> 'pt' AND a.status='published'
+        WHERE t.quality = 0 AND a.status='published'
         ORDER BY a.published_at DESC LIMIT 1
     `).first() as Record<string, any> | null;
     if (!row) return c.json({ ok: false, reason: 'no rows' });

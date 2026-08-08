@@ -2,7 +2,7 @@ import type { Article, ArticleListItem, CalendarEvent, Country, CountryStats, Da
 import { readThroughCache } from '@/lib/persistentQueryCache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
-const ARTICLE_CONTENT_REVISION = 'pt1945-v3';
+const ARTICLE_CONTENT_REVISION = 'pt1945-v4';
 
 // Session helper
 const getSessionId = () => {

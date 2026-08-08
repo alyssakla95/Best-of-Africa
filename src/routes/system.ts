@@ -226,7 +226,7 @@ router.get('/health/deep', async (c) => {
             SELECT
                 (SELECT COUNT(*) FROM articles WHERE status = 'published') AS published,
                 (SELECT COUNT(*) FROM articles WHERE status = 'published' AND audio_url IS NOT NULL AND audio_url != '') AS audio,
-                (SELECT COUNT(*) FROM article_translations WHERE quality = 1 AND language <> 'pt') AS translations,
+                (SELECT COUNT(*) FROM article_translations WHERE quality = 1) AS translations,
                 (SELECT COUNT(*) FROM generated_reports) AS reports
         `).first<{ published: number; audio: number; translations: number; reports: number }>();
         const published = Number(output?.published || 0);

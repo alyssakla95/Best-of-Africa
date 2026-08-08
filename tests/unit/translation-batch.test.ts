@@ -31,7 +31,7 @@ describe('publication-quality translation batches', () => {
         expect(Object.keys(LANGUAGE_CONFIG).sort()).toEqual(['ar', 'de', 'en', 'fr', 'hi', 'pt', 'zh']);
     });
 
-    it('queues generated full-article translations only for generated locales', async () => {
+    it('queues quality-gated full-article translations for every reader locale', async () => {
         const queued: Array<Record<string, unknown>> = [];
         const env = createMockEnv({
             TRANSLATION_QUEUE: {
@@ -48,9 +48,9 @@ describe('publication-quality translation batches', () => {
             content: 'The complete article body.',
         });
 
-        expect(queued).toHaveLength(5);
+        expect(queued).toHaveLength(6);
         expect(queued.every((message) => message.type === 'article_translation')).toBe(true);
-        expect(queued.map((message) => message.language).sort()).toEqual(['ar', 'de', 'fr', 'hi', 'zh']);
+        expect(queued.map((message) => message.language).sort()).toEqual(['ar', 'de', 'fr', 'hi', 'pt', 'zh']);
         expect(queued.every((message) => message.articleId === 'article-1')).toBe(true);
     });
 
@@ -98,5 +98,22 @@ describe('publication-quality translation batches', () => {
 
         expect(calls).toBe(2);
         expect(result).toBe(translated.trim());
+    });
+
+    it('normalises long-form Portuguese output to the pre-1990 Portugal locale before storage', async () => {
+        const source = 'The current sector defined a project and objective for economic activity.';
+        const env = createMockEnv({
+            AI: {
+                run: async () => ({
+                    response: JSON.stringify({
+                        translations: ['O setor atual definiu um projeto e objetivo para a atividade econômica.'],
+                    }),
+                }),
+            } as unknown as Ai,
+        });
+
+        await expect(translateLongText(env, source, 'pt')).resolves.toBe(
+            'O sector actual definiu um projecto e objectivo para a actividade económica.',
+        );
     });
 });

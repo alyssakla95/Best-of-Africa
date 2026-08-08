@@ -62,7 +62,7 @@ function latestPoints(records: WdiRecord[]): Point[] {
 
 async function fetchSeries(code: string): Promise<Point[]> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
         // One latest-observation request per series is materially cheaper and
         // more reliable than four semicolon-country batches. Aggregates are
@@ -100,7 +100,12 @@ export function continentalEconomyCacheIsFresh(snapshot: Snapshot): boolean {
 
 export async function getContinentalEconomyRefreshStatus(env: Env): Promise<OfficialDataRefreshStatus> {
     const snapshot = await getContinentalEconomyCache(env);
-    return (await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as OfficialDataRefreshStatus | null) || {
+    const saved = await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as OfficialDataRefreshStatus | null;
+    if (saved?.state === 'refreshing' && saved.last_attempted_at
+        && Date.now() - Date.parse(saved.last_attempted_at) > 2 * 60 * 1000) {
+        return { ...saved, state: 'upstream_unavailable' };
+    }
+    return saved || {
         state: continentalEconomyCacheIsFresh(snapshot) ? 'current' : 'upstream_unavailable',
         last_attempted_at: null,
         last_successful_at: snapshot.retrieved_at,

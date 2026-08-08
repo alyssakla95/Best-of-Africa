@@ -13,7 +13,6 @@ import {
     getSectorPerformanceCache,
     getSectorPerformanceRefreshStatus,
     refreshSectorPerformance,
-    sectorPerformanceCacheIsFresh,
 } from '../lib/sector-performance';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
@@ -621,9 +620,6 @@ router.get('/performance', async (c) => {
         getSectorPerformanceRefreshStatus(c.env),
     ]);
     if (cached) {
-        if (!sectorPerformanceCacheIsFresh(cached)) {
-            c.executionCtx.waitUntil(refreshSectorPerformance(c.env).then(() => undefined));
-        }
             c.header('Cache-Control', 'no-store, max-age=0');
             return c.json({ ...cached, official_data_refresh: officialDataRefresh, lens });
     }

@@ -8,8 +8,8 @@ import type { Env, Variables, Dashboard } from '../types';
 
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
-import { getSectorPerformanceCache, refreshSectorPerformance, sectorPerformanceCacheIsFresh } from '../lib/sector-performance';
-import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, getContinentalEconomyRefreshStatus, refreshContinentalEconomy } from '../lib/continental-economy';
+import { getSectorPerformanceCache } from '../lib/sector-performance';
+import { getContinentalEconomyCache, getContinentalEconomyRefreshStatus } from '../lib/continental-economy';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
@@ -220,12 +220,6 @@ router.get('/continental/overview', async (c) => {
         `).all(),
     ]);
 
-    if (!continentalEconomyCacheIsFresh(continentalEconomy)) {
-        c.executionCtx.waitUntil(refreshContinentalEconomy(c.env).then(() => undefined));
-    }
-    if (sectorPerformance && !sectorPerformanceCacheIsFresh(sectorPerformance)) {
-        c.executionCtx.waitUntil(refreshSectorPerformance(c.env).then(() => undefined));
-    }
     const countryCoverage = (countryCoverageResult.results || []).map((country: Record<string, any>) => reqLang === 'pt' ? {
         ...country,
         country_name: portugueseCountryName(country.country_code, country.country_name),

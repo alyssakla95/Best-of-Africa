@@ -287,7 +287,7 @@ export function calculateSectorPerformance(
 
 async function fetchSeries(config: SectorSeriesConfig): Promise<SectorPerformance | null> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
         // Three latest non-null observations are sufficient for every
         // calculation mode. Filtering to the explicit African allow-list
@@ -321,7 +321,12 @@ export type SectorPerformanceRefreshStatus = {
 
 export async function getSectorPerformanceRefreshStatus(env: Env): Promise<SectorPerformanceRefreshStatus> {
     const snapshot = await getSectorPerformanceCache(env);
-    return (await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as SectorPerformanceRefreshStatus | null) || {
+    const saved = await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as SectorPerformanceRefreshStatus | null;
+    if (saved?.state === 'refreshing' && saved.last_attempted_at
+        && Date.now() - Date.parse(saved.last_attempted_at) > 2 * 60 * 1000) {
+        return { ...saved, state: 'upstream_unavailable' };
+    }
+    return saved || {
         state: snapshot && sectorPerformanceCacheIsFresh(snapshot) ? 'current' : 'upstream_unavailable',
         last_attempted_at: null,
         last_successful_at: snapshot?.retrieved_at || null,

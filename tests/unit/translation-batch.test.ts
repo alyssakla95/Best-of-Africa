@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseTranslationBatch } from '../../src/routes/translation';
-import { autoTranslateArticle, LANGUAGE_CONFIG, parseLongTranslationBatch, translateLongText } from '../../src/lib/translate';
+import { autoTranslateArticle, isReaderTranslationLanguage, LANGUAGE_CONFIG, parseLongTranslationBatch, READER_TRANSLATION_LANGUAGES, translateLongText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
 
 describe('publication-quality translation batches', () => {
@@ -29,6 +29,13 @@ describe('publication-quality translation batches', () => {
 
     it('covers every language offered by the application', () => {
         expect(Object.keys(LANGUAGE_CONFIG).sort()).toEqual(['ar', 'de', 'en', 'fr', 'hi', 'pt', 'zh']);
+    });
+
+    it('uses one reader-locale allow-list for both queue producers and consumers', () => {
+        expect(READER_TRANSLATION_LANGUAGES).toEqual(['pt', 'fr', 'ar', 'de', 'hi', 'zh']);
+        expect(isReaderTranslationLanguage('pt')).toBe(true);
+        expect(isReaderTranslationLanguage('en')).toBe(false);
+        expect(isReaderTranslationLanguage('')).toBe(false);
     });
 
     it('queues quality-gated full-article translations for every reader locale', async () => {

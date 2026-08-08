@@ -454,9 +454,13 @@ export interface ArticleTranslationQueueMessage {
     language: ReaderTranslationLanguage;
 }
 
-const READER_TRANSLATION_LANGUAGES: readonly ReaderTranslationLanguage[] = [
+export const READER_TRANSLATION_LANGUAGES: readonly ReaderTranslationLanguage[] = [
     'pt', 'fr', 'ar', 'de', 'hi', 'zh',
 ];
+
+export function isReaderTranslationLanguage(language: string): language is ReaderTranslationLanguage {
+    return READER_TRANSLATION_LANGUAGES.includes(language as ReaderTranslationLanguage);
+}
 
 function queuedTranslationKey(articleId: string, language: ReaderTranslationLanguage): string {
     return `translation:queued:v2:${articleId}:${language}`;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { coverageAdmissionFailure, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_CATALOG, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
 
 describe('source quality and coverage admission', () => {
@@ -24,6 +25,13 @@ describe('source quality and coverage admission', () => {
             'global-news', 'markets', 'primary-evidence', 'sector-evidence',
             'africa-specialist', 'multilingual',
         ]));
+    });
+
+    it('uses productive first-party feeds and disables the empty direct SADC connector', () => {
+        const migration = readFileSync('migrations/0060_productive_regional_feeds.sql', 'utf8');
+        expect(migration).toContain('https://www.ecowas.int/feed/');
+        expect(migration).toContain('https://www.comesa.int/feed/');
+        expect(migration).toMatch(/is_active\s*=\s*0[\s\S]*primary-sadc-news/);
     });
 
     it('caps rolling country and publisher concentration', () => {

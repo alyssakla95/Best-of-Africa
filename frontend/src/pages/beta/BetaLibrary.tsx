@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useLanguage } from '../../context/LanguageContext';
+import { SEO } from '../../components/SEO';
 
 export const BetaLibrary: React.FC = () => {
     const { language, t } = useLanguage();
@@ -56,6 +57,10 @@ export const BetaLibrary: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background pb-20">
+            <SEO
+                title="Decision Workspace"
+                description="Organise evidence, monitor priority markets and carry research into the next decision."
+            />
             <div className="app-hero border-b border-border/50 bg-gradient-to-b from-primary/10 to-transparent pb-8 pt-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <div className="flex items-center gap-3 mb-4">

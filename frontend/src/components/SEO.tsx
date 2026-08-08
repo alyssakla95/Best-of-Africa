@@ -29,7 +29,8 @@ export const SEO: React.FC<SEOProps> = ({
 
     useEffect(() => {
         // Update Title (callers historically append "| BOA-Story" themselves — strip it to avoid duplication)
-        document.title = `${localizedTitle.replace(/\s*\|\s*BOA-Story\s*$/i, '')} | BOA-Story`;
+        const cleanTitle = localizedTitle.replace(/\s*\|\s*BOA-Story\s*$/i, '');
+        document.title = cleanTitle.toLowerCase() === 'boa-story' ? 'BOA-Story' : `${cleanTitle} | BOA-Story`;
 
         // Helper to update meta tags
         const updateMeta = (name: string, content: string, attribute = 'name') => {

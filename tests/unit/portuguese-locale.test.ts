@@ -182,10 +182,13 @@ describe('coded Portuguese interface locale', () => {
         expect(seo).toContain('translatePortugueseInterfaceText(value) || value');
         expect(seo).toContain("updateMeta('og:title', localizedTitle");
         expect(seo).toContain("updateMeta('twitter:description', localizedDescription");
+        expect(seo).toContain("cleanTitle.toLowerCase() === 'boa-story'");
         expect(translatePortugueseInterfaceText('African Market Intelligence | BOA-Story'))
             .toBe('Inteligência dos Mercados Africanos | BOA-Story');
         expect(translatePortugueseInterfaceText('Continental Economic Overview | BOA-Story'))
             .toBe('Panorama Económico Continental | BOA-Story');
+        expect(translatePortugueseInterfaceText('Decision Workspace'))
+            .toBe('Área de trabalho de decisão');
     });
 
     it('serves generated evidence reports as coded Portuguese structures', () => {

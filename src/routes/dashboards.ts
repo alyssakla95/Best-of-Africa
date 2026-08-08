@@ -8,9 +8,9 @@ import type { Env, Variables, Dashboard } from '../types';
 
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
-import { CONTINENTAL_WDI_SNAPSHOT } from '../data/continental-wdi-snapshot';
-import { getSectorPerformanceCache } from '../lib/sector-performance';
-import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
+import { getSectorPerformanceCache, refreshSectorPerformance, sectorPerformanceCacheIsFresh } from '../lib/sector-performance';
+import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, refreshContinentalEconomy } from '../lib/continental-economy';
+import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -170,7 +170,8 @@ router.get('/continental/overview', async (c) => {
         : '';
     const titleColumn = reqLang === 'pt' ? 'pt.title' : 'a.title';
     const summaryColumn = reqLang === 'pt' ? 'pt.summary' : 'a.summary';
-    const [sectorPerformance, narratedBriefingsResult] = await Promise.all([
+    const [continentalEconomy, sectorPerformance, narratedBriefingsResult, countryCoverageResult, sectorCoverageResult] = await Promise.all([
+        getContinentalEconomyCache(c.env),
         getSectorPerformanceCache(c.env),
         c.env.DB.prepare(`
             SELECT
@@ -196,10 +197,47 @@ router.get('/continental/overview', async (c) => {
             ORDER BY datetime(a.published_at) DESC, a.id DESC
             LIMIT 48
         `).all(),
+        c.env.DB.prepare(`
+            SELECT c.code AS country_code, c.name AS country_name, c.region,
+                   COUNT(a.id) AS records_30d, MAX(a.published_at) AS latest_record_at
+            FROM countries c
+            LEFT JOIN articles a ON a.country_code = c.code AND a.status = 'published'
+                AND a.published_at >= datetime('now', '-30 days')
+            GROUP BY c.code, c.name, c.region
+            ORDER BY c.region, c.name
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT s.id AS sector_id, s.name AS sector_name,
+                   COUNT(a.id) AS records_30d, COUNT(DISTINCT a.country_code) AS countries_30d,
+                   MAX(a.published_at) AS latest_record_at
+            FROM sectors s
+            LEFT JOIN articles a ON a.sector_id = s.id AND a.status = 'published'
+                AND a.published_at >= datetime('now', '-30 days')
+            WHERE s.id <> 'general'
+            GROUP BY s.id, s.name
+            ORDER BY s.name
+        `).all(),
     ]);
 
+    if (!continentalEconomyCacheIsFresh(continentalEconomy)) {
+        c.executionCtx.waitUntil(refreshContinentalEconomy(c.env).then(() => undefined));
+    }
+    if (sectorPerformance && !sectorPerformanceCacheIsFresh(sectorPerformance)) {
+        c.executionCtx.waitUntil(refreshSectorPerformance(c.env).then(() => undefined));
+    }
+    const countryCoverage = (countryCoverageResult.results || []).map((country: Record<string, any>) => reqLang === 'pt' ? {
+        ...country,
+        country_name: portugueseCountryName(country.country_code, country.country_name),
+    } : country);
+    const sectorCoverage = (sectorCoverageResult.results || []).map((sector: Record<string, any>) => reqLang === 'pt' ? {
+        ...sector,
+        sector_name: portugueseSectorName(sector.sector_name),
+    } : sector);
+    const briefingUpdatedAt = new Date().toISOString();
+
+    c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({
-        ...CONTINENTAL_WDI_SNAPSHOT,
+        ...continentalEconomy,
         sector_performance: sectorPerformance?.data || [],
         sectors_measured: sectorPerformance?.sectors_measured || 0,
         sector_methodology: sectorPerformance?.methodology || '',
@@ -208,6 +246,19 @@ router.get('/continental/overview', async (c) => {
             title: normalisePortuguesePortugal1945(briefing.title) || briefing.title,
             summary: normalisePortuguesePortugal1945(briefing.summary),
         } : briefing),
+        briefing_scope: {
+            window_days: 30,
+            countries_considered: countryCoverage.length,
+            sectors_considered: sectorCoverage.length,
+            countries_with_records: countryCoverage.filter((country: Record<string, any>) => Number(country.records_30d) > 0).length,
+            sectors_with_records: sectorCoverage.filter((sector: Record<string, any>) => Number(sector.records_30d) > 0).length,
+            countries: countryCoverage,
+            sectors: sectorCoverage,
+            updated_at: briefingUpdatedAt,
+            methodology: reqLang === 'pt'
+                ? 'A síntese verifica explicitamente os 54 países africanos e todos os sectores económicos configurados. Um valor zero identifica ausência de registos publicados na janela de 30 dias; não é substituído por uma inferência.'
+                : 'The briefing explicitly checks all 54 African countries and every configured economic sector. A zero identifies no published record in the 30-day window and is not replaced with an inference.',
+        },
     });
 });
 

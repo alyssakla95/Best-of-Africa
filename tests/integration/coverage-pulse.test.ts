@@ -135,6 +135,9 @@ describe('GET /coverage-pulse', () => {
                 { country_code: 'KE', country_name: 'Kenya', this_week: 8, last_week: 4 },
                 { country_code: 'GH', country_name: 'Ghana', this_week: 0, last_week: 6 },
             ] },
+            { results: [
+                { sector_id: 'finance', sector_name: 'Finance & Investment', records_30d: 14, countries_30d: 7, latest_record_at: '2026-08-08' },
+            ] },
             { first: { region: 'Central', n: 1 } },
         ]);
         const env = createMockEnv({ DB: db });
@@ -147,6 +150,8 @@ describe('GET /coverage-pulse', () => {
             stories_7d: 18,
             countries_7d: 3,
             top_sector: { name: 'Finance', stories: 7 },
+            countries_considered: 2,
+            sectors_considered: 1,
             thinnest_region: { region: 'Central', stories: 1 },
         });
         expect(body.countries[1]).toEqual({
@@ -158,14 +163,16 @@ describe('GET /coverage-pulse', () => {
         expect(queries[1]).toContain("s.id != 'general'");
         expect(queries[2]).toContain('LEFT JOIN articles');
         expect(queries[2]).toContain("published_at > datetime('now', '-14 days')");
-        expect(queries[2]).toContain('HAVING this_week > 0 OR last_week > 0');
+        expect(queries[2]).not.toContain('HAVING');
         expect(queries[2]).toContain('ORDER BY this_week DESC, (this_week - last_week) DESC, c.name ASC');
+        expect(queries[3]).toContain("WHERE s.id <> 'general'");
     });
 
     it('returns a factual zero-coverage shape without null placeholders', async () => {
         const { db } = createCoverageDb([
             { first: null },
             { first: null },
+            { results: [] },
             { results: [] },
             { first: null },
         ]);
@@ -180,6 +187,9 @@ describe('GET /coverage-pulse', () => {
             countries_7d: 0,
             top_sector: { name: 'Zero qualifying sector stories', stories: 0 },
             countries: [],
+            sectors: [],
+            countries_considered: 0,
+            sectors_considered: 0,
             thinnest_region: { region: 'Zero configured regions', stories: 0 },
         });
         expect(JSON.stringify(body)).not.toContain(':null');

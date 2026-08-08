@@ -410,7 +410,12 @@ export const api = {
         rankings: { largest_economies: { country_code: string; country_name: string; region: string; year: number; value: number }[]; fastest_growth: { country_code: string; country_name: string; region: string; year: number; value: number }[]; largest_fdi_inflows: { country_code: string; country_name: string; region: string; year: number; value: number }[] };
         sector_performance: SectorMarketPerformance[]; sectors_measured: number; sector_methodology: string;
         narrated_briefings: { id: string; slug: string; title: string; summary: string | null; audio_url: string; audio_duration_seconds: number | null; published_at: string; country_code: string | null; country_name: string | null; sector_name: string | null }[];
-    }>(`/dashboards/continental/overview?contract=economy-v1&lang=${getReaderLanguage()}`),
+        briefing_scope: {
+            window_days: number; countries_considered: number; sectors_considered: number; countries_with_records: number; sectors_with_records: number; updated_at: string; methodology: string;
+            countries: { country_code: string; country_name: string; region: string; records_30d: number; latest_record_at: string | null }[];
+            sectors: { sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }[];
+        };
+    }>(`/dashboards/continental/overview?contract=economy-v1&lang=${getReaderLanguage()}`, 0),
 
     // Search
     search: (query: string) => readerRequest<{ results: SearchResult[]; suggestions: string[]; editorial_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
@@ -615,7 +620,7 @@ export const api = {
         retrieved_at: string;
         source_name: string;
         source_url: string;
-    }>(`/market-intel/performance?contract=market-v2${lens ? `&lens=${lens}` : ''}`, 12 * 60 * 60 * 1000),
+    }>(`/market-intel/performance?contract=market-v2${lens ? `&lens=${lens}` : ''}`, 0),
 
     getLeadingSector: () => request<{
         name: string;
@@ -634,9 +639,12 @@ export const api = {
         most_reported_sector: { name: string; stories: number };
         top_sector: { name: string; stories: number };
         countries: { country_code: string; country_name: string; this_week: number; last_week: number }[];
+        sectors: { sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }[];
+        countries_considered: number;
+        sectors_considered: number;
         thinnest_region: { region: string; stories: number };
         updated_at: string;
-    }>('/market-intel/coverage-pulse', 60 * 60 * 1000),
+    }>('/market-intel/coverage-pulse', 0),
 
     getSentimentDivergence: () => request<{
         evidence_scope: string;

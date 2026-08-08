@@ -169,7 +169,10 @@ const BUNDLED_SNAPSHOT: SectorPerformanceResponse = {
 };
 
 const CACHE_KEY = 'market-intel:sector-performance:wdi:v2';
-const FRESH_MS = 12 * 60 * 60 * 1000;
+// Re-check the official upstream release frequently while preserving the
+// indicator's real observation year. Retrieval freshness must never be
+// presented as if an annual economic series itself updates every minute.
+const FRESH_MS = 15 * 60 * 1000;
 
 function round(value: number, digits = 1): number {
     return Number(value.toFixed(digits));

@@ -28,7 +28,16 @@ export const BetaIntelligence = () => {
   const query = useQuery({
     queryKey: ['sector-market-performance', 'market-v2'],
     queryFn: () => api.getSectorPerformance('investor'),
-    staleTime: 12 * 60 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+  const coverageQuery = useQuery({
+    queryKey: ['market-briefing-coverage', 'all-markets-v1'],
+    queryFn: api.getCoveragePulse,
+    staleTime: 0,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const performance = query.data;
@@ -86,6 +95,18 @@ export const BetaIntelligence = () => {
           </section>
 
           <DataReadingGuide subject="the market-intelligence dashboard" />
+
+          {coverageQuery.data && <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="all-market-scope">
+            <div className="grid gap-6 border-b border-border px-5 py-6 md:grid-cols-[1fr_auto] md:items-end md:px-8">
+              <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Live briefing scope</p><h2 id="all-market-scope" className="mt-2 font-serif text-3xl text-navy md:text-4xl">Every African country and every economic sector is checked</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">The evidence ledger refreshes every minute. Countries or sectors with zero current records remain visible as evidence gaps; they are never omitted or filled with assumptions.</p></div>
+              <dl className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-navy p-4 text-white"><dt className="text-[9px] uppercase tracking-[.12em] text-white/60">Countries checked</dt><dd className="mt-1 font-serif text-3xl">{coverageQuery.data.countries_considered}</dd></div><div className="rounded-xl bg-navy p-4 text-white"><dt className="text-[9px] uppercase tracking-[.12em] text-white/60">Sectors checked</dt><dd className="mt-1 font-serif text-3xl">{coverageQuery.data.sectors_considered}</dd></div></dl>
+            </div>
+            <div className="grid gap-8 px-5 py-6 md:px-8 lg:grid-cols-[1.2fr_.8fr]">
+              <div><h3 className="font-serif text-xl text-navy">Complete 54-country ledger</h3><p className="mt-2 text-xs leading-5 text-muted-foreground">Current week compared with the preceding seven days. Zero is a real coverage result.</p><details className="mt-4 rounded-xl border border-border"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-navy">Open all country readings</summary><div className="grid gap-2 border-t border-border p-3 sm:grid-cols-2 xl:grid-cols-3">{coverageQuery.data.countries.map(country => <Link key={country.country_code} to={`/countries/${country.country_code}`} className="flex items-center justify-between gap-3 rounded-lg bg-navy/[.035] px-3 py-2 text-xs"><span className="font-semibold text-navy">{country.country_name}</span><span className="tabular-nums text-muted-foreground">{country.this_week} / {country.last_week}</span></Link>)}</div></details></div>
+              <div><h3 className="font-serif text-xl text-navy">Full sector ledger</h3><p className="mt-2 text-xs leading-5 text-muted-foreground">Published evidence across the rolling 30-day window.</p><div className="mt-4 space-y-2">{coverageQuery.data.sectors.map(sector => <Link key={sector.sector_id} to={`/sectors/${sector.sector_id}/trends`} className="grid grid-cols-[1fr_auto] gap-3 rounded-lg border border-border p-3"><span className="text-sm font-semibold text-navy">{text(sector.sector_name)}</span><span className="text-right text-xs tabular-nums text-muted-foreground">{sector.records_30d} records<br/>{sector.countries_30d} countries</span></Link>)}</div></div>
+            </div>
+            <p className="border-t border-border px-5 py-4 text-xs text-muted-foreground md:px-8">Ledger updated {new Intl.DateTimeFormat(activeLocale(), { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(coverageQuery.data.updated_at))}.</p>
+          </section>}
 
           <section className="page-section rounded-2xl border border-border bg-white p-5 md:p-8" aria-labelledby="market-analysis-path">
             <div className="max-w-3xl">

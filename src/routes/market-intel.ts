@@ -620,7 +620,8 @@ router.get('/performance', async (c) => {
         if (!sectorPerformanceCacheIsFresh(cached)) {
             c.executionCtx.waitUntil(refreshSectorPerformance(c.env).then(() => undefined));
         }
-        return c.json({ ...cached, lens });
+            c.header('Cache-Control', 'no-store, max-age=0');
+            return c.json({ ...cached, lens });
     }
 
     const refreshed = await refreshSectorPerformance(c.env);
@@ -632,6 +633,7 @@ router.get('/performance', async (c) => {
             source_url: 'https://data.worldbank.org/indicator',
         }, 503);
     }
+    c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({ ...refreshed, lens });
 });
 
@@ -763,8 +765,8 @@ router.get('/leading-sector', async (c) => {
 // read as meaningless to visitors — because they were.
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/coverage-pulse', async (c) => {
-    const data = await getCached(c.env, 'coverage:pulse:evidence-contract-v2', async () => {
-        const [totals, topSector, countries, thinnest] = await Promise.all([
+        const reqLang = c.req.query('lang')?.toLowerCase();
+        const [totals, topSector, countries, sectors, thinnest] = await Promise.all([
             c.env.DB.prepare(`
                 SELECT COUNT(*) AS stories, COUNT(DISTINCT country_code) AS countries
                 FROM articles
@@ -785,9 +787,19 @@ router.get('/coverage-pulse', async (c) => {
                 LEFT JOIN articles a ON a.country_code = c.code AND a.status = 'published'
                     AND a.published_at > datetime('now', '-14 days')
                 GROUP BY c.code
-                HAVING this_week > 0 OR last_week > 0
                 ORDER BY this_week DESC, (this_week - last_week) DESC, c.name ASC
             `).all<{ country_code: string; country_name: string; this_week: number; last_week: number }>(),
+            c.env.DB.prepare(`
+                SELECT s.id AS sector_id, s.name AS sector_name,
+                       COUNT(a.id) AS records_30d, COUNT(DISTINCT a.country_code) AS countries_30d,
+                       MAX(a.published_at) AS latest_record_at
+                FROM sectors s
+                LEFT JOIN articles a ON a.sector_id = s.id AND a.status = 'published'
+                    AND a.published_at >= datetime('now', '-30 days')
+                WHERE s.id <> 'general'
+                GROUP BY s.id, s.name
+                ORDER BY records_30d DESC, s.name
+            `).all<{ sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }>(),
             c.env.DB.prepare(`
                 SELECT c.region, COUNT(a.id) AS n
                 FROM countries c
@@ -797,17 +809,26 @@ router.get('/coverage-pulse', async (c) => {
             `).first<{ region: string; n: number }>(),
         ]);
 
-        return {
+        const data = {
             stories_7d: totals?.stories || 0,
             countries_7d: totals?.countries || 0,
             most_reported_sector: topSector ? { name: topSector.name, stories: topSector.n } : { name: 'Zero qualifying sector stories', stories: 0 },
             // Compatibility alias. This is editorial volume, never performance.
             top_sector: topSector ? { name: topSector.name, stories: topSector.n } : { name: 'Zero qualifying sector stories', stories: 0 },
-            countries: countries.results || [],
+            countries: (countries.results || []).map(country => reqLang === 'pt' ? {
+                ...country,
+                country_name: portugueseCountryName(country.country_code, country.country_name) || country.country_name,
+            } : country),
+            sectors: (sectors.results || []).map(sector => reqLang === 'pt' ? {
+                ...sector,
+                sector_name: portugueseSectorName(sector.sector_name) || sector.sector_name,
+            } : sector),
+            countries_considered: (countries.results || []).length,
+            sectors_considered: (sectors.results || []).length,
             thinnest_region: thinnest ? { region: thinnest.region, stories: thinnest.n } : { region: 'Zero configured regions', stories: 0 },
             updated_at: new Date().toISOString(),
         };
-    }, { ttl: 600 });
+    c.header('Cache-Control', 'no-store, max-age=0');
     return c.json(data);
 });
 

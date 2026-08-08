@@ -31,7 +31,9 @@ export const BetaContinentalOverview: React.FC = () => {
   const query = useQuery({
     queryKey: ['continental-economic-overview', 'economy-v1'],
     queryFn: api.getContinentalOverview,
-    staleTime: 12 * 60 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   if (query.isLoading) return <div className="mx-auto max-w-6xl animate-pulse px-5 py-16 sm:px-6"><div className="h-16 w-2/3 rounded-xl bg-navy/10"/><div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[1,2,3,4].map(i => <div key={i} className="h-40 rounded-2xl bg-navy/5"/>)}</div><div className="mt-10 h-96 rounded-2xl bg-navy/5"/></div>;
@@ -85,6 +87,18 @@ export const BetaContinentalOverview: React.FC = () => {
           </section>
 
           <DataReadingGuide subject="the continental overview" />
+
+          <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="continental-briefing-scope">
+            <div className="grid gap-6 border-b border-border px-5 py-6 md:grid-cols-[1fr_auto] md:items-end md:px-8">
+              <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Continental briefing scope</p><h2 id="continental-briefing-scope" className="mt-2 font-serif text-3xl text-navy md:text-4xl">No African market or economic sector disappears from the briefing</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">The rolling evidence check covers every configured country and sector. A zero remains an explicit evidence gap, while official economic indicators retain their actual observation years.</p></div>
+              <dl className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-navy p-4 text-white"><dt className="text-[9px] uppercase tracking-[.12em] text-white/60">Countries considered</dt><dd className="mt-1 font-serif text-3xl">{data.briefing_scope.countries_considered}</dd><p className="mt-1 text-[10px] text-white/60">{data.briefing_scope.countries_with_records} with 30-day records</p></div><div className="rounded-xl bg-navy p-4 text-white"><dt className="text-[9px] uppercase tracking-[.12em] text-white/60">Sectors considered</dt><dd className="mt-1 font-serif text-3xl">{data.briefing_scope.sectors_considered}</dd><p className="mt-1 text-[10px] text-white/60">{data.briefing_scope.sectors_with_records} with 30-day records</p></div></dl>
+            </div>
+            <div className="grid gap-4 px-5 py-5 md:grid-cols-2 md:px-8">
+              <details className="rounded-xl border border-border"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-navy">Inspect all country evidence states</summary><div className="grid max-h-[30rem] gap-2 overflow-y-auto border-t border-border p-3 sm:grid-cols-2">{data.briefing_scope.countries.map(country => <Link key={country.country_code} to={`/countries/${country.country_code}`} className="flex items-center justify-between gap-3 rounded-lg bg-navy/[.035] px-3 py-2 text-xs"><span><strong className="text-navy">{country.country_name}</strong><small className="ml-1 text-muted-foreground">{country.region}</small></span><span className="tabular-nums text-muted-foreground">{country.records_30d}</span></Link>)}</div></details>
+              <details className="rounded-xl border border-border"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-navy">Inspect every sector evidence state</summary><div className="space-y-2 border-t border-border p-3">{data.briefing_scope.sectors.map(sector => <Link key={sector.sector_id} to={`/sectors/${sector.sector_id}/trends`} className="grid grid-cols-[1fr_auto] gap-3 rounded-lg bg-navy/[.035] px-3 py-2"><span className="text-xs font-semibold text-navy">{sector.sector_name}</span><span className="text-right text-[10px] text-muted-foreground">{sector.records_30d} records · {sector.countries_30d} countries</span></Link>)}</div></details>
+            </div>
+            <p className="border-t border-border px-5 py-4 text-xs leading-5 text-muted-foreground md:px-8">{data.briefing_scope.methodology} Updated {new Intl.DateTimeFormat(activeLocale(), { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(data.briefing_scope.updated_at))}.</p>
+          </section>
 
           <section className="page-section rounded-2xl border border-border bg-white p-5 md:p-8" aria-labelledby="continental-audio-briefings">
             <div className="flex max-w-4xl items-start gap-4">

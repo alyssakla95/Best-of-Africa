@@ -2607,6 +2607,31 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   '6-digit verification code': 'Código de verificação de 6 dígitos',
   'Membership email address': 'Endereço de correio electrónico da adesão',
   'Member Preview': 'Pré-visualização de membro',
+  'Live briefing scope': 'Âmbito da síntese em directo',
+  'Every African country and every economic sector is checked': 'Todos os países africanos e todos os sectores económicos são verificados',
+  'The evidence ledger refreshes every minute. Countries or sectors with zero current records remain visible as evidence gaps; they are never omitted or filled with assumptions.':
+    'O registo documental é actualizado a cada minuto. Os países ou sectores sem registos actuais permanecem visíveis como lacunas documentais; nunca são omitidos nem preenchidos com suposições.',
+  'Countries checked': 'Países verificados',
+  'Sectors checked': 'Sectores verificados',
+  'Complete 54-country ledger': 'Registo completo dos 54 países',
+  'Current week compared with the preceding seven days. Zero is a real coverage result.':
+    'Semana actual comparada com os sete dias anteriores. Zero é um resultado documental real.',
+  'Open all country readings': 'Abrir todas as leituras nacionais',
+  'Full sector ledger': 'Registo sectorial completo',
+  'Published evidence across the rolling 30-day window.': 'Dados publicados na janela móvel de 30 dias.',
+  'records ·': 'registos ·',
+  'Ledger updated': 'Registo actualizado',
+  'Continental briefing scope': 'Âmbito da síntese continental',
+  'No African market or economic sector disappears from the briefing': 'Nenhum mercado africano nem sector económico desaparece da síntese',
+  'The rolling evidence check covers every configured country and sector. A zero remains an explicit evidence gap, while official economic indicators retain their actual observation years.':
+    'A verificação documental móvel abrange todos os países e sectores configurados. Um valor zero permanece uma lacuna documental explícita, enquanto os indicadores económicos oficiais conservam os respectivos anos de observação.',
+  'Countries considered': 'Países considerados',
+  'Sectors considered': 'Sectores considerados',
+  'with 30-day records': 'com registos nos últimos 30 dias',
+  'Inspect all country evidence states': 'Examinar o estado documental de todos os países',
+  'Inspect every sector evidence state': 'Examinar o estado documental de todos os sectores',
+  'The briefing explicitly checks all 54 African countries and every configured economic sector. A zero identifies no published record in the 30-day window and is not replaced with an inference.':
+    'A síntese verifica explicitamente os 54 países africanos e todos os sectores económicos configurados. Um valor zero identifica a ausência de registos publicados na janela de 30 dias e não é substituído por uma inferência.',
 };
 
 const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {

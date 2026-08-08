@@ -297,13 +297,24 @@ export const BetaArticle = () => {
   }, [data?.article?.id]);
 
   // Show the real headline in the breadcrumb instead of the de-slugified URL.
-  useSetBreadcrumb(data?.article ? stripMarkdown(data.article.title) : null);
+  useSetBreadcrumb(
+    data?.article
+      ? stripMarkdown(data.article.title)
+      : isError
+        ? t('article.not_found', 'Story not found')
+        : null,
+  );
 
   if (isLoading) return <ArticleSkeleton />;
 
   // Show a proper error page instead of silently redirecting
   if (isError || !data?.article) {
     return (
+      <>
+      <SEO
+        title={`${t('article.not_found', 'Story not found')} | BOA-Story`}
+        description={t('article.not_found_desc', 'This story may have moved or been updated. Browse all our coverage below.')}
+      />
       <div className="bg-background text-primary font-sans">
         
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
@@ -320,6 +331,7 @@ export const BetaArticle = () => {
           </Link>
         </div>
       </div>
+      </>
     );
   }
 

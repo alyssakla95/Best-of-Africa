@@ -1,9 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import ts from 'typescript';
-import { PORTUGUESE_INTERFACE_PHRASES } from '../frontend/src/i18n/pt-PT-1945.ts';
+import { PORTUGUESE_INTERFACE_PHRASES, translatePortugueseInterfaceText } from '../frontend/src/i18n/pt-PT-1945.ts';
 
 const root = process.cwd();
+const scanAllLiterals = !process.argv.includes('--jsx-only');
 const sourceRoot = join(root, 'frontend', 'src');
 const catalogue = new Set(Object.keys(PORTUGUESE_INTERFACE_PHRASES));
 const maintained = new Set();
@@ -38,16 +39,36 @@ const results = [];
 
 const record = (file, source, node, raw) => {
   const value = raw.replace(/\s+/g, ' ').trim();
-  if (value.length < 3 || !/[A-Za-z]/.test(value) || ignored.test(value) || !englishMarkers.test(value)) return;
-  const utilityMarkers = value.match(/(?:^|\s)(?:fixed|relative|absolute|flex|grid|hidden|block|rounded(?:-|$)|bg-|text-|data-\[|z-|w-|h-|p[trblxy]?-[\d[]|m[trblxy]?-[\d[]|top-|left-|right-|inset-|overflow-|transition)/g) || [];
+  const languageSample = value.replace(/BOA-Story/g, '');
+  if (value.length < 3 || !/[A-Za-z]/.test(value) || ignored.test(value) || /^(?:\/|\[data-|use client$)/.test(value) || !englishMarkers.test(languageSample)) return;
+  const utilityMarkers = value.match(/(?:^|\s)(?:fixed|relative|absolute|flex|inline-flex|grid|hidden|block|items-|gap-|leading-|underline|hover:|page-|section-|content-|space-|opacity-|select-|pointer-|blur-|min-w-|max-w-|animate-|slide-|rounded(?:-|$)|bg-|text-|data-\[|z-|w-|h-|p[trblxy]?-[\d[]|m[trblxy]?-[\d[]|top-|left-|right-|inset-|overflow-|transition)/g) || [];
   if (utilityMarkers.length >= 2) return;
-  if (catalogue.has(value) || maintained.has(value)) return;
+  if (catalogue.has(value) || maintained.has(value) || translatePortugueseInterfaceText(value)) return;
   const position = source.getLineAndCharacterOfPosition(node.getStart(source));
   results.push({ file: relative(root, file).replaceAll('\\', '/'), line: position.line + 1, value });
 };
 
 for (const file of files) {
+  const auditRelativePath = relative(root, file).replaceAll('\\', '/');
+  const skipAllLiteralAudit = /(?:\/components\/ui\/|\/components\/(?:CustomCursor|ErrorBoundary|InterfaceTranslator|SEO)\.tsx$|\/context\/LanguageContext\.tsx$)/.test(`/${auditRelativePath}`);
   const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const isDiagnosticLiteral = (node) => {
+    let parent = node.parent;
+    while (parent && !ts.isStatement(parent) && !ts.isSourceFile(parent)) {
+      if (ts.isNewExpression(parent) && parent.expression.getText(source) === 'Error') return true;
+      if (ts.isCallExpression(parent) && /^console\./.test(parent.expression.getText(source))) return true;
+      parent = parent.parent;
+    }
+    return false;
+  };
+  const hasCodedPortugueseBranch = (node) => {
+    let parent = node.parent;
+    while (parent && !ts.isStatement(parent) && !ts.isSourceFile(parent)) {
+      if (ts.isConditionalExpression(parent) && /language\s*===\s*['"]pt['"]/.test(parent.condition.getText(source))) return true;
+      parent = parent.parent;
+    }
+    return false;
+  };
   const visit = (node) => {
     if (ts.isJsxText(node)) record(file, source, node, node.text);
     if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer)) {
@@ -56,6 +77,10 @@ for (const file of files) {
       if (!structural.test(name)) record(file, source, node, node.initializer.text);
     }
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      if (scanAllLiterals && !skipAllLiteralAudit && !isDiagnosticLiteral(node)
+        && !ts.isImportDeclaration(node.parent) && !ts.isExportDeclaration(node.parent)) {
+        record(file, source, node, node.text);
+      }
       let parent = node.parent;
       while (parent && !ts.isSourceFile(parent) && !ts.isJsxAttribute(parent)) {
         if (ts.isJsxExpression(parent)) {
@@ -64,6 +89,11 @@ for (const file of files) {
         }
         parent = parent.parent;
       }
+    }
+    if (scanAllLiterals && !skipAllLiteralAudit && ts.isTemplateExpression(node)
+      && !isDiagnosticLiteral(node) && !hasCodedPortugueseBranch(node)) {
+      const sample = `${node.head.text}${node.templateSpans.map(span => `1${span.literal.text}`).join('')}`;
+      record(file, source, node, sample);
     }
     ts.forEachChild(node, visit);
   };

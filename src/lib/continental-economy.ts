@@ -8,6 +8,7 @@ import {
 
 const WORLD_BANK_API = 'https://api.worldbank.org/v2';
 const CACHE_KEY = 'continental:economy:wdi:v1';
+const REFRESH_LOCK_KEY = 'continental:economy:wdi:refresh-lock:v1';
 const FRESH_MS = 15 * 60 * 1000;
 const COUNTRY_CODES = [
     'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CD', 'CG', 'CI',
@@ -93,6 +94,8 @@ export function continentalEconomyCacheIsFresh(snapshot: Snapshot): boolean {
 
 export async function refreshContinentalEconomy(env: Env): Promise<Snapshot> {
     const previous = await getContinentalEconomyCache(env);
+    if (await env.CACHE.get(REFRESH_LOCK_KEY)) return previous;
+    await env.CACHE.put(REFRESH_LOCK_KEY, new Date().toISOString(), { expirationTtl: 5 * 60 });
     try {
         const [seriesResults, countryResult] = await Promise.all([
             Promise.all(SERIES.map(fetchSeries)),
@@ -151,6 +154,7 @@ export async function refreshContinentalEconomy(env: Env): Promise<Snapshot> {
             },
         };
         await env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot));
+        await env.CACHE.delete(REFRESH_LOCK_KEY);
         return snapshot;
     } catch (error) {
         console.error('[continental-economy] refresh failed', error);

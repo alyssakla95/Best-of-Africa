@@ -169,6 +169,7 @@ const BUNDLED_SNAPSHOT: SectorPerformanceResponse = {
 };
 
 const CACHE_KEY = 'market-intel:sector-performance:wdi:v2';
+const REFRESH_LOCK_KEY = 'market-intel:sector-performance:wdi:refresh-lock:v1';
 // Re-check the official upstream release frequently while preserving the
 // indicator's real observation year. Retrieval freshness must never be
 // presented as if an annual economic series itself updates every minute.
@@ -324,6 +325,8 @@ export function sectorPerformanceCacheIsFresh(snapshot: SectorPerformanceRespons
 
 export async function refreshSectorPerformance(env: Env): Promise<SectorPerformanceResponse | null> {
     const previous = await getSectorPerformanceCache(env);
+    if (await env.CACHE.get(REFRESH_LOCK_KEY)) return previous;
+    await env.CACHE.put(REFRESH_LOCK_KEY, new Date().toISOString(), { expirationTtl: 5 * 60 });
     const results = await Promise.all(SECTOR_PERFORMANCE_SERIES.map(fetchSeries));
     if (!results.some((item): item is SectorPerformance => item !== null)) return previous;
     const previousBySector = new Map((previous?.data || []).map(item => [item.sector_id, item]));
@@ -342,5 +345,6 @@ export async function refreshSectorPerformance(env: Env): Promise<SectorPerforma
         source_url: 'https://data.worldbank.org/indicator',
     };
     await env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot));
+    await env.CACHE.delete(REFRESH_LOCK_KEY);
     return snapshot;
 }

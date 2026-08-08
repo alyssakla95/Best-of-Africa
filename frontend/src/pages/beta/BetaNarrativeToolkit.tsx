@@ -398,7 +398,7 @@ export const BetaNarrativeToolkit: React.FC = () => {
               {dossier!.upcoming_events.slice(0, 6).map(event => (
                 <article key={event.id} className="rounded-xl bg-navy/5 p-5">
                   <p className="text-xs font-bold uppercase tracking-widest text-navy/55">{event.category} · {formatReaderDate(event.date_start, { dateStyle: 'medium' })}</p>
-                  <h3 className="mt-2 font-bold">{stripMarkdown(event.title)}</h3>
+                  <h3 data-no-translate className="mt-2 font-bold">{stripMarkdown(event.title)}</h3>
                   <p className="mt-2 text-sm text-navy/65">{event.location}</p>
                 </article>
               ))}

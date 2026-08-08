@@ -15,6 +15,7 @@ export function PhotoCredit({ credit, sourceUrl, className = '' }: PhotoCreditPr
       href={sourceUrl}
       target="_blank"
       rel="noreferrer noopener"
+      data-no-translate
       className={`inline-flex items-center gap-1.5 text-[11px] leading-4 underline decoration-current/30 underline-offset-2 hover:decoration-current ${className}`}
       aria-label={`${language === 'pt' ? 'Fonte da fotografia' : t('photo.source', 'Photography source')}: ${credit}`}
     >

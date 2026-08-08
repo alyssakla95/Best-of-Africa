@@ -13,7 +13,7 @@ const ORTHOGRAPHY_REPLACEMENTS: ReadonlyArray<OrthographyReplacement> = [
   [/\bsetor(es|ial|iais)?\b/gi, (value: string) => value.replace(/setor/gi, 'sector')],
   [/\batividade(s)?\b/gi, (value: string) => value.replace(/atividade/gi, 'actividade')],
   [/\bativo(s|a|as)?\b/gi, (value: string) => value.replace(/ativo/gi, 'activo')],
-  [/\batual(mente|ização|izações)?\b/gi, (value: string) => value.replace(/atual/gi, 'actual')],
+  [/\batual(mente|ização|izações|izado|izada|izados|izadas)?\b/gi, (value: string) => value.replace(/atual/gi, 'actual')],
   [/\bprojeto(s)?\b/gi, (value: string) => value.replace(/projeto/gi, 'projecto')],
   [/\bobjetivo(s)?\b/gi, (value: string) => value.replace(/objetivo/gi, 'objectivo')],
   [/\bperspetiva(s)?\b/gi, (value: string) => value.replace(/perspetiva/gi, 'perspectiva')],
@@ -2461,6 +2461,7 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Toggle play queue': 'Mostrar ou ocultar a fila de reprodução',
   '6-digit verification code': 'Código de verificação de 6 dígitos',
   'Membership email address': 'Endereço de correio electrónico da adesão',
+  'Member Preview': 'Pré-visualização de membro',
 };
 
 const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {

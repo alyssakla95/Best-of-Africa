@@ -156,7 +156,7 @@ export const BetaEvents: React.FC = () => {
                                             </span>
                                         )}
                                     </div>
-                                    <h2 className="mb-5 break-words font-serif text-[clamp(1.85rem,8vw,2.5rem)] leading-[1.05] text-foreground md:mb-6">{stripMarkdown(event.title)}</h2>
+                                    <h2 data-no-translate className="mb-5 break-words font-serif text-[clamp(1.85rem,8vw,2.5rem)] leading-[1.05] text-foreground md:mb-6">{stripMarkdown(event.title)}</h2>
                                     <p className="mb-7 text-base font-light leading-7 text-foreground/60 line-clamp-4 md:mb-10 md:text-[1.125rem] md:leading-[1.8]">
                                         {localText(stripMarkdown(event.description))}
                                     </p>

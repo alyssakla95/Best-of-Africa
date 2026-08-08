@@ -4,7 +4,7 @@ const REPLACEMENTS: ReadonlyArray<readonly [RegExp, Replacement]> = [
     [/\bsetor(es|ial|iais)?\b/gi, 'sector$1'],
     [/\batividade(s)?\b/gi, 'actividade$1'],
     [/\bativo(s|a|as)?\b/gi, 'activo$1'],
-    [/\batual(mente|ização|izações)?\b/gi, 'actual$1'],
+    [/\batual(mente|ização|izações|izado|izada|izados|izadas)?\b/gi, 'actual$1'],
     [/\bprojeto(s)?\b/gi, 'projecto$1'],
     [/\bobjetivo(s)?\b/gi, 'objectivo$1'],
     [/\bperspetiva(s)?\b/gi, 'perspectiva$1'],
@@ -142,6 +142,7 @@ export const PORTUGUESE_SECTOR_NAMES: Readonly<Record<string, string>> = {
     'Finance & Investment': 'Finanças e investimento',
     'Healthcare & Pharma': 'Saúde e indústria farmacêutica',
     'Infrastructure & Construction': 'Infra-estruturas e construção',
+    'Manufacturing & Industry': 'Indústria transformadora e indústria',
     'Technology & Innovation': 'Tecnologia e inovação',
     'Tourism & Hospitality': 'Turismo e hotelaria',
 };

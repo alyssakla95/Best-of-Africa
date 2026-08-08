@@ -1,20 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { normalisePortuguesePortugal1945 } from '../../src/lib/portuguese';
+import { normalisePortuguesePortugal1945, portugueseSectorName } from '../../src/lib/portuguese';
 import { localizeArticleList } from '../../src/routes/articles';
 import type { Env } from '../../src/types';
 
 describe('Portuguese publication locale', () => {
     it('normalises Brazilian and post-1990 forms before serving stored copy', () => {
         expect(normalisePortuguesePortugal1945(
-            'A diretora atual apresentou ações do setor econômico em uma infraestrutura de trilhões, com demanda dos usuários.',
+            'A diretora atualizada apresentou ações do setor econômico em uma infraestrutura de trilhões, com demanda dos usuários.',
         )).toBe(
-            'A directora actual apresentou acções do sector económico numa infra-estrutura de biliões, com procura dos utilizadores.',
+            'A directora actualizada apresentou acções do sector económico numa infra-estrutura de biliões, com procura dos utilizadores.',
         );
     });
 
     it('preserves empty optional publication fields', () => {
         expect(normalisePortuguesePortugal1945(null)).toBeNull();
         expect(normalisePortuguesePortugal1945('')).toBe('');
+    });
+
+    it('covers every sector name returned by current market datasets', () => {
+        expect(portugueseSectorName('Manufacturing & Industry')).toBe('Indústria transformadora e indústria');
     });
 
     it('serves an existing Portuguese record instead of forcing article lists back to English', async () => {

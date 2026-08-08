@@ -39,8 +39,8 @@ describe('coded Portuguese interface locale', () => {
     it('uses European Portuguese and the pre-1990 spellings requested for the product', () => {
         expect(PORTUGUESE_LOCALE).toBe('pt-PT');
         expect(PORTUGUESE_ORTHOGRAPHY).toBe('1945');
-        expect(applyPortuguese1945Orthography('setor, atividade, atual, projeto, objetivo e perspetiva'))
-            .toBe('sector, actividade, actual, projecto, objectivo e perspectiva');
+        expect(applyPortuguese1945Orthography('setor, atividade, atual, atualizada, projeto, objetivo e perspetiva'))
+            .toBe('sector, actividade, actual, actualizada, projecto, objectivo e perspectiva');
 
         const maintainedCopy = Object.values(TRANSLATIONS.pt).join('\n');
         expect(maintainedCopy).not.toMatch(/\bsetor(?:es|ial|iais)?\b/i);
@@ -174,6 +174,18 @@ describe('coded Portuguese interface locale', () => {
         expect(translatePortugueseInterfaceText('Return to Nigéria hub')).toBe('Voltar ao dossiê de Nigéria');
         expect(translatePortugueseInterfaceText('Middle reading from 31 countries · 2024'))
             .toBe('Leitura mediana de 31 países · 2024');
+    });
+
+    it('localises preview identity, document titles and discovery metadata with the coded catalogue', () => {
+        const seo = readFileSync('frontend/src/components/SEO.tsx', 'utf8');
+        expect(translatePortugueseInterfaceText('Member Preview')).toBe('Pré-visualização de membro');
+        expect(seo).toContain('translatePortugueseInterfaceText(value) || value');
+        expect(seo).toContain("updateMeta('og:title', localizedTitle");
+        expect(seo).toContain("updateMeta('twitter:description', localizedDescription");
+        expect(translatePortugueseInterfaceText('African Market Intelligence | BOA-Story'))
+            .toBe('Inteligência dos Mercados Africanos | BOA-Story');
+        expect(translatePortugueseInterfaceText('Continental Economic Overview | BOA-Story'))
+            .toBe('Panorama Económico Continental | BOA-Story');
     });
 
     it('serves generated evidence reports as coded Portuguese structures', () => {

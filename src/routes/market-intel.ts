@@ -670,16 +670,7 @@ router.get('/founder-log', async (c) => {
         }, {}),
     ).sort((a, b) => b[1] - a[1]);
     const countries = tally(rows.map(row => reqLang === 'pt' ? portugueseCountryName(row.country_code, row.country_name) : row.country_name));
-    const sectorNamesPt: Record<string, string> = {
-        'Agriculture & Agribusiness': 'Agricultura e agro-indústria',
-        'Energy & Mining': 'Energia e mineração',
-        'Finance & Investment': 'Finanças e investimento',
-        'Healthcare & Pharma': 'Saúde e indústria farmacêutica',
-        'Infrastructure & Construction': 'Infra-estruturas e construção',
-        'Technology & Innovation': 'Tecnologia e inovação',
-        'Tourism & Hospitality': 'Turismo e hotelaria',
-    };
-    const sectors = tally(rows.map(row => reqLang === 'pt' && row.sector_name ? sectorNamesPt[row.sector_name] || row.sector_name : row.sector_name));
+    const sectors = tally(rows.map(row => reqLang === 'pt' && row.sector_name ? portugueseSectorName(row.sector_name) : row.sector_name));
     const sources = tally(rows.map(row => row.source_name));
     const list = (items: Array<[string, number]>) =>
         items.slice(0, 8).map(([name, count]) => `${name} (${count})`).join(', ') || (reqLang === 'pt' ? 'Sem registos classificados neste período' : 'No classified records in this period');

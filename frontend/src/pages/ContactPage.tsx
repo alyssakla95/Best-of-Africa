@@ -136,6 +136,7 @@ export const ContactPage: React.FC = () => {
                                         value={formData.email}
                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
                                         placeholder="official@organization.com"
+                                        data-no-translate
                                         className="bg-background text-ink border-border placeholder:text-ink-mute focus-visible:ring-accent"
                                     />
                                 </div>

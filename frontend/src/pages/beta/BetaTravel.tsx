@@ -159,7 +159,7 @@ export const BetaTravel: React.FC = () => {
                                 <div className="mb-4 text-[11px] font-bold uppercase tracking-widest text-accent">
                                     {hotel.location}
                                 </div>
-                                <h3 className="text-[2.5rem] font-serif leading-none mb-6 text-foreground">{hotel.name}</h3>
+                                <h3 data-no-translate className="text-[2.5rem] font-serif leading-none mb-6 text-foreground">{hotel.name}</h3>
                                 <p className="text-foreground/60 mb-10 text-[1.125rem] font-light leading-[1.8]">
                                     An established property included as a starting point for independent research. Confirm location, facilities, policies, rates and current operating conditions directly before making travel decisions.
                                 </p>

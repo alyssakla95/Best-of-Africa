@@ -542,7 +542,9 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
           'UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization',
           'African Development Bank Group', 'African Development Bank News', 'World Bank Africa News',
           'International Monetary Fund News', 'UN Trade and Development News', 'International Finance Corporation Africa',
-          'International Energy Agency Africa', 'International Renewable Energy Agency News', 'FAO Africa News'
+          'International Energy Agency Africa', 'International Renewable Energy Agency News', 'FAO Africa News',
+          'Economic Community of West African States', 'Southern African Development Community',
+          'East African Community', 'Common Market for Eastern and Southern Africa'
         ) THEN 0
         WHEN name IN ('BBC Africa', 'Associated Press Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
                       'France 24 Africa', 'Deutsche Welle Africa', 'Al Jazeera', 'The Africa Report',

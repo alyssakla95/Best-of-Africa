@@ -715,10 +715,22 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
                 const aiPrompt = `System: You are BOA-Story's evidence editor. Use only the supplied article, distinguish facts from analysis and preserve the requested JSON schema.\nUser: ${prompt}`;
                 const rawResponse = await callConfiguredAI(c.env, { prompt: aiPrompt, max_tokens: 6000, temperature: 0.2, response_profile: 'structured-analysis', structured_output: true });
                 const match = (rawResponse || '').match(/\{.*\}/s);
-                return match ? normaliseDecisionBrief(JSON.parse(match[0]) as ArticleDecisionBrief) : null;
+                if (!match) throw new Error('Decision brief did not return JSON');
+                const parsed = JSON.parse(match[0]) as ArticleDecisionBrief;
+                const strategicWords = typeof parsed.strategic_implication === 'string'
+                    ? parsed.strategic_implication.trim().split(/\s+/).filter(Boolean).length
+                    : 0;
+                if (!Array.isArray(parsed.key_takeaways) || parsed.key_takeaways.length < 6
+                    || strategicWords < 300
+                    || !Array.isArray(parsed.limitations) || parsed.limitations.length < 4
+                    || !Array.isArray(parsed.diligence_questions) || parsed.diligence_questions.length < 5
+                    || !Array.isArray(parsed.claim_ledger) || parsed.claim_ledger.length < 4) {
+                    throw new Error('Decision brief failed the required depth structure');
+                }
+                return normaliseDecisionBrief(parsed);
             } catch (e) {
                 console.error('AI Context Failed', e);
-                return null;
+                throw e;
             }
     };
 
@@ -731,7 +743,9 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
     const aiContext = await getCachedValue<ArticleDecisionBrief>(c.env, aiContextKey);
     if (!aiContext) {
         c.executionCtx.waitUntil(
-            getCached(c.env, aiContextKey, generateAiContext, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
+            getCached(c.env, aiContextKey, generateAiContext, { ttl: CACHE_TTL.ARCHIVE })
+                .then(() => undefined)
+                .catch(error => console.error('Decision brief warm failed', error))
         );
     }
 

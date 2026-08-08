@@ -68,6 +68,7 @@ describe('Portuguese publication locale', () => {
         expect(source).toContain('/outlook?lang=${getReaderLanguage()}');
         expect(articleRoute).toContain("articleContext(article.id)}:pt-PT-1945:v1");
         expect(articleRoute).toContain("Write every human-readable JSON value in natural European Portuguese from Portugal");
+        expect(articleRoute).toContain("max_tokens: 6000");
         expect(articleRoute).toContain("...(aiContext ? { ai_context: aiContext } : {})");
         expect(articleRoute).not.toContain("aiContext && reqLang !== 'pt'");
         expect(outlookRoute).toContain('zero registos publicados na janela documental');

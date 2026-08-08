@@ -147,7 +147,7 @@ export const AdminPage: React.FC = () => {
                             <LockClosedIcon className="h-4 w-4" /> Restricted Access
                         </div>
                         <h1 className="text-4xl font-serif font-black text-foreground">Mission Intelligence Console</h1>
-                        <p className="text-muted-foreground font-medium">Monitoring and regulating autonomous content operations.</p>
+                        <p className="text-muted-foreground font-medium">Monitoring editorial content operations.</p>
                     </div>
 
                     <Tabs defaultValue="moderation" className="space-y-8">

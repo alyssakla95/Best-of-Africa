@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Hono } from 'hono';
 import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
 import { TRANSLATIONS } from '../../frontend/src/i18n/dict';
 import {
@@ -29,6 +30,15 @@ const looksPortuguese = (value: string) => {
 };
 
 describe('coded Portuguese interface locale', () => {
+    it('covers exact user-facing English copy throughout the frontend source', () => {
+        const audit = spawnSync(process.execPath, [
+            '--experimental-strip-types',
+            'scripts/audit-portuguese-interface.mjs',
+        ], { cwd: process.cwd(), encoding: 'utf8' });
+
+        expect(audit.status, `${audit.stdout}\n${audit.stderr}`).toBe(0);
+    });
+
     it('contains a Portuguese source string for every maintained English key', () => {
         const missing = Object.keys(TRANSLATIONS.en)
             .filter((key) => !TRANSLATIONS.pt?.[key]?.trim());
@@ -46,6 +56,11 @@ describe('coded Portuguese interface locale', () => {
         expect(maintainedCopy).not.toMatch(/\bsetor(?:es|ial|iais)?\b/i);
         expect(maintainedCopy).not.toMatch(/\batividade(?:s)?\b/i);
         expect(maintainedCopy).not.toMatch(/\bperspetiva(?:s)?\b/i);
+
+        const completeInterfaceCopy = Object.values(PORTUGUESE_INTERFACE_PHRASES)
+            .map(applyPortuguese1945Orthography)
+            .join('\n');
+        expect(completeInterfaceCopy).not.toMatch(/\b(?:setor(?:es|ial|iais)?|atividade(?:s)?|perspetiva(?:s)?|projeto(?:s)?|objetivo(?:s)?)\b/i);
     });
 
     it('normalises stored publication copy without breaking Portuguese grammar or capitalisation', () => {

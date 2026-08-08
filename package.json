@@ -21,6 +21,7 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "test:ui": "vitest --ui",
+        "audit:portuguese": "node --experimental-strip-types scripts/audit-portuguese-interface.mjs",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {

@@ -61,7 +61,7 @@ export const ArticleFeedbackDialog: React.FC<ArticleFeedbackDialogProps> = ({
                         <Label htmlFor="feedback">Editorial feedback</Label>
                         <Textarea
                             id="feedback"
-                            placeholder="Why is this change necessary? (e.g., Tone issues, hallucination, missing context...)"
+                            placeholder="Why is this change necessary? (e.g., Tone issues, unsupported claims, missing context...)"
                             value={feedback}
                             onChange={(e) => setFeedback(e.target.value)}
                             className="min-h-[100px]"

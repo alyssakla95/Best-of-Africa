@@ -5,6 +5,7 @@ describe('source quality and coverage admission', () => {
     it('distinguishes authoritative, established, national and aggregator sources', () => {
         expect(sourceQualityProfile('Reuters', 'https://reuters.com/world/africa', 'discovery').tier).toBe(4);
         expect(sourceQualityProfile('The Africa Report', null, 'discovery').tier).toBe(3);
+        expect(sourceQualityProfile('Economic Community of West African States', 'https://ecowas.int/news', 'discovery').tier).toBe(4);
         expect(sourceQualityProfile('Ghana Business News', null, 'discovery').tier).toBe(2);
         expect(sourceQualityProfile('AllAfrica · Liberia', null, 'fixed').tier).toBe(1);
         expect(sourceQualityProfile('Unknown Blog', null, 'discovery').tier).toBe(0);
@@ -13,10 +14,12 @@ describe('source quality and coverage admission', () => {
     });
 
     it('ships a broad trusted discovery pool', () => {
-        expect(TRUSTED_DISCOVERY_DOMAINS.length).toBeGreaterThanOrEqual(45);
+        expect(TRUSTED_DISCOVERY_DOMAINS.length).toBeGreaterThanOrEqual(60);
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('reuters.com');
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('afdb.org');
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('afreximbank.com');
+        expect(TRUSTED_DISCOVERY_DOMAINS).toContain('ecowas.int');
+        expect(TRUSTED_DISCOVERY_DOMAINS).toContain('comesa.int');
         expect(new Set(TRUSTED_DISCOVERY_CATALOG.map(source => source.lane))).toEqual(new Set([
             'global-news', 'markets', 'primary-evidence', 'sector-evidence',
             'africa-specialist', 'multilingual',
@@ -26,7 +29,7 @@ describe('source quality and coverage admission', () => {
     it('caps rolling country and publisher concentration', () => {
         expect(coverageAdmissionFailure({ total30d: 300, country30d: 159, source30d: 10, countryCode: 'NG', sourceName: 'Reuters', qualityTier: 4 }))
             .toContain('rolling country balance');
-        expect(coverageAdmissionFailure({ total30d: 300, country30d: 2, source30d: 40, countryCode: 'BW', sourceName: 'Daily Maverick', qualityTier: 3 }))
+        expect(coverageAdmissionFailure({ total30d: 300, country30d: 2, source30d: 40, countryCode: 'BW', sourceName: 'Daily Maverick', qualityTier: 3, tier4Total30d: 200 }))
             .toContain('rolling source balance');
         expect(coverageAdmissionFailure({ total30d: 300, country30d: 2, source30d: 2, countryCode: 'BW', sourceName: 'Reuters', qualityTier: 4 }))
             .toBeNull();
@@ -55,6 +58,36 @@ describe('source quality and coverage admission', () => {
             sourceName: 'Verified Liberian outlet',
             qualityTier: 2,
             tier2Total30d: 20,
+        })).toBeNull();
+    });
+
+    it('requires global or primary evidence to be the majority of the rolling window', () => {
+        expect(coverageAdmissionFailure({
+            total30d: 100,
+            country30d: 1,
+            source30d: 1,
+            countryCode: 'KE',
+            sourceName: 'The Africa Report',
+            qualityTier: 3,
+            tier4Total30d: 40,
+        })).toContain('at least 55%');
+        expect(coverageAdmissionFailure({
+            total30d: 100,
+            country30d: 0,
+            source30d: 1,
+            countryCode: 'LR',
+            sourceName: 'The Africa Report',
+            qualityTier: 3,
+            tier4Total30d: 40,
+        })).toBeNull();
+        expect(coverageAdmissionFailure({
+            total30d: 100,
+            country30d: 2,
+            source30d: 1,
+            countryCode: 'KE',
+            sourceName: 'Reuters',
+            qualityTier: 4,
+            tier4Total30d: 40,
         })).toBeNull();
     });
 

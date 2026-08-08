@@ -78,7 +78,8 @@ export async function generateArticleFromQueue(
             SELECT COUNT(*) AS total_30d,
                    SUM(CASE WHEN ((? IS NULL AND country_code IS NULL) OR country_code = ?) THEN 1 ELSE 0 END) AS country_30d,
                    SUM(CASE WHEN LOWER(COALESCE(source_title, '')) = LOWER(?) THEN 1 ELSE 0 END) AS source_30d,
-                   SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_30d
+                   SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_30d,
+                   SUM(CASE WHEN source_quality_tier = 4 THEN 1 ELSE 0 END) AS tier4_30d
             FROM articles
             WHERE status IN ('published', 'pending_audit')
               AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
@@ -91,6 +92,7 @@ export async function generateArticleFromQueue(
             sourceName: publisherName,
             qualityTier: quality.tier,
             tier2Total30d: Number(coverage?.tier2_30d || 0),
+            tier4Total30d: Number(coverage?.tier4_30d || 0),
         });
         if (admissionFailure) {
             await env.DB.prepare(

@@ -18,6 +18,11 @@ const PRIMARY_OR_GLOBAL = [
     'united nations development programme', 'undp', 'world health organization', 'who',
     'european investment bank', 'eib', 'european bank for reconstruction and development', 'ebrd',
     'organisation for economic co-operation and development', 'oecd', 'un tourism', 'miga',
+    'wall street journal', 'wsj', 'cnbc', 'cnn', 'nikkei', 'agence france-presse', 'afp',
+    'bank for international settlements', 'bis', 'extractive industries transparency initiative', 'eiti',
+    'international fund for agricultural development', 'ifad', 'economic community of west african states', 'ecowas',
+    'southern african development community', 'sadc', 'east african community', 'eac',
+    'common market for eastern and southern africa', 'comesa',
 ];
 
 const ESTABLISHED_SPECIALIST = [
@@ -51,6 +56,8 @@ const PRIMARY_DOMAINS = [
     'miga.org', 'iea.org', 'irena.org', 'ilo.org', 'fao.org', 'unido.org',
     'intracen.org', 'undp.org', 'who.int', 'eib.org', 'ebrd.com', 'oecd.org',
     'untourism.int',
+    'wsj.com', 'cnbc.com', 'cnn.com', 'nikkei.com', 'afp.com', 'bis.org', 'eiti.org',
+    'ifad.org', 'ecowas.int', 'sadc.int', 'eac.int', 'comesa.int', 'igad.int',
 ];
 
 const SPECIALIST_DOMAINS = [
@@ -93,6 +100,11 @@ export const TRUSTED_DISCOVERY_CATALOG = [
     { domain: 'bloomberg.com', lane: 'global-news' },
     { domain: 'bbc.com', lane: 'global-news' },
     { domain: 'economist.com', lane: 'global-news' },
+    { domain: 'wsj.com', lane: 'global-news' },
+    { domain: 'cnbc.com', lane: 'global-news' },
+    { domain: 'cnn.com', lane: 'global-news' },
+    { domain: 'nikkei.com', lane: 'global-news' },
+    { domain: 'afp.com', lane: 'global-news' },
     { domain: 'spglobal.com', lane: 'markets' },
     { domain: 'fitchratings.com', lane: 'markets' },
     { domain: 'moodys.com', lane: 'markets' },
@@ -119,6 +131,14 @@ export const TRUSTED_DISCOVERY_CATALOG = [
     { domain: 'ebrd.com', lane: 'markets' },
     { domain: 'oecd.org', lane: 'markets' },
     { domain: 'untourism.int', lane: 'sector-evidence' },
+    { domain: 'bis.org', lane: 'markets' },
+    { domain: 'eiti.org', lane: 'sector-evidence' },
+    { domain: 'ifad.org', lane: 'sector-evidence' },
+    { domain: 'ecowas.int', lane: 'primary-evidence' },
+    { domain: 'sadc.int', lane: 'primary-evidence' },
+    { domain: 'eac.int', lane: 'primary-evidence' },
+    { domain: 'comesa.int', lane: 'primary-evidence' },
+    { domain: 'igad.int', lane: 'primary-evidence' },
     { domain: 'theafricareport.com', lane: 'africa-specialist' },
     { domain: 'african.business', lane: 'africa-specialist' },
     { domain: 'theconversation.com', lane: 'africa-specialist' },
@@ -146,6 +166,7 @@ export interface CoverageAdmissionInput {
     sourceName: string;
     qualityTier: SourceQualityProfile['tier'];
     tier2Total30d?: number;
+    tier4Total30d?: number;
 }
 
 export function coverageAdmissionFailure(input: CoverageAdmissionInput): string | null {
@@ -161,9 +182,22 @@ export function coverageAdmissionFailure(input: CoverageAdmissionInput): string 
         input.qualityTier === 2
         && input.total30d >= 24
         && input.country30d >= 1
-        && (input.tier2Total30d || 0) / input.total30d >= 0.20
+        && (input.tier2Total30d || 0) / input.total30d >= 0.10
     ) {
-        return 'source quality mix: verified national reporting has reached its 20% rolling ceiling';
+        return 'source quality mix: verified national reporting has reached its 10% rolling ceiling';
+    }
+
+    // An established specialist may open an evidence gap, but it cannot keep
+    // expanding the feed while globally authoritative or primary evidence is a
+    // minority. This makes tier 4 the platform's default layer rather than an
+    // occasional supplement to regional commentary.
+    if (
+        input.qualityTier === 3
+        && input.total30d >= 24
+        && input.country30d >= 1
+        && (input.tier4Total30d || 0) / input.total30d < 0.55
+    ) {
+        return 'source quality mix: primary and globally authoritative evidence must comprise at least 55% of the rolling window';
     }
 
     const countryCap = Math.max(2, Math.ceil(input.total30d * 0.04));
@@ -189,7 +223,7 @@ export function diversifyCoverageRows<T extends { country_code?: string | null; 
     const picked: T[] = [];
     const countryCounts = new Map<string, number>();
     const publisherCounts = new Map<string, number>();
-    const maximumNationalSources = Math.max(1, Math.floor(limit * 0.20));
+    const maximumNationalSources = Math.max(1, Math.floor(limit * 0.10));
     let nationalSources = 0;
     for (const row of rows) {
         if (picked.length >= limit) break;

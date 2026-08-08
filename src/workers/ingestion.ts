@@ -135,6 +135,14 @@ export function mentionsTargetCountry(title: string, content: string, countryNam
     return [normalizedName, ...aliases.map(normalizedDiscoveryText)].some(name => haystack.includes(name));
 }
 
+export function discoveryCountryExpression(countryName: string): string {
+    const normalizedName = normalizedDiscoveryText(countryName);
+    const aliases = COUNTRY_DISCOVERY_ALIASES[normalizedName] || [];
+    return [countryName, ...aliases]
+        .map(name => `"${name.replace(/"/g, '')}"`)
+        .join(' OR ');
+}
+
 const STRONG_MARKET_EVIDENCE = [
     /\beconom(?:y|ic|ics)\b/, /\bbusiness(?:es)?\b/, /\bexports?\b/, /\bimports?\b/,
     /\binvest(?:ment|ments|or|ors|ing)\b/, /\bmarkets?\b/, /\bfinanc(?:e|es|ial|ing)\b/,
@@ -333,6 +341,34 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
 interface CoverageCountry {
     name: string;
     recent_count: number;
+}
+
+export interface DiscoveryCountry {
+    code: string;
+    name: string;
+    region: string;
+    article_count: number;
+    last_attempted_at: string | null;
+    attempt_count?: number;
+}
+
+/** Select more than one underserved market per region without allowing one
+ * difficult country to monopolise the discovery schedule indefinitely. */
+export function selectDiscoveryTargets(countries: DiscoveryCountry[], perRegion = 2): DiscoveryCountry[] {
+    const byRegion = new Map<string, DiscoveryCountry[]>();
+    for (const country of countries) {
+        const group = byRegion.get(country.region) || [];
+        group.push(country);
+        byRegion.set(country.region, group);
+    }
+    const compare = (a: DiscoveryCountry, b: DiscoveryCountry) =>
+        Number(a.article_count || 0) - Number(b.article_count || 0)
+        || String(a.last_attempted_at || '1970-01-01').localeCompare(String(b.last_attempted_at || '1970-01-01'))
+        || Number(a.attempt_count || 0) - Number(b.attempt_count || 0)
+        || a.name.localeCompare(b.name);
+    return [...byRegion.keys()].sort().flatMap(region =>
+        (byRegion.get(region) || []).sort(compare).slice(0, perRegion)
+    );
 }
 
 /** Prefer valid evidence naming markets with the least recent output. */
@@ -605,7 +641,7 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         console.warn(`[ingestion] Skipping non-independent source ${s.name}.`);
                         return;
                     }
-                    if (sourceProfile.tier === 2 && fixedTier2Share >= 0.20) {
+                    if (sourceProfile.tier === 2 && fixedTier2Share >= 0.10) {
                         await env.DB.prepare(`UPDATE sources SET last_fetched_at = datetime('now') WHERE id = ?`).bind(s.id).run();
                         console.warn(`[ingestion] Pausing national source ${s.name}: the rolling national-source share is ${(fixedTier2Share * 100).toFixed(1)}%.`);
                         return;
@@ -726,11 +762,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                 SELECT c.code, c.name, c.region,
                        SUM(CASE WHEN a.status IN ('published', 'pending_audit')
                                  AND a.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS article_count
-                       , d.last_attempted_at
+                       , d.last_attempted_at, COALESCE(d.attempt_count, 0) AS attempt_count
                 FROM countries c
                 LEFT JOIN articles a ON a.country_code = c.code
                 LEFT JOIN coverage_discovery_state d ON d.country_code = c.code
-                GROUP BY c.code, d.last_attempted_at
+                GROUP BY c.code, d.last_attempted_at, d.attempt_count
                 ORDER BY article_count ASC,
                          COALESCE(d.last_attempted_at, '1970-01-01') ASC,
                          c.region ASC, c.name ASC
@@ -755,13 +791,10 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
             // permanently monopolising a regional slot while retaining a strict
             // all-country coverage objective.
             const minute = Math.floor(Date.now() / 60000);
-            const byRegion = new Map<string, Array<{ code: string; name: string; article_count: number; last_attempted_at: string | null }>>();
-            for (const country of (underservedQuery.results || []) as Array<{ code: string; name: string; region: string; article_count: number; last_attempted_at: string | null }>) {
-                const group = byRegion.get(country.region) || [];
-                group.push(country);
-                byRegion.set(country.region, group);
-            }
-            const targetCountries = [...byRegion.values()].map(group => group[0]).filter(Boolean);
+            const targetCountries = selectDiscoveryTargets(
+                (underservedQuery.results || []) as unknown as DiscoveryCountry[],
+                2,
+            );
             await Promise.all(targetCountries.map(country => env.DB.prepare(`
                 INSERT INTO coverage_discovery_state (country_code, last_attempted_at, attempt_count)
                 VALUES (?, datetime('now'), 1)
@@ -777,9 +810,6 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                 return TRUSTED_DISCOVERY_CATALOG.filter(source => lanes.includes(source.lane));
             };
             const countryPool = sourcesForLanes(['global-news', 'primary-evidence', 'markets', 'multilingual']);
-            const globalNewsPool = sourcesForLanes(['global-news']);
-            const primaryEvidencePool = sourcesForLanes(['primary-evidence']);
-            const countryContextPool = sourcesForLanes(['markets', 'multilingual', 'africa-specialist']);
             const sectorPool = discoveryCatalog.filter(source =>
                 ['sector-evidence', 'primary-evidence', 'markets'].includes(source.lane)
             );
@@ -791,17 +821,16 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             const queries: Array<{ query: string; targetCountryCode?: string; targetCountryName?: string }> = [
                 ...targetCountries.map((country, index) => {
-                    // Each country search combines a global newsroom, a primary
-                    // institution and a regional/market specialist. This avoids
-                    // three adjacent catalogue entries representing one evidence
-                    // type and gives every market triangulated acquisition paths.
-                    const domains = [
-                        globalNewsPool[(minute + index) % globalNewsPool.length].domain,
-                        primaryEvidencePool[(minute + index * 3) % primaryEvidencePool.length].domain,
-                        countryContextPool[(minute + index * 5) % countryContextPool.length].domain,
-                    ];
+                    // One first-party domain per query is deliberately simpler
+                    // than a parenthesised OR expression: Google otherwise
+                    // ignores the quoted country surprisingly often. The domain
+                    // rotates on every attempt, so each market moves through
+                    // global newsrooms, primary institutions and market sources.
+                    const domain = countryPool[
+                        (minute + Number(country.attempt_count || 0) + index * 7) % countryPool.length
+                    ].domain;
                     return {
-                        query: `(${domains.map(domain => `site:${domain}`).join(' OR ')}) "${country.name}" (economy OR business OR trade OR investment OR infrastructure) when:30d`,
+                        query: `site:${domain} (${discoveryCountryExpression(country.name)}) (economy OR business OR trade OR investment OR infrastructure OR economie OR commerce OR investissement OR economia OR comercio OR investimento) when:45d`,
                         targetCountryCode: country.code,
                         targetCountryName: country.name,
                     };

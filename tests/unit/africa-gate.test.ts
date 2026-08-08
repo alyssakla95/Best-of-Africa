@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect } from 'vitest';
-import { extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry } from '../../src/workers/ingestion';
+import { discoveryCountryExpression, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, selectDiscoveryTargets } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -110,6 +110,25 @@ describe('mentionsTargetCountry', () => {
     it('supports official and common country-name variants', () => {
         expect(mentionsTargetCountry('Ivory Coast cocoa exports rise', '', "Côte d'Ivoire")).toBe(true);
         expect(mentionsTargetCountry('DRC revises its mining code', '', 'Democratic Republic of Congo')).toBe(true);
+    });
+});
+
+describe('underserved-country discovery', () => {
+    it('builds alias-aware single-country search expressions', () => {
+        expect(discoveryCountryExpression("C\u00f4te d'Ivoire")).toContain('ivory coast');
+        expect(discoveryCountryExpression('Cabo Verde')).toContain('cape verde');
+    });
+
+    it('selects two least-covered, least-recently-attempted markets per region', () => {
+        const countries = [
+            { code: 'LR', name: 'Liberia', region: 'West', article_count: 0, last_attempted_at: '2026-08-08', attempt_count: 90 },
+            { code: 'GM', name: 'Gambia', region: 'West', article_count: 0, last_attempted_at: null, attempt_count: 0 },
+            { code: 'BJ', name: 'Benin', region: 'West', article_count: 0, last_attempted_at: null, attempt_count: 0 },
+            { code: 'GH', name: 'Ghana', region: 'West', article_count: 4, last_attempted_at: null, attempt_count: 0 },
+            { code: 'AO', name: 'Angola', region: 'Central', article_count: 0, last_attempted_at: null, attempt_count: 0 },
+            { code: 'GA', name: 'Gabon', region: 'Central', article_count: 1, last_attempted_at: null, attempt_count: 0 },
+        ];
+        expect(selectDiscoveryTargets(countries).map(country => country.code)).toEqual(['AO', 'GA', 'BJ', 'GM']);
     });
 });
 

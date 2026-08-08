@@ -11,6 +11,7 @@ import {
     translatePortugueseInterfaceText,
 } from '../../frontend/src/i18n/pt-PT-1945';
 import { translationRouter } from '../../src/routes/translation';
+import { localiseStoredReportForPortuguese } from '../../src/routes/market-intel';
 import { translateText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
 import {
@@ -22,7 +23,7 @@ import {
 const looksPortuguese = (value: string) => {
     if (value === 'Best of Africa.') return true;
     if (/^(?:Idioma|Remover|Fotografia|Fontes|Contacto|Conta|Confiança|Definições|Empresas|Inteligência|Ler|Privacidade|Sobre|Termos|Facultativo|Obrigatório)$/i.test(value)) return true;
-    if (/\b(?:abrir|actual|ajudá-lo|apoiar|candidato|candidata|consultado|direitos|fotografia|históricas|identificadas|mercado|nome|observações|oficial|país|países|pesquisar|portal|preparado|primeiro|priorizar|projecções|publicações|recurso|registo|reservados|segundo|seleccione|tentar|terceiro)\b/i.test(value)) return true;
+    if (/\b(?:abrir|actual|ajudá-lo|análise|apoiar|candidato|candidata|consultado|direitos|documentada|económicos|fotografia|históricas|identificadas|mercado|nome|observações|oficial|país|países|pesquisar|portal|preparado|primeiro|priorizar|projecções|publicações|recurso|registo|reservados|segundo|seleccione|síntese|tentar|terceiro)\b/i.test(value)) return true;
     const markers = value.match(/\b(?:aos?|as|com|da|das|de|do|dos|em|entre|num|numa|não|o|os|para|pela|pelas|pelo|pelos|por|que|sem|uma|um)\b/gi) || [];
     return /[ãõçáéíóúâêôà]/i.test(value) && markers.length > 0;
 };
@@ -173,6 +174,32 @@ describe('coded Portuguese interface locale', () => {
         expect(translatePortugueseInterfaceText('Return to Nigéria hub')).toBe('Voltar ao dossiê de Nigéria');
         expect(translatePortugueseInterfaceText('Middle reading from 31 countries · 2024'))
             .toBe('Leitura mediana de 31 países · 2024');
+    });
+
+    it('serves generated evidence reports as coded Portuguese structures', () => {
+        const report = localiseStoredReportForPortuguese({
+            id: 'country-report',
+            type: 'country_brief',
+            title: 'Egypt Country Brief',
+            subtitle: 'Market Intelligence Report',
+            metadata: { country_code: 'EG', country_name: 'Egypt' },
+            sections: [
+                { title: 'Executive Summary', content: 'English generated narrative.' },
+                { title: 'Economic Indicators', content: '', data: { gdp_usd: 10, population: 20 } },
+                { title: 'Sector Coverage', content: '', data: [{ sector: 'Technology & Innovation', articles: 3 }] },
+            ],
+        }, [{ título: 'Registo revisto', fonte: 'Fonte oficial', data: '2026-08-08' }]);
+
+        expect(report.title).toBe('Síntese nacional — Egipto');
+        expect(report.subtitle).toBe('Dossiê documental de mercado | Egipto');
+        expect(report.sections.map((section: Record<string, unknown>) => section.title)).toEqual([
+            'Como ler esta síntese',
+            'Indicadores económicos',
+            'Cobertura sectorial documentada',
+            'Registos recentes em português',
+        ]);
+        expect(JSON.stringify(report)).not.toContain('English generated narrative');
+        expect(report.sections[2].data[0]).toEqual({ sector: 'Tecnologia e inovação', registos: 3 });
     });
 
     it('covers direct copy across every reader-facing routed page', () => {

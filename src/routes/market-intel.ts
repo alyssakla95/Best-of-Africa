@@ -8,7 +8,7 @@ import type { Env, Variables, MarketIntelligence } from '../types';
 import { requireApiKey, rateLimit } from '../lib/auth';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
-import { normalisePortuguesePortugal1945, portugueseCountryName } from '../lib/portuguese';
+import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import {
     getSectorPerformanceCache,
     refreshSectorPerformance,
@@ -17,6 +17,102 @@ import {
 import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+type StoredReportRecord = Record<string, any>;
+
+const PORTUGUESE_REPORT_FIELDS: Readonly<Record<string, string>> = {
+    articles: 'registos',
+    average: 'média',
+    country: 'país',
+    country_code: 'código do país',
+    date: 'data',
+    engagement: 'resposta dos leitores',
+    gdp: 'PIB',
+    gdp_growth: 'crescimento do PIB',
+    gdp_usd: 'PIB em dólares dos Estados Unidos',
+    indicator: 'indicador',
+    population: 'população',
+    sector: 'sector',
+    source: 'fonte',
+    title: 'título',
+    value: 'valor',
+    year: 'ano',
+};
+
+const localisePortugueseReportData = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(localisePortugueseReportData);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => {
+        const translatedKey = PORTUGUESE_REPORT_FIELDS[key] || key.replaceAll('_', ' ');
+        if (key === 'sector' && typeof item === 'string') return [translatedKey, portugueseSectorName(item) || item];
+        if (key === 'country' && typeof item === 'string') return [translatedKey, portugueseCountryName(null, item) || item];
+        return [translatedKey, localisePortugueseReportData(item)];
+    }));
+};
+
+export function localiseStoredReportForPortuguese(
+    report: StoredReportRecord,
+    portugueseRecords: StoredReportRecord[] = [],
+): StoredReportRecord {
+    const metadata = report.metadata || {};
+    const countryName = portugueseCountryName(metadata.country_code, metadata.country_name) || metadata.country_name;
+    const sectorName = portugueseSectorName(metadata.sector_name) || metadata.sector_name;
+    const originalSections = Array.isArray(report.sections) ? report.sections : [];
+    const sectionData = (title: string) => originalSections.find((section: StoredReportRecord) => section.title === title)?.data;
+
+    if (report.type === 'country_brief') {
+        const records = portugueseRecords.length ? portugueseRecords : [{
+            estado: 'O dossiê conserva apenas registos cuja edição portuguesa foi revista e armazenada.',
+            âmbito: countryName,
+        }];
+        return {
+            ...report,
+            title: `Síntese nacional — ${countryName}`,
+            subtitle: `Dossiê documental de mercado | ${countryName}`,
+            sections: [
+                {
+                    title: 'Como ler esta síntese',
+                    content: `Este dossiê reúne os indicadores económicos armazenados, a cobertura sectorial e os registos recentes revistos para ${countryName}. Os totais de publicações descrevem a base documental da BOA-Story; não medem, por si só, o desempenho ou a atractividade do mercado.`,
+                },
+                { title: 'Indicadores económicos', content: '', data: localisePortugueseReportData(sectionData('Economic Indicators')) },
+                { title: 'Cobertura sectorial documentada', content: '', data: localisePortugueseReportData(sectionData('Sector Coverage')) },
+                { title: 'Registos recentes em português', content: '', data: records },
+            ],
+        };
+    }
+
+    if (report.type === 'sector_analysis') {
+        const records = portugueseRecords.length ? portugueseRecords : [{
+            estado: 'A selecção conserva apenas registos sectoriais cuja edição portuguesa foi revista e armazenada.',
+            sector: sectorName,
+        }];
+        return {
+            ...report,
+            title: `Análise sectorial — ${sectorName}`,
+            subtitle: `Registo pan-africano | ${sectorName}`,
+            sections: [
+                {
+                    title: 'Como ler esta análise',
+                    content: `Esta análise organiza a distribuição nacional dos registos e a evidência recente revista sobre ${sectorName}. A concentração de publicações identifica onde existe mais documentação; não substitui indicadores comparáveis de produção, preços, investimento, emprego ou rentabilidade.`,
+                },
+                { title: 'Distribuição nacional dos registos', content: '', data: localisePortugueseReportData(sectionData('Country Breakdown')) },
+                { title: 'Registos recentes em português', content: '', data: records },
+            ],
+        };
+    }
+
+    return {
+        ...report,
+        title: normalisePortuguesePortugal1945(report.title) || report.title,
+        subtitle: normalisePortuguesePortugal1945(report.subtitle) || report.subtitle,
+        sections: originalSections.map((section: StoredReportRecord) => ({
+            ...section,
+            title: normalisePortuguesePortugal1945(section.title) || section.title,
+            content: '',
+            data: localisePortugueseReportData(section.data),
+        })),
+    };
+}
 
 // Apply API key auth to premium endpoints
 // Reports routes have mixed access (catalog is public, details are premium)
@@ -328,6 +424,7 @@ ${evidenceContext}`;
 
 // GET /market-intel/reports - List available reports
 router.get('/generated-reports', async (c) => {
+    const reqLang = c.req.query('lang')?.toLowerCase();
     const reports = await c.env.DB.prepare(`
         SELECT id, type, title, metadata, created_at
         FROM generated_reports
@@ -343,13 +440,16 @@ router.get('/generated-reports', async (c) => {
             // needs identifying metadata; the body is fetched from the detail
             // endpoint after a reader opens one report.
             const { sections: _sections, ...summaryMetadata } = metadata;
-            return {
+            const summary = {
                 id: r.id,
                 type: r.type,
                 title: r.title,
                 metadata: summaryMetadata,
                 created_at: r.created_at,
             };
+            if (reqLang !== 'pt') return summary;
+            const { sections: _portugueseSections, subtitle: _portugueseSubtitle, ...localizedSummary } = localiseStoredReportForPortuguese(summary);
+            return localizedSummary;
         })
     });
 });
@@ -358,6 +458,7 @@ router.get('/generated-reports', async (c) => {
 // evidence brief as structured data. This route must live on this active router
 // (the older split reports router is not mounted by src/routes/index.ts).
 router.get('/generated-reports/:id', async (c) => {
+    const reqLang = c.req.query('lang')?.toLowerCase();
     const report = await c.env.DB.prepare(`
         SELECT id, type, title, metadata, created_at
         FROM generated_reports
@@ -373,18 +474,51 @@ router.get('/generated-reports/:id', async (c) => {
     try { metadata = r.metadata ? JSON.parse(r.metadata as string) : {}; } catch { metadata = {}; }
     const { sections, subtitle, generated_at, ...rest } = metadata;
 
-    return c.json({
-        data: {
-            id: r.id,
-            type: r.type,
-            title: r.title,
-            subtitle: subtitle || null,
-            sections: Array.isArray(sections) ? sections : [],
-            metadata: rest,
-            generated_at: generated_at || r.created_at,
-            created_at: r.created_at,
-        },
-    });
+    const data = {
+        id: r.id,
+        type: r.type,
+        title: r.title,
+        subtitle: subtitle || null,
+        sections: Array.isArray(sections) ? sections : [],
+        metadata: rest,
+        generated_at: generated_at || r.created_at,
+        created_at: r.created_at,
+    };
+
+    if (reqLang !== 'pt') return c.json({ data });
+
+    const countryCode = String(rest.country_code || '');
+    const sectorId = String(rest.sector_id || '');
+    const localizedArticles = countryCode || sectorId
+        ? await c.env.DB.prepare(`
+            SELECT pt.title, pt.summary, a.source_title, a.published_at,
+                   c.code AS country_code, c.name AS country_name, s.name AS sector_name
+            FROM articles a
+            JOIN article_translations pt
+              ON pt.article_id = a.id
+             AND pt.language = 'pt'
+             AND pt.quality >= 0
+             AND length(trim(pt.title)) > 0
+            LEFT JOIN countries c ON c.code = a.country_code
+            LEFT JOIN sectors s ON s.id = a.sector_id
+            WHERE a.status = 'published'
+              AND (? = '' OR a.country_code = ?)
+              AND (? = '' OR a.sector_id = ?)
+            ORDER BY a.published_at DESC
+            LIMIT 20
+        `).bind(countryCode, countryCode, sectorId, sectorId).all()
+        : { results: [] };
+
+    const portugueseRecords = (localizedArticles.results || []).map((article: StoredReportRecord) => ({
+        título: normalisePortuguesePortugal1945(article.title),
+        resumo: normalisePortuguesePortugal1945(article.summary),
+        país: portugueseCountryName(article.country_code, article.country_name),
+        sector: portugueseSectorName(article.sector_name),
+        fonte: article.source_title,
+        data: article.published_at,
+    }));
+
+    return c.json({ data: localiseStoredReportForPortuguese(data, portugueseRecords) });
 });
 
 // GET /market-intel/reports - List available reports

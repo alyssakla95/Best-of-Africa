@@ -192,7 +192,11 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
     LIMIT ? OFFSET ?
   `).bind(...params, Math.min(200, limitNum * 6), offset).all<ArticleListItem & { source_title?: string | null }>();
 
-        articleResults = await localizeArticleList(c.env, diversifyCoverageRows(articles.results || [], limitNum), reqLang);
+        articleResults = await localizeArticleList(
+            c.env,
+            diversifyCoverageRows(articles.results || [], limitNum, country ? limitNum : 2, 1),
+            reqLang,
+        );
     } catch (err) {
         console.error('[articles] list query failed:', err);
         return c.json({ error: 'internal_error', message: 'Failed to load articles' }, 500);
@@ -373,19 +377,21 @@ router.get('/country/:code', validate('param', CountryCodeParamSchema), validate
       a.id, a.slug, a.title, a.subtitle, a.summary,
       a.sector_id, s.name as sector_name,
       a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
-      a.published_at, a.engagement_score
+      a.published_at, a.engagement_score, a.country_code, a.source_title, a.source_quality_tier
     FROM articles a
     LEFT JOIN sectors s ON a.sector_id = s.id
     WHERE a.country_code = ? AND a.status = 'published' ${portugueseOnly}
     ORDER BY a.published_at DESC
     LIMIT ? OFFSET ?
-  `).bind(code, limitNum, offset).all();
+  `).bind(code, Math.min(200, limitNum * 6), offset).all();
+
+    const countryArticles = diversifyCoverageRows(articles.results || [], limitNum, limitNum, 1);
 
     c.header('Cache-Control', 'public, max-age=60, s-maxage=300');
     return c.json({
         country,
         articles: {
-            data: await localizeArticleList(c.env, articles.results || [], reqLang),
+            data: await localizeArticleList(c.env, countryArticles, reqLang),
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -432,15 +438,17 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
       a.id, a.slug, a.title, a.subtitle, a.summary,
       a.country_code, c.name as country_name, c.flag_emoji,
       a.hero_image_url, a.image_credit, a.image_source_url, a.reading_time_minutes,
-      a.published_at, a.engagement_score
+      a.published_at, a.engagement_score, a.source_title, a.source_quality_tier
     FROM articles a
     LEFT JOIN countries c ON a.country_code = c.code
     WHERE a.sector_id = ? AND a.status = 'published' ${portugueseOnly}
     ORDER BY a.published_at DESC
     LIMIT ? OFFSET ?
-  `).bind(sectorId, limitNum, offset).all();
+  `).bind(sectorId, Math.min(200, limitNum * 8), offset).all();
 
-    const sectorEvidenceRows = (articles.results as any[]).slice(0, 10);
+    const sectorArticles = diversifyCoverageRows(articles.results || [], limitNum);
+
+    const sectorEvidenceRows = (sectorArticles as any[]).slice(0, 10);
     const sectorEvidence = sectorEvidenceRows.map((article, index) =>
                 `[${index + 1}] ${article.published_at || 'date unavailable'} — ${article.title}\n${article.summary || 'Summary unavailable.'}`
     ).join('\n\n');
@@ -473,7 +481,7 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
             ai_outlook: aiOutlook || immediateSectorOutlook
         },
         articles: {
-            data: await localizeArticleList(c.env, articles.results || [], reqLang),
+            data: await localizeArticleList(c.env, sectorArticles, reqLang),
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -641,15 +649,16 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
         CACHE_KEYS.articleRelated(article.id),
         async () => {
             const result = await c.env.DB.prepare(`
-                SELECT id, slug, title, summary, hero_image_url, image_credit, image_source_url, reading_time_minutes
+                SELECT id, slug, title, summary, country_code, source_title, source_quality_tier,
+                       hero_image_url, image_credit, image_source_url, reading_time_minutes
                 FROM articles
                 WHERE status = 'published'
                   AND id != ?
                   AND (country_code = ? OR sector_id = ?)
                 ORDER BY ((engagement_score + 3.0) / pow((julianday('now') - julianday(published_at)) + 2, 1.3)) DESC, published_at DESC
-                LIMIT 4
+                LIMIT 24
             `).bind(article.id, article.country_code, article.sector_id).all();
-            return result.results || [];
+            return diversifyCoverageRows(result.results || [], 4);
         },
         { ttl: CACHE_TTL.FREQUENT } // 5 minutes
     );

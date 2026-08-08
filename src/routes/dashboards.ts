@@ -11,6 +11,7 @@ import { callConfiguredAI } from '../lib/ai';
 import { CONTINENTAL_WDI_SNAPSHOT } from '../data/continental-wdi-snapshot';
 import { getSectorPerformanceCache } from '../lib/sector-performance';
 import { normalisePortuguesePortugal1945 } from '../lib/portuguese';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -77,11 +78,12 @@ router.get('/:region', async (c) => {
         if (articleIds.length > 0) {
             const placeholders = articleIds.map(() => '?').join(',');
             const articles = await c.env.DB.prepare(`
-                SELECT id, slug, title, summary, country_code, hero_image_url, image_credit, image_source_url, published_at
+                SELECT id, slug, title, summary, country_code, source_title, source_quality_tier,
+                       hero_image_url, image_credit, image_source_url, published_at
                 FROM articles
                 WHERE id IN (${placeholders}) AND status = 'published'
             `).bind(...articleIds).all();
-            featuredArticles = articles.results || [];
+            featuredArticles = diversifyCoverageRows(articles.results || [], 6);
         }
     }
 
@@ -180,6 +182,8 @@ router.get('/continental/overview', async (c) => {
                 a.audio_duration_seconds,
                 a.published_at,
                 a.country_code,
+                a.source_title,
+                a.source_quality_tier,
                 c.name AS country_name,
                 s.name AS sector_name
             FROM articles a
@@ -190,7 +194,7 @@ router.get('/continental/overview', async (c) => {
               AND a.audio_url IS NOT NULL
               AND TRIM(a.audio_url) <> ''
             ORDER BY datetime(a.published_at) DESC, a.id DESC
-            LIMIT 6
+            LIMIT 48
         `).all(),
     ]);
 
@@ -199,7 +203,7 @@ router.get('/continental/overview', async (c) => {
         sector_performance: sectorPerformance?.data || [],
         sectors_measured: sectorPerformance?.sectors_measured || 0,
         sector_methodology: sectorPerformance?.methodology || '',
-        narrated_briefings: (narratedBriefingsResult.results || []).map((briefing: Record<string, any>) => reqLang === 'pt' ? {
+        narrated_briefings: diversifyCoverageRows(narratedBriefingsResult.results || [], 6).map((briefing: Record<string, any>) => reqLang === 'pt' ? {
             ...briefing,
             title: normalisePortuguesePortugal1945(briefing.title) || briefing.title,
             summary: normalisePortuguesePortugal1945(briefing.summary),
@@ -246,12 +250,13 @@ async function generateDashboard(env: Env, region: string): Promise<any> {
 
     // Get featured articles
     const featured = await env.DB.prepare(`
-        SELECT a.id FROM articles a
+        SELECT a.id, a.country_code, a.source_title, a.source_quality_tier FROM articles a
         JOIN countries c ON a.country_code = c.code
         WHERE c.region = ? AND a.status = 'published'
         ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
-        LIMIT 6
+        LIMIT 48
     `).bind(region).all();
+    const balancedFeatured = diversifyCoverageRows(featured.results || [], 6);
 
     const dashboardId = crypto.randomUUID();
     const keyMetrics = {
@@ -296,7 +301,7 @@ async function generateDashboard(env: Env, region: string): Promise<any> {
         region,
         `${region} Africa Dashboard`,
         JSON.stringify(keyMetrics),
-        JSON.stringify((featured.results || []).map((a: any) => a.id)),
+        JSON.stringify(balancedFeatured.map((a: any) => a.id)),
         executiveBrief
     ).run();
 
@@ -345,13 +350,14 @@ router.get('/analytics/summary', async (c) => {
         `).all<Record<string, any>>(),
         c.env.DB.prepare(`
             SELECT a.title, a.summary, a.published_at, a.source_title, a.source_url,
+                   a.source_quality_tier, a.country_code,
                    c.name AS country_name, s.name AS sector_name
             FROM articles a
             LEFT JOIN countries c ON c.code = a.country_code
             LEFT JOIN sectors s ON s.id = a.sector_id
             WHERE a.status = 'published'
             ORDER BY a.published_at DESC
-            LIMIT 12
+            LIMIT 96
         `).all<Record<string, any>>(),
     ]);
 
@@ -369,7 +375,8 @@ router.get('/analytics/summary', async (c) => {
         };
     });
 
-    const evidence = (recentRecords.results || []).map((record, index) =>
+    const balancedRecentRecords = diversifyCoverageRows(recentRecords.results || [], 12);
+    const evidence = balancedRecentRecords.map((record, index) =>
         `[${index + 1}] ${record.published_at || 'date unavailable'} — ${record.title}\nCountry: ${record.country_name || 'unavailable'} | Sector: ${record.sector_name || 'unavailable'}\n${(record.summary || 'Summary unavailable.').slice(0, 900)}\nSource: ${record.source_title || 'unavailable'} | ${record.source_url || 'URL unavailable'}`
     ).join('\n\n');
 

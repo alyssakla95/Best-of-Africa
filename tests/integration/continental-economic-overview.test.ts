@@ -14,6 +14,8 @@ describe('GET /dashboards/continental/overview', () => {
             audio_duration_seconds: 420,
             published_at: '2026-07-25T10:00:00Z',
             country_code: 'KE',
+            source_title: 'Reuters',
+            source_quality_tier: 4,
             country_name: 'Kenya',
             sector_name: 'Trade',
         };

@@ -6,6 +6,7 @@
 import type { Env } from '../types';
 import { getKeyEconomicStats } from './economics';
 import { callConfiguredAI } from './ai';
+import { diversifyCoverageRows } from './source-quality';
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Report Types
@@ -46,13 +47,15 @@ export async function generateCountryBrief(
 
     // Get recent articles
     const articles = await env.DB.prepare(`
-        SELECT a.title, a.summary, a.source_title, a.source_url, s.name as sector_name, a.published_at
+        SELECT a.title, a.summary, a.source_title, a.source_url, s.name as sector_name,
+               a.published_at, a.country_code, a.source_quality_tier
         FROM articles a
         LEFT JOIN sectors s ON a.sector_id = s.id
         WHERE a.country_code = ? AND a.status = 'published'
         ORDER BY a.published_at DESC
-        LIMIT 10
+        LIMIT 80
     `).bind(countryCode).all();
+    const balancedArticles = diversifyCoverageRows(articles.results || [], 10, 10, 1);
 
     // Get sector coverage
     const sectors = await env.DB.prepare(`
@@ -67,7 +70,7 @@ export async function generateCountryBrief(
     const economics = await getKeyEconomicStats(env, countryCode);
 
     // Generate executive summary
-    const articleContext = (articles.results || []).slice(0, 10).map((a: any, index: number) =>
+    const articleContext = balancedArticles.map((a: any, index: number) =>
         `[${index + 1}] ${a.published_at || 'date unavailable'} — ${a.title}\nSector: ${a.sector_name || 'unavailable'}\nSource: ${a.source_title || 'unavailable'} | ${a.source_url || 'URL unavailable'}\nEvidence: ${(a.summary || 'summary unavailable').slice(0, 1000)}`
     ).join('\n');
 
@@ -110,7 +113,7 @@ ${articleContext}`;
             {
                 title: 'Recent Headlines',
                 content: '',
-                data: (articles.results || []).map((a: any) => ({
+                data: balancedArticles.map((a: any) => ({
                     title: a.title,
                     sector: a.sector_name,
                     date: a.published_at,
@@ -155,18 +158,20 @@ export async function generateSectorAnalysis(
 
     // Recent articles
     const articles = await env.DB.prepare(`
-        SELECT a.title, a.summary, a.source_title, a.source_url, c.name as country_name, a.published_at
+        SELECT a.title, a.summary, a.source_title, a.source_url, c.name as country_name,
+               a.published_at, a.country_code, a.source_quality_tier
         FROM articles a
         LEFT JOIN countries c ON a.country_code = c.code
         WHERE a.sector_id = ? AND a.status = 'published'
         ORDER BY a.published_at DESC
-        LIMIT 10
+        LIMIT 80
     `).bind(sectorId).all();
+    const balancedArticles = diversifyCoverageRows(articles.results || [], 10);
 
     // analysis
     let aiAnalysis = '';
     try {
-        const context = (articles.results || []).slice(0, 10).map((a: any, index: number) =>
+        const context = balancedArticles.map((a: any, index: number) =>
             `[${index + 1}] ${a.published_at || 'date unavailable'} — ${a.title}\nCountry: ${a.country_name || 'unavailable'}\nSource: ${a.source_title || 'unavailable'} | ${a.source_url || 'URL unavailable'}\nEvidence: ${(a.summary || 'summary unavailable').slice(0, 1000)}`
         ).join('\n');
 
@@ -187,7 +192,7 @@ ${context}`;
         sections: [
             { title: 'Industry Outlook', content: aiAnalysis },
             { title: 'Country Breakdown', content: '', data: countryBreakdown.results },
-            { title: 'Recent Coverage', content: '', data: articles.results },
+            { title: 'Recent Coverage', content: '', data: balancedArticles },
         ],
         metadata: { sector_id: sectorId, sector_name: s.name },
     };

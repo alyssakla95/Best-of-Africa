@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Env, Variables, UserPreference } from '../types';
 import { getCached, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI, MODELS } from '../lib/ai';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -231,17 +232,18 @@ router.get('/recommended', async (c) => {
         const popular = await c.env.DB.prepare(`
             SELECT a.id, a.slug, a.title, a.summary, a.country_code, a.sector_id,
                    c.name as country_name, c.flag_emoji, s.name as sector_name,
-                   a.hero_image_url, a.published_at
+                   a.hero_image_url, a.published_at, a.source_title, a.source_quality_tier
             FROM articles a
             LEFT JOIN countries c ON a.country_code = c.code
             LEFT JOIN sectors s ON a.sector_id = s.id
             WHERE a.status = 'published'
             ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
             LIMIT ?
-        `).bind(limit).all();
+        `).bind(Math.min(100, limit * 8)).all();
+        const balancedPopular = diversifyCoverageRows(popular.results || [], limit);
 
         return c.json({
-            data: (popular.results || []).map((art: any) => ({
+            data: balancedPopular.map((art: any) => ({
                 ...art,
                 reasoning: "Trending on the platform right now."
             }))
@@ -258,17 +260,18 @@ router.get('/recommended', async (c) => {
         const popular = await c.env.DB.prepare(`
             SELECT a.id, a.slug, a.title, a.summary, a.country_code, a.sector_id,
                    c.name as country_name, c.flag_emoji, s.name as sector_name,
-                   a.hero_image_url, a.published_at
+                   a.hero_image_url, a.published_at, a.source_title, a.source_quality_tier
             FROM articles a
             LEFT JOIN countries c ON a.country_code = c.code
             LEFT JOIN sectors s ON a.sector_id = s.id
             WHERE a.status = 'published'
             ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
             LIMIT ?
-        `).bind(limit).all();
+        `).bind(Math.min(100, limit * 8)).all();
+        const balancedPopular = diversifyCoverageRows(popular.results || [], limit);
 
         return c.json({
-            data: (popular.results || []).map((art: any) => ({
+            data: balancedPopular.map((art: any) => ({
                 ...art,
                 reasoning: "Trending on the platform right now."
             }))
@@ -284,7 +287,8 @@ router.get('/recommended', async (c) => {
     let query = `
         SELECT a.id, a.slug, a.title, a.summary, a.country_code, a.sector_id,
                c.name as country_name, c.flag_emoji, s.name as sector_name,
-               a.hero_image_url, a.published_at, a.engagement_score
+               a.hero_image_url, a.published_at, a.engagement_score,
+               a.source_title, a.source_quality_tier
         FROM articles a
         LEFT JOIN countries c ON a.country_code = c.code
         LEFT JOIN sectors s ON a.sector_id = s.id
@@ -313,11 +317,17 @@ router.get('/recommended', async (c) => {
 
     query += '(a.engagement_score * 1.0 / ((julianday(\'now\') - julianday(a.published_at)) + 1)) DESC LIMIT ?';
 
-    const params = [...articlesRead, ...countries, ...sectors, limit];
+    const params = [...articlesRead, ...countries, ...sectors, Math.min(100, limit * 8)];
     const recommended = await c.env.DB.prepare(query).bind(...params).all();
+    const balancedRecommended = diversifyCoverageRows(
+        recommended.results || [],
+        limit,
+        countries.length === 1 && sectors.length === 0 ? limit : 2,
+        1,
+    );
 
     // Generate Reasoning for each item
-    const enrichedResults = (recommended.results || []).map((art: any) => {
+    const enrichedResults = balancedRecommended.map((art: any) => {
         let reason = "Recommended for you.";
         if (art.country_code && countries.includes(art.country_code)) {
             reason = `Because you follow ${art.country_name}`;
@@ -364,11 +374,13 @@ router.get('/feed/curated', async (c) => {
     // For now, simpler time-based cache is sufficient
     return c.json(await getCached(
         c.env,
-        `feed:curated:depth-v7:${sessionId}`,
+        `feed:curated:depth-v8:${sessionId}`,
         async () => {
             // 1. Fetch Top 15 Candidates (SQL)
             const candidates = await c.env.DB.prepare(`
-                SELECT a.id, a.slug, a.title, a.summary, c.name as country, s.name as sector
+                SELECT a.id, a.slug, a.title, a.summary, a.country_code,
+                       a.source_title, a.source_quality_tier,
+                       c.name as country, s.name as sector
                 FROM articles a
                 LEFT JOIN countries c ON a.country_code = c.code
                 LEFT JOIN sectors s ON a.sector_id = s.id
@@ -378,16 +390,23 @@ router.get('/feed/curated', async (c) => {
                     OR a.sector_id IN (${sectors.length ? sectors.map(() => '?').join(',') : "''"})
                 )
                 ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
-                LIMIT 15
+                LIMIT 100
              `).bind(...countries, ...sectors).all();
 
-            if (!candidates.results || candidates.results.length < 3) {
+            const balancedCandidates = diversifyCoverageRows(
+                candidates.results || [],
+                15,
+                countries.length === 1 && sectors.length === 0 ? 15 : 2,
+                1,
+            );
+
+            if (balancedCandidates.length < 3) {
                 // Fallback if not enough matches
                 return { curated: [], message: "Not enough matching content for AI curation yet." };
             }
 
             // 2. Curation Logic
-            const context = (candidates.results as any[]).map((a, i) =>
+            const context = (balancedCandidates as any[]).map((a, i) =>
                 `[${i + 1}] ID:${a.id} | Title: ${a.title} | Country: ${a.country || 'unavailable'} | Sector: ${a.sector || 'unavailable'}\nEvidence: ${(a.summary || 'Summary unavailable.').slice(0, 900)}`
             ).join('\n');
 
@@ -412,7 +431,7 @@ router.get('/feed/curated', async (c) => {
                 // 3. Hydrate Results
                 const finalFeed = [];
                 for (const sel of selections) {
-                    const original = (candidates.results as any[]).find(c => c.id === sel.id);
+                    const original = (balancedCandidates as any[]).find(c => c.id === sel.id);
                     if (original) {
                         finalFeed.push({
                             ...original,
@@ -436,7 +455,7 @@ router.get('/feed/curated', async (c) => {
                 console.error('AI Curation Failed', e);
                 // Fallback to top 5 raw
                 return {
-                    data: candidates.results.slice(0, 5).map(c => ({ ...c, curation: { relevance_note: 'This report directly matches at least one selected country or sector. Read its dated source record and article evidence before drawing a broader conclusion.', match_basis: 'deterministic country or sector preference match' } })),
+                    data: balancedCandidates.slice(0, 5).map(c => ({ ...c, curation: { relevance_note: 'This report directly matches at least one selected country or sector. Read its dated source record and article evidence before drawing a broader conclusion.', match_basis: 'deterministic country or sector preference match' } })),
                     meta: { mode: 'fallback' }
                 };
             }

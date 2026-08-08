@@ -10,6 +10,7 @@ import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 import { validate, CountryCodeParamSchema, UuidParamSchema, AiChatSchema, AiReframeSchema, AiReformatSchema } from '../lib';
 import { z } from 'zod';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -52,7 +53,7 @@ router.get('/country/:code/report', validate('param', CountryCodeParamSchema), a
   // Cache the comprehensive report for 30 minutes
   const report = await getCached(
     c.env,
-    CACHE_KEYS.intelCountryReport(code),
+    `${CACHE_KEYS.intelCountryReport(code)}:source-v2`,
     async () => {
       // Gather comprehensive data
       const [
@@ -78,13 +79,15 @@ router.get('/country/:code/report', validate('param', CountryCodeParamSchema), a
           SELECT id, slug, title, COALESCE(summary, title) AS summary,
                  COALESCE(sector_id, 'general') AS sector_id,
                  COALESCE(published_at, updated_at, created_at) AS published_at,
-                 COALESCE(engagement_score, 0) AS engagement_score
+                 COALESCE(engagement_score, 0) AS engagement_score,
+                 country_code, source_title, source_quality_tier
           FROM articles
           WHERE country_code = ? AND status = 'published'
           ORDER BY published_at DESC
-          LIMIT 10
+          LIMIT 80
         `).bind(code).all(),
       ]);
+      const balancedRecentArticles = diversifyCoverageRows(recentArticles.results || [], 10, 10, 1);
 
       // Identify narrative gaps
       const gaps = await c.env.DB.prepare(`
@@ -96,12 +99,12 @@ router.get('/country/:code/report', validate('param', CountryCodeParamSchema), a
 
       const recommendationKey = `intel:country:${code}:recommendations:v2`;
       const cachedRecommendations = await getCachedValue<string[]>(c.env, recommendationKey);
-      const recommendationFallback = (recentArticles.results as any[]).slice(0, 3).map((article, index) =>
+      const recommendationFallback = (balancedRecentArticles as any[]).slice(0, 3).map((article, index) =>
         `${index + 1}. Verify the institutions, dates and primary documents behind “${article.title}”. The BOA-Story record was published ${article.published_at || 'on an unrecorded date'} and should be checked against current official, regulatory and financial evidence before a decision.`
       );
-      if (!cachedRecommendations && recentArticles.results?.length) {
+      if (!cachedRecommendations && balancedRecentArticles.length) {
         c.executionCtx.waitUntil(
-          getCached(c.env, recommendationKey, () => generateAIRecommendations(c.env, (country as Record<string, any>).name, recentArticles.results || []), { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
+          getCached(c.env, recommendationKey, () => generateAIRecommendations(c.env, (country as Record<string, any>).name, balancedRecentArticles), { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
         );
       }
 
@@ -112,12 +115,12 @@ router.get('/country/:code/report', validate('param', CountryCodeParamSchema), a
           sector: { id: s.id, name: s.name, icon: s.icon } as any,
           count: s.count,
         })),
-        recent_articles: recentArticles.results as any || [],
+        recent_articles: balancedRecentArticles as any,
         evidence_profile: {
           published_articles: Number(articleCount?.total || 0),
           sectors_represented: (topSectors.results || []).length,
-          source_records_reviewed: (recentArticles.results || []).length,
-          latest_reported_at: (recentArticles.results?.[0] as Record<string, any> | undefined)?.published_at || 'No published country record',
+          source_records_reviewed: balancedRecentArticles.length,
+          latest_reported_at: (balancedRecentArticles[0] as Record<string, any> | undefined)?.published_at || 'No published country record',
         },
         methodology: 'BOA-Story does not infer sentiment, investment readiness or tourism appeal from article count, engagement or sector mentions. Use the source-linked recommendations and primary evidence instead.',
         narrative_gaps: (gaps.results || []).map((g: any) => g.name),
@@ -179,12 +182,13 @@ router.get('/sector/:id/trends', validate('param', UuidParamSchema), async (c) =
 
         c.env.DB.prepare(`
           SELECT a.id, a.slug, a.title, a.summary, a.source_url, a.country_code, c.name as country_name,
-                 a.view_count, a.engagement_score, a.published_at
+                 a.view_count, a.engagement_score, a.published_at,
+                 a.source_title, a.source_quality_tier
           FROM articles a
           JOIN countries c ON a.country_code = c.code
           WHERE a.sector_id = ? AND a.status = 'published'
           ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
-          LIMIT 10
+          LIMIT 80
         `).bind(sectorId).all(),
 
         c.env.DB.prepare(`
@@ -197,9 +201,10 @@ router.get('/sector/:id/trends', validate('param', UuidParamSchema), async (c) =
         `).bind(sectorId).all(),
       ]);
 
-      const sectorAnalysisKey = CACHE_KEYS.intelSectorAnalysis(sectorId);
+      const balancedTopArticles = diversifyCoverageRows(topArticles.results || [], 10);
+      const sectorAnalysisKey = `${CACHE_KEYS.intelSectorAnalysis(sectorId)}:source-v2`;
       const generateSectorReport = async () => {
-          const evidence = (topArticles.results as any[]).slice(0, 10).map((article, index) =>
+          const evidence = (balancedTopArticles as any[]).slice(0, 10).map((article, index) =>
             `[${index + 1}] ${article.title}\nCountry: ${article.country_name}\nPublished: ${article.published_at || 'date unavailable'}\nSource URL: ${article.source_url || 'unavailable'}\nCoverage engagement: ${article.engagement_score ?? 'unavailable'}\nEvidence: ${(article.summary || '').slice(0, 1200)}`
           ).join('\n---\n');
           if (!evidence) return "Insufficient evidence for deep analysis.";
@@ -213,12 +218,12 @@ router.get('/sector/:id/trends', validate('param', UuidParamSchema), async (c) =
           }
       };
       const aiReport = await getCachedValue<string>(c.env, sectorAnalysisKey);
-      if (!aiReport && topArticles.results?.length) {
+      if (!aiReport && balancedTopArticles.length) {
         c.executionCtx.waitUntil(
           getCached(c.env, sectorAnalysisKey, generateSectorReport, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
         );
       }
-      const immediateSectorReport = (topArticles.results as any[]).slice(0, 6).map((article, index) =>
+      const immediateSectorReport = (balancedTopArticles as any[]).slice(0, 6).map((article, index) =>
         `${index + 1}. ${article.title} (${article.country_name}, ${article.published_at || 'date not recorded'}). ${(article.summary || '').slice(0, 420)}`
       ).join('\n\n') || `The sector report is grounded in the country, regional and monthly coverage records returned with this response.`;
 
@@ -226,7 +231,7 @@ router.get('/sector/:id/trends', validate('param', UuidParamSchema), async (c) =
         by_country: countryBreakdown.results || [],
         by_region: regionBreakdown.results || [],
         monthly_trend: monthlyTrend.results || [],
-        top_articles: topArticles.results || [],
+        top_articles: balancedTopArticles,
         ai_analyst_report: aiReport || immediateSectorReport
       };
     },

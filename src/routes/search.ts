@@ -9,6 +9,7 @@ import { trackEvent } from '../lib/analytics';
 import { getCached, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { checkRateLimit, rateLimitHeaders } from '../lib/ratelimit';
 import { callConfiguredAI } from '../lib/ai';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -98,7 +99,7 @@ router.get('/', async (c) => {
             const placeholders = articleIds.map(() => '?').join(',');
             const articles = await c.env.DB.prepare(`
         SELECT
-          a.id, a.slug, a.title, a.summary, a.source_url,
+          a.id, a.slug, a.title, a.summary, a.source_url, a.source_title, a.source_quality_tier,
           a.country_code, c.name as country_name,
           a.sector_id, s.name as sector_name,
           a.hero_image_url, a.published_at
@@ -109,7 +110,12 @@ router.get('/', async (c) => {
       `).bind(...articleIds).all();
 
             // Transform to SearchResult format
-            const searchResults = (articles.results || []).map((article: any) => {
+            const balancedSemanticArticles = diversifyCoverageRows(
+                [...(articles.results || [])].sort((left: any, right: any) =>
+                    (bestMatches.get(right.id)?.score || 0) - (bestMatches.get(left.id)?.score || 0)),
+                limitNum,
+            );
+            const searchResults = balancedSemanticArticles.map((article: any) => {
                 const match = bestMatches.get(article.id);
                 // Use chunk text for immediate context if available, else summary
                 const context = match?.text || article.summary;
@@ -162,7 +168,7 @@ router.get('/', async (c) => {
         const ftsQuery = `"${q.replace(/"/g, '""')}"*`;
         const fullTextResults = await c.env.DB.prepare(`
       SELECT 
-        a.id, a.slug, a.title, a.summary,
+        a.id, a.slug, a.title, a.summary, a.source_title, a.source_quality_tier,
         a.country_code, c.name as country_name,
         a.sector_id, s.name as sector_name,
         a.hero_image_url, a.published_at
@@ -174,7 +180,7 @@ router.get('/', async (c) => {
         AND a.status = 'published'
       ORDER BY rank
       LIMIT ?
-    `).bind(ftsQuery, limitNum).all();
+    `).bind(ftsQuery, Math.min(200, limitNum * 8)).all();
 
         // Merge and deduplicate results
         const seen = new Set<string>();
@@ -226,7 +232,7 @@ router.get('/', async (c) => {
             const ph = semanticIds.map(() => '?').join(',');
             const rows = await c.env.DB.prepare(`
                 SELECT a.id, a.slug, a.title, a.summary, a.source_url,
-                       a.country_code, c.name as country_name,
+                       a.country_code, c.name as country_name, a.source_title, a.source_quality_tier,
                        a.sector_id, s.name as sector_name,
                        a.hero_image_url, a.published_at
                 FROM articles a
@@ -244,18 +250,19 @@ router.get('/', async (c) => {
         }
         // Drop anything that never resolved to a published article (stale vectors).
         const resolvedResults = merged.filter((m: any) => m.slug && m.title);
+        const balancedResolvedResults = diversifyCoverageRows(resolvedResults as any[], limitNum);
 
         // ═══════════════════════════════════════════════════════════════════════════
         // RAG: Generate summary from top results using Workers (CACHED)
         // ═══════════════════════════════════════════════════════════════════════════
-        const topResults = resolvedResults.slice(0, 12);
+        const topResults = balancedResolvedResults.slice(0, 12);
         let aiSummary: string | null = null;
 
         if (topResults.length > 0) {
             // Cache summaries for 10 minutes to avoid repeated expensive calls
             aiSummary = await getCached(
                 c.env,
-                CACHE_KEYS.searchAiSummary(`${q}:depth-v4`),
+                CACHE_KEYS.searchAiSummary(`${q}:depth-v5`),
                 async () => {
                     try {
                         const briefsContext = topResults.map((item: any, i: number) => {
@@ -279,7 +286,7 @@ router.get('/', async (c) => {
         }
 
         // Transform results to match frontend SearchResult type
-        const searchResults = resolvedResults.slice(0, limitNum).map((item: any) => ({
+        const searchResults = balancedResolvedResults.map((item: any) => ({
             article: {
                 id: item.id,
                 slug: item.slug,
@@ -310,7 +317,7 @@ router.get('/', async (c) => {
     const ftsQuery = `"${q.replace(/"/g, '""')}"*`;
     const results = await c.env.DB.prepare(`
     SELECT 
-      a.id, a.slug, a.title, a.summary,
+      a.id, a.slug, a.title, a.summary, a.source_title, a.source_quality_tier,
       a.country_code, c.name as country_name,
       a.sector_id, s.name as sector_name,
       a.hero_image_url, a.published_at
@@ -322,10 +329,12 @@ router.get('/', async (c) => {
       AND a.status = 'published'
     ORDER BY rank
     LIMIT ?
-  `).bind(ftsQuery, limitNum).all();
+  `).bind(ftsQuery, Math.min(200, limitNum * 8)).all();
+
+    const balancedFullTextResults = diversifyCoverageRows(results.results || [], limitNum);
 
     // Transform to SearchResult format
-    const searchResults = (results.results || []).map((article: any) => ({
+    const searchResults = balancedFullTextResults.map((article: any) => ({
         article: {
             id: article.id,
             slug: article.slug,
@@ -420,6 +429,7 @@ router.get('/semantic', async (c) => {
         const articles = await c.env.DB.prepare(`
             SELECT 
                 a.id, a.slug, a.title, a.summary, a.content, a.source_url,
+                a.source_title, a.source_quality_tier,
                 a.country_code, c.name as country_name, c.flag_emoji,
                 a.sector_id, s.name as sector_name,
                 a.hero_image_url, a.reading_time_minutes, a.published_at
@@ -434,15 +444,16 @@ router.get('/semantic', async (c) => {
         const sorted = (articles.results || []).sort(
             (a: any, b: any) => (scoreMap.get(b.id) || 0) - (scoreMap.get(a.id) || 0)
         );
+        const balancedSorted = diversifyCoverageRows(sorted, limitNum);
 
         // 4. (Optional) Pass chunks to LLM for summary generation
         let aiSummary: string | null = null;
-        const topResults = sorted.slice(0, 12);
+        const topResults = balancedSorted.slice(0, 12);
 
         if (topResults.length > 0) {
             aiSummary = await getCached(
                 c.env,
-                CACHE_KEYS.searchAiSummary(`${q}:depth-v4`),
+                CACHE_KEYS.searchAiSummary(`${q}:depth-v5`),
                 async () => {
                     try {
                         const contextChunks = topResults.map((item: any, i: number) => {
@@ -466,7 +477,7 @@ router.get('/semantic', async (c) => {
         }
 
         // Transform results
-        const results = sorted.map((article: any) => ({
+        const results = balancedSorted.map((article: any) => ({
             id: article.id,
             slug: article.slug,
             title: article.title,
@@ -516,7 +527,8 @@ router.get('/similar/:id', async (c) => {
     if (!article?.embedding_id) {
         // Fallback: find by same country/sector
         const fallback = await c.env.DB.prepare(`
-      SELECT a.id, a.slug, a.title, a.summary, a.hero_image_url
+      SELECT a.id, a.slug, a.title, a.summary, a.hero_image_url,
+             a.country_code, a.source_title, a.source_quality_tier
       FROM articles a
       WHERE a.id != ?
         AND a.status = 'published'
@@ -526,9 +538,9 @@ router.get('/similar/:id', async (c) => {
         )
       ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
       LIMIT ?
-    `).bind(articleId, articleId, articleId, limitNum).all();
+    `).bind(articleId, articleId, articleId, Math.min(100, limitNum * 8)).all();
 
-        return c.json({ data: fallback.results || [] });
+        return c.json({ data: diversifyCoverageRows(fallback.results || [], limitNum) });
     }
 
     // Get the embedding vector for this article from Vectorize
@@ -541,7 +553,7 @@ router.get('/similar/:id', async (c) => {
     let vectorResults;
     try {
         vectorResults = await c.env.VECTORS.query(embeddingResult[0].values, {
-            topK: limitNum + 1, // +1 to exclude self
+            topK: Math.min(100, limitNum * 8 + 1),
             returnMetadata: 'all',
         });
     } catch (e) {
@@ -552,7 +564,7 @@ router.get('/similar/:id', async (c) => {
     // Filter out the source article
     const similarIds = vectorResults.matches
         .filter(m => m.id !== articleId)
-        .slice(0, limitNum)
+        .slice(0, Math.min(100, limitNum * 8))
         .map(m => m.id);
 
     if (similarIds.length === 0) {
@@ -564,12 +576,12 @@ router.get('/similar/:id', async (c) => {
 
     const placeholders = cleanIds.map(() => '?').join(',');
     const similar = await c.env.DB.prepare(`
-    SELECT id, slug, title, summary, hero_image_url
+    SELECT id, slug, title, summary, hero_image_url, country_code, source_title, source_quality_tier
     FROM articles
     WHERE id IN (${placeholders}) AND status = 'published'
   `).bind(...cleanIds).all();
 
-    return c.json({ data: similar.results || [] });
+    return c.json({ data: diversifyCoverageRows(similar.results || [], limitNum) });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -591,7 +603,7 @@ router.get('/suggest', async (c) => {
             const articles = await c.env.DB.prepare(`
                 SELECT DISTINCT title
                 FROM articles
-                WHERE status = 'published' AND title LIKE ?
+                WHERE status = 'published' AND source_quality_tier >= 3 AND title LIKE ?
                 LIMIT 5
             `).bind(`${q}%`).all<{ title: string }>();
 

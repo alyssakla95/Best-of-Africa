@@ -14,6 +14,7 @@ import {
     refreshSectorPerformance,
     sectorPerformanceCacheIsFresh,
 } from '../lib/sector-performance';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -924,12 +925,13 @@ router.get('/opportunities', async (c) => {
 
             const formatOpportunity = async (o: any) => {
                 const recentArticles = await c.env.DB.prepare(`
-                    SELECT id, slug, title, summary, published_at, source_title, source_url FROM articles
+                    SELECT id, slug, title, summary, published_at, source_title, source_url,
+                           country_code, source_quality_tier FROM articles
                     WHERE country_code = ? AND sector_id = ? AND status = 'published'
-                    ORDER BY published_at DESC LIMIT 12
+                    ORDER BY published_at DESC LIMIT 96
                 `).bind(o.country_code, o.sector_id).all();
 
-                const sourceRecords = recentArticles.results || [];
+                const sourceRecords = diversifyCoverageRows(recentArticles.results || [], 12, 12, 1);
                 const evidence = sourceRecords.map((article: any, index: number) =>
                     `[${index + 1}] ${article.published_at || 'date unavailable'} — ${article.title}\n${article.summary || 'Summary unavailable.'}\nSource: ${article.source_title || 'source unavailable'} | ${article.source_url || 'URL unavailable'}`
                 ).join('\n\n');

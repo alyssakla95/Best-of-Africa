@@ -80,4 +80,15 @@ describe('source quality and coverage admission', () => {
         ];
         expect(diversifyCoverageRows(rows, 5).map(row => row.id)).toEqual([1, 3, 4, 5]);
     });
+
+    it('allows a country page to fill from distinct publishers without weakening source quality', () => {
+        const rows = [
+            { id: 1, country_code: 'KE', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 2, country_code: 'KE', source_title: 'Associated Press', source_quality_tier: 4 },
+            { id: 3, country_code: 'KE', source_title: 'The Africa Report', source_quality_tier: 3 },
+            { id: 4, country_code: 'KE', source_title: 'The Standard Kenya', source_quality_tier: 2 },
+            { id: 5, country_code: 'KE', source_title: 'Business Daily Africa', source_quality_tier: 3 },
+        ];
+        expect(diversifyCoverageRows(rows, 5, 5, 1).map(row => row.id)).toEqual([1, 2, 3, 4, 5]);
+    });
 });

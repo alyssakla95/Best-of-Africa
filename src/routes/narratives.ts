@@ -8,6 +8,7 @@ import type { Env, Variables, NarrativeStrategy, Country } from '../types';
 import { requireAdmin } from '../lib/auth';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
+import { diversifyCoverageRows } from '../lib/source-quality';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -82,12 +83,13 @@ router.get('/country/:code', async (c) => {
     const articles = await c.env.DB.prepare(`
         SELECT a.id, a.slug, a.title, a.target_audience, a.tone,
                a.published_at, a.source_title, a.source_url,
+               a.country_code, a.source_quality_tier,
                ns.narrative_theme
         FROM articles a
         LEFT JOIN narrative_strategies ns ON a.narrative_strategy_id = ns.id
         WHERE a.country_code = ? AND a.status = 'published'
         ORDER BY (a.engagement_score * 1.0 / ((julianday('now') - julianday(a.published_at)) + 1)) DESC
-        LIMIT 10
+        LIMIT 80
     `).bind(code).all();
 
     // Get coverage by sector
@@ -116,13 +118,13 @@ router.get('/country/:code', async (c) => {
     }>();
 
     const countryData = country as Record<string, any>;
-    const articleRows = (articles.results || []) as Record<string, any>[];
+    const articleRows = diversifyCoverageRows(articles.results || [], 10, 10, 1) as Record<string, any>[];
     const sourceLedger = articleRows.slice(0, 6).map((article, index) =>
         `${index + 1}. ${article.title}${article.published_at ? ` (${article.published_at})` : ''}${article.source_title ? ` — source: ${article.source_title}` : ''}${article.narrative_theme ? ` — frame: ${article.narrative_theme}` : ''}.`
     ).join('\n\n') || `${countryData.name} currently has no published reporting record in this dataset. The active strategies and sector table below therefore define the evidence boundary rather than supporting a narrative conclusion.`;
 
     // Narrative Synthesis (The "Story So Far")
-    const narrativeArcKey = CACHE_KEYS.narrativeSynthesis(code);
+    const narrativeArcKey = `${CACHE_KEYS.narrativeSynthesis(code)}:source-v2`;
     const generateNarrativeArc = async () => {
             if (!articleRows.length) return sourceLedger;
 
@@ -139,12 +141,12 @@ router.get('/country/:code', async (c) => {
             }
     };
     const narrativeArc = await getCachedValue<string>(c.env, narrativeArcKey);
-    if (!narrativeArc && articles.results?.length) {
+    if (!narrativeArc && articleRows.length) {
         c.executionCtx.waitUntil(
             getCached(c.env, narrativeArcKey, generateNarrativeArc, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
         );
     }
-    const immediateNarrativeArc = (articles.results as any[]).slice(0, 6).map((article, index) =>
+    const immediateNarrativeArc = articleRows.slice(0, 6).map((article, index) =>
         `${index + 1}. ${article.title}${article.narrative_theme ? ` — ${article.narrative_theme}` : ''}${article.tone ? ` (${article.tone})` : ''}.`
     ).join('\n\n') || `${countryData.name} is represented by its active strategies, aligned reporting and sector coverage in this record.`;
 
@@ -184,7 +186,7 @@ router.get('/country/:code', async (c) => {
             ...n,
             key_messages: n.key_messages ? JSON.parse(n.key_messages) : [],
         })),
-        aligned_articles: articles.results || [],
+        aligned_articles: articleRows,
         sector_coverage: sectorCoverage.results || [],
         ai_gap_analysis: gapAnalysis
     });

@@ -15,6 +15,9 @@ describe('official sector performance aggregation', () => {
             record('NG', 'Nigeria', 2024, 4), record('NG', 'Nigeria', 2023, 2),
             record('KE', 'Kenya', 2024, 6), record('KE', 'Kenya', 2023, 7),
             record('ZA', 'South Africa', 2024, -1), record('ZA', 'South Africa', 2023, -3),
+            // The all-country endpoint also returns regional aggregates. They
+            // must never enter the 54-market calculations.
+            record('1W', 'World', 2024, 100), record('1W', 'World', 2023, -100),
         ]);
 
         expect(result).toMatchObject({

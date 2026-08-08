@@ -9,7 +9,7 @@ import type { Env, Variables, Dashboard } from '../types';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 import { getSectorPerformanceCache, refreshSectorPerformance, sectorPerformanceCacheIsFresh } from '../lib/sector-performance';
-import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, refreshContinentalEconomy } from '../lib/continental-economy';
+import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, getContinentalEconomyRefreshStatus, refreshContinentalEconomy } from '../lib/continental-economy';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
@@ -170,8 +170,9 @@ router.get('/continental/overview', async (c) => {
         : '';
     const titleColumn = reqLang === 'pt' ? 'pt.title' : 'a.title';
     const summaryColumn = reqLang === 'pt' ? 'pt.summary' : 'a.summary';
-    const [continentalEconomy, sectorPerformance, narratedBriefingsResult, countryCoverageResult, sectorCoverageResult] = await Promise.all([
+    const [continentalEconomy, officialDataRefresh, sectorPerformance, narratedBriefingsResult, countryCoverageResult, sectorCoverageResult] = await Promise.all([
         getContinentalEconomyCache(c.env),
+        getContinentalEconomyRefreshStatus(c.env),
         getSectorPerformanceCache(c.env),
         c.env.DB.prepare(`
             SELECT
@@ -238,6 +239,7 @@ router.get('/continental/overview', async (c) => {
     c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({
         ...continentalEconomy,
+        official_data_refresh: officialDataRefresh,
         sector_performance: sectorPerformance?.data || [],
         sectors_measured: sectorPerformance?.sectors_measured || 0,
         sector_methodology: sectorPerformance?.methodology || '',

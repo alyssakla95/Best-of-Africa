@@ -1557,6 +1557,14 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
     'Sínteses sonoras claras e coerentes para ouvir em mobilidade.',
   'Explore': 'Explorar',
   'Freshness': 'Actualidade',
+  'Last successful source retrieval': 'Última obtenção bem sucedida da fonte',
+  'Source refresh': 'Actualização da fonte',
+  'Official source refresh completed successfully': 'A actualização da fonte oficial foi concluída com êxito',
+  'Official source refresh is in progress': 'A actualização da fonte oficial está em curso',
+  'Latest source check failed 1; the last verified snapshot is retained':
+    'A última verificação da fonte falhou em 1; conserva-se o último registo verificado',
+  'The official source is overdue for a successful refresh; the last verified snapshot is retained':
+    'A fonte oficial aguarda uma actualização bem sucedida; conserva-se o último registo verificado',
   'Review': 'Revisão',
   'Evidence policy': 'Política documental',
   'Critical claims require editorial review': 'As afirmações críticas exigem revisão editorial',

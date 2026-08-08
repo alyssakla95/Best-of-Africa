@@ -1,19 +1,41 @@
 import { Clock3, Database, ShieldCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatReaderDateTime } from '../../i18n/locale';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface IntelligenceTrustPanelProps {
   updatedAt?: string | number | null;
   sourceLabel: string;
+  refreshStatus?: {
+    state: 'current' | 'refreshing' | 'upstream_unavailable';
+    last_attempted_at: string | null;
+    last_successful_at: string | null;
+  };
 }
 
-export const IntelligenceTrustPanel = ({ updatedAt, sourceLabel }: IntelligenceTrustPanelProps) => {
+export const IntelligenceTrustPanel = ({ updatedAt, sourceLabel, refreshStatus }: IntelligenceTrustPanelProps) => {
+  const { language } = useLanguage();
+  const portuguese = language === 'pt';
   const timestamp = updatedAt ? new Date(updatedAt) : null;
   const validTimestamp = timestamp && !Number.isNaN(timestamp.getTime());
+  const attempted = refreshStatus?.last_attempted_at ? new Date(refreshStatus.last_attempted_at) : null;
+  const validAttempt = attempted && !Number.isNaN(attempted.getTime());
+  const refreshMessage = refreshStatus?.state === 'current'
+    ? (portuguese ? 'A actualização da fonte oficial foi concluída com êxito' : 'Official source refresh completed successfully')
+    : refreshStatus?.state === 'refreshing'
+      ? (portuguese ? 'A actualização da fonte oficial está em curso' : 'Official source refresh is in progress')
+      : validAttempt
+        ? (portuguese
+          ? `A última verificação da fonte falhou em ${formatReaderDateTime(attempted, { dateStyle: 'medium', timeStyle: 'short' })}; conserva-se o último registo verificado`
+          : `Latest source check failed ${formatReaderDateTime(attempted, { dateStyle: 'medium', timeStyle: 'short' })}; the last verified snapshot is retained`)
+        : (portuguese
+          ? 'A fonte oficial aguarda uma actualização bem sucedida; conserva-se o último registo verificado'
+          : 'The official source is overdue for a successful refresh; the last verified snapshot is retained');
 
   const items = [
     { Icon: Database, label: 'Source', value: sourceLabel },
-    { Icon: Clock3, label: 'Freshness', value: validTimestamp ? formatReaderDateTime(timestamp, { dateStyle: 'medium', timeStyle: 'short' }) : 'Updated with the live dataset' },
+    { Icon: Clock3, label: 'Last successful source retrieval', value: validTimestamp ? formatReaderDateTime(timestamp, { dateStyle: 'medium', timeStyle: 'short' }) : (portuguese ? 'Sem data de obtenção verificada' : 'No verified retrieval timestamp') },
+    { Icon: ShieldCheck, label: 'Source refresh', value: refreshMessage },
     { Icon: UserCheck, label: 'Review', value: 'Critical claims require editorial review' },
     { Icon: ShieldCheck, label: 'Evidence policy', value: 'Summaries must remain source-bound and factual' },
   ];
@@ -48,7 +70,7 @@ export const IntelligenceTrustPanel = ({ updatedAt, sourceLabel }: IntelligenceT
           </div>
           <Link to="/about" className="text-xs font-semibold text-navy hover:text-accent-ink">Editorial standards →</Link>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {items.map(({ Icon, label, value }) => (
             <div key={label} className="flex gap-3">
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />

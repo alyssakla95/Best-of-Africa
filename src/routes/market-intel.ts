@@ -11,6 +11,7 @@ import { callConfiguredAI } from '../lib/ai';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import {
     getSectorPerformanceCache,
+    getSectorPerformanceRefreshStatus,
     refreshSectorPerformance,
     sectorPerformanceCacheIsFresh,
 } from '../lib/sector-performance';
@@ -615,13 +616,16 @@ router.get('/reports/sector/:id', requireApiKey, rateLimit, async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/performance', async (c) => {
     const lens = c.req.query('lens') || 'investor';
-    const cached = await getSectorPerformanceCache(c.env);
+    const [cached, officialDataRefresh] = await Promise.all([
+        getSectorPerformanceCache(c.env),
+        getSectorPerformanceRefreshStatus(c.env),
+    ]);
     if (cached) {
         if (!sectorPerformanceCacheIsFresh(cached)) {
             c.executionCtx.waitUntil(refreshSectorPerformance(c.env).then(() => undefined));
         }
             c.header('Cache-Control', 'no-store, max-age=0');
-            return c.json({ ...cached, lens });
+            return c.json({ ...cached, official_data_refresh: officialDataRefresh, lens });
     }
 
     const refreshed = await refreshSectorPerformance(c.env);
@@ -634,7 +638,7 @@ router.get('/performance', async (c) => {
         }, 503);
     }
     c.header('Cache-Control', 'no-store, max-age=0');
-    return c.json({ ...refreshed, lens });
+    return c.json({ ...refreshed, official_data_refresh: await getSectorPerformanceRefreshStatus(c.env), lens });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────

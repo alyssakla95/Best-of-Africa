@@ -12,6 +12,7 @@ const AFRICAN_COUNTRY_CODES = [
     'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RW', 'ST', 'SN',
     'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG', 'TN', 'UG', 'ZM', 'ZW',
 ] as const;
+const AFRICAN_COUNTRY_CODE_SET = new Set<string>(AFRICAN_COUNTRY_CODES);
 
 type CalculationMode = 'growth_rate' | 'year_over_year' | 'level_change';
 
@@ -170,6 +171,7 @@ const BUNDLED_SNAPSHOT: SectorPerformanceResponse = {
 
 const CACHE_KEY = 'market-intel:sector-performance:wdi:v2';
 const REFRESH_LOCK_KEY = 'market-intel:sector-performance:wdi:refresh-lock:v1';
+const REFRESH_STATUS_KEY = 'market-intel:sector-performance:wdi:refresh-status:v1';
 // Re-check the official upstream release frequently while preserving the
 // indicator's real observation year. Retrieval freshness must never be
 // presented as if an annual economic series itself updates every minute.
@@ -201,7 +203,7 @@ export function calculateSectorPerformance(
         const countryCode = record.country?.id?.toUpperCase();
         const year = Number(record.date);
         const value = Number(record.value);
-        if (!countryCode || !Number.isFinite(year) || record.value === null || !Number.isFinite(value)) continue;
+        if (!countryCode || !AFRICAN_COUNTRY_CODE_SET.has(countryCode) || !Number.isFinite(year) || record.value === null || !Number.isFinite(value)) continue;
         const entry = grouped.get(countryCode) || { country_name: record.country?.value || countryCode, values: [] };
         entry.values.push({ year, value });
         grouped.set(countryCode, entry);
@@ -285,28 +287,16 @@ export function calculateSectorPerformance(
 
 async function fetchSeries(config: SectorSeriesConfig): Promise<SectorPerformance | null> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    const currentYear = new Date().getUTCFullYear();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
-        // The API accepts semicolon-separated countries but rejects very long
-        // 54-country paths at the edge. Four bounded batches also prevent one
-        // upstream country-code issue from discarding the whole continent.
-        const groups: string[][] = [];
-        for (let index = 0; index < AFRICAN_COUNTRY_CODES.length; index += 14) {
-            groups.push([...AFRICAN_COUNTRY_CODES.slice(index, index + 14)]);
-        }
-        const responses = await Promise.all(groups.map(async group => {
-            const countries = group.join(';');
-            const url = `${WORLD_BANK_API}/country/${countries}/indicator/${config.indicator_code}?format=json&date=${currentYear - 7}:${currentYear}&per_page=1000`;
-            const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
-            if (!response.ok) {
-                console.error(`[sector-performance] ${config.indicator_code} batch returned ${response.status}`);
-                return [] as WorldBankRecord[];
-            }
-            const payload = await response.json() as [unknown, WorldBankRecord[]];
-            return Array.isArray(payload?.[1]) ? payload[1] : [];
-        }));
-        return calculateSectorPerformance(config, responses.flat());
+        // Three latest non-null observations are sufficient for every
+        // calculation mode. Filtering to the explicit African allow-list
+        // removes World Bank regional and income-group aggregates.
+        const url = `${WORLD_BANK_API}/country/all/indicator/${config.indicator_code}?format=json&mrv=3&gapfill=y&per_page=1000`;
+        const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+        if (!response.ok) throw new Error(`${config.indicator_code} returned ${response.status}`);
+        const payload = await response.json() as [unknown, WorldBankRecord[]];
+        return calculateSectorPerformance(config, Array.isArray(payload?.[1]) ? payload[1] : []);
     } catch (error) {
         console.error(`[sector-performance] ${config.indicator_code} refresh failed`, error);
         return null;
@@ -323,28 +313,65 @@ export function sectorPerformanceCacheIsFresh(snapshot: SectorPerformanceRespons
     return Date.now() - Date.parse(snapshot.retrieved_at) <= FRESH_MS;
 }
 
+export type SectorPerformanceRefreshStatus = {
+    state: 'current' | 'refreshing' | 'upstream_unavailable';
+    last_attempted_at: string | null;
+    last_successful_at: string | null;
+};
+
+export async function getSectorPerformanceRefreshStatus(env: Env): Promise<SectorPerformanceRefreshStatus> {
+    const snapshot = await getSectorPerformanceCache(env);
+    return (await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as SectorPerformanceRefreshStatus | null) || {
+        state: snapshot && sectorPerformanceCacheIsFresh(snapshot) ? 'current' : 'upstream_unavailable',
+        last_attempted_at: null,
+        last_successful_at: snapshot?.retrieved_at || null,
+    };
+}
+
 export async function refreshSectorPerformance(env: Env): Promise<SectorPerformanceResponse | null> {
     const previous = await getSectorPerformanceCache(env);
     if (await env.CACHE.get(REFRESH_LOCK_KEY)) return previous;
-    await env.CACHE.put(REFRESH_LOCK_KEY, new Date().toISOString(), { expirationTtl: 5 * 60 });
-    const results = await Promise.all(SECTOR_PERFORMANCE_SERIES.map(fetchSeries));
-    if (!results.some((item): item is SectorPerformance => item !== null)) return previous;
-    const previousBySector = new Map((previous?.data || []).map(item => [item.sector_id, item]));
-    const data = SECTOR_PERFORMANCE_SERIES
-        .map((config, index) => results[index] || previousBySector.get(config.sector_id) || null)
-        .filter((item): item is SectorPerformance => item !== null);
-    if (!data.length) return previous;
+    const attemptedAt = new Date().toISOString();
+    await Promise.all([
+        env.CACHE.put(REFRESH_LOCK_KEY, attemptedAt, { expirationTtl: 5 * 60 }),
+        env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+            state: 'refreshing', last_attempted_at: attemptedAt, last_successful_at: previous?.retrieved_at || null,
+        } satisfies SectorPerformanceRefreshStatus)),
+    ]);
+    try {
+        const results = await Promise.all(SECTOR_PERFORMANCE_SERIES.map(fetchSeries));
+        if (!results.some((item): item is SectorPerformance => item !== null)) {
+            throw new Error('No official sector series passed validation');
+        }
+        const previousBySector = new Map((previous?.data || []).map(item => [item.sector_id, item]));
+        const data = SECTOR_PERFORMANCE_SERIES
+            .map((config, index) => results[index] || previousBySector.get(config.sector_id) || null)
+            .filter((item): item is SectorPerformance => item !== null);
+        if (!data.length) throw new Error('No verified sector observations are available');
 
-    const snapshot: SectorPerformanceResponse = {
-        data,
-        sectors_measured: data.length,
-        countries_in_scope: 54,
-        methodology: 'Each sector combines a primary official performance proxy with three structural or operating dimensions. Country-level observations use the latest available annual records within the retrieval window. Values are cross-country medians, not continental totals; comparison values are median changes versus each country’s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
-        retrieved_at: new Date().toISOString(),
-        source_name: 'World Bank World Development Indicators',
-        source_url: 'https://data.worldbank.org/indicator',
-    };
-    await env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot));
-    await env.CACHE.delete(REFRESH_LOCK_KEY);
-    return snapshot;
+        const snapshot: SectorPerformanceResponse = {
+            data,
+            sectors_measured: data.length,
+            countries_in_scope: 54,
+            methodology: 'Each sector combines a primary official performance proxy with three structural or operating dimensions. Country-level observations use the latest available annual records within the retrieval window. Values are cross-country medians, not continental totals; comparison values are median changes versus each country’s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
+            retrieved_at: new Date().toISOString(),
+            source_name: 'World Bank World Development Indicators',
+            source_url: 'https://data.worldbank.org/indicator',
+        };
+        await Promise.all([
+            env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot)),
+            env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+                state: 'current', last_attempted_at: attemptedAt, last_successful_at: snapshot.retrieved_at,
+            } satisfies SectorPerformanceRefreshStatus)),
+        ]);
+        return snapshot;
+    } catch (error) {
+        console.error('[sector-performance] refresh failed', error);
+        await env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+            state: 'upstream_unavailable', last_attempted_at: attemptedAt, last_successful_at: previous?.retrieved_at || null,
+        } satisfies SectorPerformanceRefreshStatus));
+        return previous;
+    } finally {
+        await env.CACHE.delete(REFRESH_LOCK_KEY);
+    }
 }

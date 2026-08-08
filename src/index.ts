@@ -394,6 +394,22 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         });
     }
 
+    // Refresh the two official World Bank-derived intelligence datasets on the
+    // Worker schedule. Reader requests may still request a retry, but are no
+    // longer the only mechanism capable of advancing the saved snapshots.
+    if (minutes % 15 === 0) {
+        await safe('official-intelligence-refresh', async () => {
+            const [{ refreshContinentalEconomy }, { refreshSectorPerformance }] = await Promise.all([
+                import('./lib/continental-economy'),
+                import('./lib/sector-performance'),
+            ]);
+            await Promise.all([
+                refreshContinentalEconomy(env),
+                refreshSectorPerformance(env),
+            ]);
+        });
+    }
+
     // Recover real publisher photography for existing stories. This is
     // source-only: no generated or generic fallback imagery is permitted.
     await safe('backfill-source-images', async () => {

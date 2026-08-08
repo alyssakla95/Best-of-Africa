@@ -405,6 +405,7 @@ export const api = {
     }>(`/dashboards/${region}`),
     getContinentalOverview: () => readerRequest<{
         source_name: string; source_url: string; retrieved_at: string; countries_in_scope: number; methodology: string;
+        official_data_refresh: { state: 'current' | 'refreshing' | 'upstream_unavailable'; last_attempted_at: string | null; last_successful_at: string };
         indicators: { indicator_code: string; label: string; value: number; unit: string; aggregation: 'sum' | 'country median' | 'derived balance'; countries_reported: number; period_start: number; period_end: number; interpretation: string; caveat: string; source_url: string }[];
         regions: { region: string; country_count: number; gdp: { value: number; countries_reported: number; period_start: number; period_end: number }; population: { value: number; countries_reported: number; period_start: number; period_end: number }; growth: { value: number; countries_reported: number; period_start: number; period_end: number }; inflation: { value: number; countries_reported: number; period_start: number; period_end: number }; fdi: { value: number; countries_reported: number; period_start: number; period_end: number }; investment: { value: number; countries_reported: number; period_start: number; period_end: number } }[];
         rankings: { largest_economies: { country_code: string; country_name: string; region: string; year: number; value: number }[]; fastest_growth: { country_code: string; country_name: string; region: string; year: number; value: number }[]; largest_fdi_inflows: { country_code: string; country_name: string; region: string; year: number; value: number }[] };
@@ -620,6 +621,7 @@ export const api = {
         retrieved_at: string;
         source_name: string;
         source_url: string;
+        official_data_refresh: { state: 'current' | 'refreshing' | 'upstream_unavailable'; last_attempted_at: string | null; last_successful_at: string | null };
     }>(`/market-intel/performance?contract=market-v2${lens ? `&lens=${lens}` : ''}`, 0),
 
     getLeadingSector: () => request<{

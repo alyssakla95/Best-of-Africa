@@ -9,6 +9,7 @@ import {
 const WORLD_BANK_API = 'https://api.worldbank.org/v2';
 const CACHE_KEY = 'continental:economy:wdi:v1';
 const REFRESH_LOCK_KEY = 'continental:economy:wdi:refresh-lock:v1';
+const REFRESH_STATUS_KEY = 'continental:economy:wdi:refresh-status:v1';
 const FRESH_MS = 15 * 60 * 1000;
 const COUNTRY_CODES = [
     'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CD', 'CG', 'CI',
@@ -26,6 +27,13 @@ type Snapshot = typeof CONTINENTAL_WDI_SNAPSHOT;
 type WdiRecord = { country?: { id?: string; value?: string }; date?: string; value?: number | null };
 type Point = { country_code: string; country_name: string; year: number; value: number };
 type CountryMeta = { code: string; name: string; region: string };
+export type OfficialDataRefreshStatus = {
+    state: 'current' | 'refreshing' | 'upstream_unavailable';
+    last_attempted_at: string | null;
+    last_successful_at: string;
+};
+
+const COUNTRY_CODE_SET = new Set<string>(COUNTRY_CODES);
 
 const median = (values: number[]): number => {
     const sorted = [...values].sort((a, b) => a - b);
@@ -54,19 +62,17 @@ function latestPoints(records: WdiRecord[]): Point[] {
 
 async function fetchSeries(code: string): Promise<Point[]> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    const currentYear = new Date().getUTCFullYear();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
-        const groups: string[][] = [];
-        for (let index = 0; index < COUNTRY_CODES.length; index += 14) groups.push([...COUNTRY_CODES.slice(index, index + 14)]);
-        const responses = await Promise.all(groups.map(async group => {
-            const url = `${WORLD_BANK_API}/country/${group.join(';')}/indicator/${code}?format=json&date=${currentYear - 7}:${currentYear}&per_page=1000`;
-            const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
-            if (!response.ok) throw new Error(`${code} returned ${response.status}`);
-            const payload = await response.json() as [unknown, WdiRecord[]];
-            return Array.isArray(payload?.[1]) ? payload[1] : [];
-        }));
-        return latestPoints(responses.flat());
+        // One latest-observation request per series is materially cheaper and
+        // more reliable than four semicolon-country batches. Aggregates are
+        // removed by the explicit 54-country allow-list below.
+        const url = `${WORLD_BANK_API}/country/all/indicator/${code}?format=json&mrv=1&gapfill=y&per_page=500`;
+        const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+        if (!response.ok) throw new Error(`${code} returned ${response.status}`);
+        const payload = await response.json() as [unknown, WdiRecord[]];
+        const records = Array.isArray(payload?.[1]) ? payload[1] : [];
+        return latestPoints(records).filter(point => COUNTRY_CODE_SET.has(point.country_code));
     } finally {
         clearTimeout(timeout);
     }
@@ -92,16 +98,33 @@ export function continentalEconomyCacheIsFresh(snapshot: Snapshot): boolean {
     return Date.now() - Date.parse(snapshot.retrieved_at) <= FRESH_MS;
 }
 
+export async function getContinentalEconomyRefreshStatus(env: Env): Promise<OfficialDataRefreshStatus> {
+    const snapshot = await getContinentalEconomyCache(env);
+    return (await env.CACHE.get(REFRESH_STATUS_KEY, 'json') as OfficialDataRefreshStatus | null) || {
+        state: continentalEconomyCacheIsFresh(snapshot) ? 'current' : 'upstream_unavailable',
+        last_attempted_at: null,
+        last_successful_at: snapshot.retrieved_at,
+    };
+}
+
 export async function refreshContinentalEconomy(env: Env): Promise<Snapshot> {
     const previous = await getContinentalEconomyCache(env);
     if (await env.CACHE.get(REFRESH_LOCK_KEY)) return previous;
-    await env.CACHE.put(REFRESH_LOCK_KEY, new Date().toISOString(), { expirationTtl: 5 * 60 });
+    const attemptedAt = new Date().toISOString();
+    await Promise.all([
+        env.CACHE.put(REFRESH_LOCK_KEY, attemptedAt, { expirationTtl: 5 * 60 }),
+        env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+            state: 'refreshing', last_attempted_at: attemptedAt, last_successful_at: previous.retrieved_at,
+        } satisfies OfficialDataRefreshStatus)),
+    ]);
     try {
         const [seriesResults, countryResult] = await Promise.all([
             Promise.all(SERIES.map(fetchSeries)),
             env.DB.prepare('SELECT code, name, region FROM countries ORDER BY name').all<CountryMeta>(),
         ]);
-        if (seriesResults.some(points => points.length < 35)) return previous;
+        if (seriesResults.some(points => points.length < 35)) {
+            throw new Error('Official series response did not meet the 35-country completeness threshold');
+        }
         const byCode = new Map(SERIES.map((code, index) => [code, seriesResults[index]]));
         const countries = countryResult.results || [];
         const countryMeta = new Map(countries.map(country => [country.code, country]));
@@ -153,11 +176,20 @@ export async function refreshContinentalEconomy(env: Env): Promise<Snapshot> {
                 largest_fdi_inflows: rank('BX.KLT.DINV.CD.WD'),
             },
         };
-        await env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot));
-        await env.CACHE.delete(REFRESH_LOCK_KEY);
+        await Promise.all([
+            env.CACHE.put(CACHE_KEY, JSON.stringify(snapshot)),
+            env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+                state: 'current', last_attempted_at: attemptedAt, last_successful_at: snapshot.retrieved_at,
+            } satisfies OfficialDataRefreshStatus)),
+        ]);
         return snapshot;
     } catch (error) {
         console.error('[continental-economy] refresh failed', error);
+        await env.CACHE.put(REFRESH_STATUS_KEY, JSON.stringify({
+            state: 'upstream_unavailable', last_attempted_at: attemptedAt, last_successful_at: previous.retrieved_at,
+        } satisfies OfficialDataRefreshStatus));
         return previous;
+    } finally {
+        await env.CACHE.delete(REFRESH_LOCK_KEY);
     }
 }

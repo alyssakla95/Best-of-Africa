@@ -48,6 +48,7 @@ describe('GET /dashboards/continental/overview', () => {
         expect(body.indicators).toHaveLength(11);
         expect(body.regions).toHaveLength(5);
         expect(body.sector_performance).toHaveLength(8);
+        expect(body.official_data_refresh).toMatchObject({ state: 'current' });
         expect(body.narrated_briefings).toEqual([briefing]);
         expect(body.briefing_scope).toMatchObject({ countries_considered: 1, sectors_considered: 1, countries_with_records: 1, sectors_with_records: 1 });
         expect(body.rankings.largest_economies).toHaveLength(8);

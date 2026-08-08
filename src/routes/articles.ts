@@ -713,20 +713,36 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
 
             try {
                 const aiPrompt = `System: You are BOA-Story's evidence editor. Use only the supplied article, distinguish facts from analysis and preserve the requested JSON schema.\nUser: ${prompt}`;
-                const rawResponse = await callConfiguredAI(c.env, { prompt: aiPrompt, max_tokens: 6000, temperature: 0.2, response_profile: 'structured-analysis', structured_output: true });
-                const match = (rawResponse || '').match(/\{.*\}/s);
-                if (!match) throw new Error('Decision brief did not return JSON');
-                const parsed = JSON.parse(match[0]) as ArticleDecisionBrief;
-                const strategicWords = typeof parsed.strategic_implication === 'string'
-                    ? parsed.strategic_implication.trim().split(/\s+/).filter(Boolean).length
-                    : 0;
-                if (!Array.isArray(parsed.key_takeaways) || parsed.key_takeaways.length < 6
-                    || strategicWords < 300
-                    || !Array.isArray(parsed.limitations) || parsed.limitations.length < 4
-                    || !Array.isArray(parsed.diligence_questions) || parsed.diligence_questions.length < 5
-                    || !Array.isArray(parsed.claim_ledger) || parsed.claim_ledger.length < 4) {
-                    throw new Error('Decision brief failed the required depth structure');
+                const parseCandidate = (raw: string | null): ArticleDecisionBrief | null => {
+                    const match = (raw || '').match(/\{.*\}/s);
+                    if (!match) return null;
+                    try { return JSON.parse(match[0]) as ArticleDecisionBrief; }
+                    catch { return null; }
+                };
+                const hasRequiredDepth = (candidate: ArticleDecisionBrief | null): candidate is ArticleDecisionBrief => {
+                    const strategicWords = typeof candidate?.strategic_implication === 'string'
+                        ? candidate.strategic_implication.trim().split(/\s+/).filter(Boolean).length
+                        : 0;
+                    return !!candidate
+                        && Array.isArray(candidate.key_takeaways) && candidate.key_takeaways.length >= 6
+                        && strategicWords >= 300
+                        && Array.isArray(candidate.limitations) && candidate.limitations.length >= 4
+                        && Array.isArray(candidate.diligence_questions) && candidate.diligence_questions.length >= 5
+                        && Array.isArray(candidate.claim_ledger) && candidate.claim_ledger.length >= 4;
+                };
+                let rawResponse = await callConfiguredAI(c.env, { prompt: aiPrompt, max_tokens: 6000, temperature: 0.2, response_profile: 'structured-analysis', structured_output: true });
+                let parsed = parseCandidate(rawResponse);
+                if (!hasRequiredDepth(parsed)) {
+                    rawResponse = await callConfiguredAI(c.env, {
+                        prompt: `${aiPrompt}\n\nSTRICT CORRECTION: The previous response was incomplete. Return one valid JSON object only, with exactly six detailed key_takeaways, a 350-500 word strategic_implication, at least four limitations, exactly five diligence_questions and at least four claim_ledger entries. Preserve the requested language and do not add unsupported facts.`,
+                        max_tokens: 6000,
+                        temperature: 0.1,
+                        response_profile: 'structured-analysis',
+                        structured_output: true,
+                    });
+                    parsed = parseCandidate(rawResponse);
                 }
+                if (!hasRequiredDepth(parsed)) throw new Error('Decision brief failed the required depth structure');
                 return normaliseDecisionBrief(parsed);
             } catch (e) {
                 console.error('AI Context Failed', e);

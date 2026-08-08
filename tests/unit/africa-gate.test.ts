@@ -7,8 +7,8 @@
 // exact leak classes and the legitimate coverage the fixes must not lose.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { describe, it, expect } from 'vitest';
-import { discoveryCountryExpression, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, selectDiscoveryTargets } from '../../src/workers/ingestion';
+import { describe, it, expect, vi } from 'vitest';
+import { discoveryCountryExpression, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, parseHTMLListing, selectDiscoveryTargets } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -165,5 +165,24 @@ describe('extractParagraphEvidence', () => {
         expect(evidence).toContain('First substantive paragraph');
         expect(evidence).toContain('Second substantive paragraph');
         expect(evidence).not.toContain('Short');
+    });
+});
+
+describe('official institutional listing extraction', () => {
+    it('accepts root-level and latest-news article paths used by regional institutions', async () => {
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(
+            url.includes('ecowas')
+                ? '<a href="/regional-trade-investment-programme-expands">Regional trade investment programme expands across member states</a><a href="/about">About the institution</a>'
+                : '<a href="/latest-news/finance-ministers-strengthen-regional-investment">Finance ministers strengthen regional investment cooperation</a>',
+            { status: 200, headers: { 'content-type': 'text/html' } },
+        )));
+        try {
+            const ecowas = await parseHTMLListing('https://www.ecowas.int/c/news/press-releases/');
+            const sadc = await parseHTMLListing('https://www.sadc.int/latest-news');
+            expect(ecowas.map(item => item.title)).toEqual(['Regional trade investment programme expands across member states']);
+            expect(sadc.map(item => item.title)).toEqual(['Finance ministers strengthen regional investment cooperation']);
+        } finally {
+            vi.unstubAllGlobals();
+        }
     });
 });

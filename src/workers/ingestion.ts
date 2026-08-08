@@ -294,6 +294,10 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
 
         const html = await response.text();
         const base = new URL(url);
+        const rootArticleHosts = ['ecowas.int', 'comesa.int'];
+        const permitsRootArticles = rootArticleHosts.some(host =>
+            base.hostname === host || base.hostname.endsWith(`.${host}`)
+        );
         const seen = new Set<string>();
         const items: RSSItem[] = [];
         const anchorRegex = /<a\s[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -305,7 +309,10 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
             } catch {
                 continue;
             }
-            const isArticlePath = /\/(?:article|articles|news|pressroom|press-release|press-releases|news-and-events)\//i.test(resolved.pathname);
+            const isArticlePath = /\/(?:article|articles|news|latest-news|pressroom|press-release|press-releases|news-and-events)\//i.test(resolved.pathname)
+                || (permitsRootArticles
+                    && resolved.pathname.split('/').filter(Boolean).length === 1
+                    && resolved.pathname.length >= 12);
             if (resolved.hostname !== base.hostname || !isArticlePath || resolved.pathname === base.pathname) continue;
             resolved.hash = '';
             const articleUrl = resolved.toString();

@@ -381,8 +381,8 @@ router.get('/health/deep', async (c) => {
         const primaryProductive30d = productiveRows.filter(row => sourceQualityProfile(String(row.name || ''), String(row.url || ''), 'fixed').tier === 4).length;
         const highQualityProductive30d = productiveRows.filter(row => sourceQualityProfile(String(row.name || ''), String(row.url || ''), 'fixed').tier >= 3).length;
         const minimumProductive = Math.min(20, Math.ceil(activeSources * 0.25));
-        const minimumPrimaryProductive = Math.min(8, Math.ceil(activeSources * 0.10));
-        const minimumHighQualityProductive = Math.min(15, Math.ceil(activeSources * 0.25));
+        const minimumPrimaryProductive = Math.min(15, Math.ceil(activeSources * 0.25));
+        const minimumHighQualityProductive = Math.min(20, Math.ceil(activeSources * 0.40));
         const healthy = activeSources > 0
             && measured24h >= Math.ceil(activeSources * 0.9)
             && productive30d >= minimumProductive

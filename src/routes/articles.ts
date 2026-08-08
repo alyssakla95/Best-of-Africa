@@ -667,8 +667,29 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
         reqLang,
     );
 
+    type ArticleDecisionBrief = {
+        key_takeaways: string[];
+        strategic_implication: string;
+        limitations?: string[];
+        diligence_questions?: string[];
+        claim_ledger?: string[];
+    };
+
+    const normaliseDecisionBrief = (brief: ArticleDecisionBrief): ArticleDecisionBrief => reqLang === 'pt'
+        ? {
+            key_takeaways: brief.key_takeaways.map(item => normalisePortuguesePortugal1945(item) || item),
+            strategic_implication: normalisePortuguesePortugal1945(brief.strategic_implication) || brief.strategic_implication,
+            ...(brief.limitations ? { limitations: brief.limitations.map(item => normalisePortuguesePortugal1945(item) || item) } : {}),
+            ...(brief.diligence_questions ? { diligence_questions: brief.diligence_questions.map(item => normalisePortuguesePortugal1945(item) || item) } : {}),
+            ...(brief.claim_ledger ? { claim_ledger: brief.claim_ledger.map(item => normalisePortuguesePortugal1945(item) || item) } : {}),
+        }
+        : brief;
+
     // Generate Executive Brief (Key Takeaways & Strategic Implications)
     const generateAiContext = async () => {
+            const outputLanguage = reqLang === 'pt'
+                ? `Write every human-readable JSON value in natural European Portuguese from Portugal, using the orthography preceding the 1990 Orthographic Agreement. Do not use Brazilian vocabulary or post-1990 spellings. Preserve proper names, source names, dates, figures and currencies.`
+                : 'Write every human-readable JSON value in English.';
             const prompt = `
                 Article Title: ${article.title}
                 Summary: ${article.summary}
@@ -683,6 +704,8 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
                 3. Four to six evidence limitations, counter-signals or alternative explanations.
                 4. Five concrete diligence questions ordered by decision importance.
                 5. A claim ledger linking each major conclusion to a passage or supplied fact.
+
+                Language requirement: ${outputLanguage}
                 
                 Output JSON format:
                 { "key_takeaways": ["..."], "strategic_implication": "...", "limitations": ["..."], "diligence_questions": ["..."], "claim_ledger": ["..."] }
@@ -692,7 +715,7 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
                 const aiPrompt = `System: You are BOA-Story's evidence editor. Use only the supplied article, distinguish facts from analysis and preserve the requested JSON schema.\nUser: ${prompt}`;
                 const rawResponse = await callConfiguredAI(c.env, { prompt: aiPrompt, max_tokens: 3200, temperature: 0.2, response_profile: 'structured-analysis', structured_output: true });
                 const match = (rawResponse || '').match(/\{.*\}/s);
-                return match ? JSON.parse(match[0]) : null;
+                return match ? normaliseDecisionBrief(JSON.parse(match[0]) as ArticleDecisionBrief) : null;
             } catch (e) {
                 console.error('AI Context Failed', e);
                 return null;
@@ -702,14 +725,10 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
     // Never hold the article body behind an AI call. Serve a previously
     // generated brief when available and warm a missing brief after the
     // response has been released to the reader.
-    const aiContextKey = CACHE_KEYS.articleContext(article.id);
-    const aiContext = await getCachedValue<{
-        key_takeaways: string[];
-        strategic_implication: string;
-        limitations?: string[];
-        diligence_questions?: string[];
-        claim_ledger?: string[];
-    }>(c.env, aiContextKey);
+    const aiContextKey = reqLang === 'pt'
+        ? `${CACHE_KEYS.articleContext(article.id)}:pt-PT-1945:v1`
+        : CACHE_KEYS.articleContext(article.id);
+    const aiContext = await getCachedValue<ArticleDecisionBrief>(c.env, aiContextKey);
     if (!aiContext) {
         c.executionCtx.waitUntil(
             getCached(c.env, aiContextKey, generateAiContext, { ttl: CACHE_TTL.ARCHIVE }).then(() => undefined)
@@ -746,7 +765,7 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
         article: {
             ...article,
             content: articleContent,
-            ...(aiContext && reqLang !== 'pt' ? { ai_context: aiContext } : {}),
+            ...(aiContext ? { ai_context: aiContext } : {}),
             ...(paywallActive && {
                 paywall: true,
                 paragraphs_visible: paragraphsVisible,

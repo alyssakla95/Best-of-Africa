@@ -29,9 +29,12 @@ describe('source quality and coverage admission', () => {
 
     it('uses productive first-party feeds and disables the empty direct SADC connector', () => {
         const migration = readFileSync('migrations/0060_productive_regional_feeds.sql', 'utf8');
+        const ecowasMigration = readFileSync('migrations/0061_disable_unproductive_ecowas_direct.sql', 'utf8');
         expect(migration).toContain('https://www.ecowas.int/feed/');
         expect(migration).toContain('https://www.comesa.int/feed/');
         expect(migration).toMatch(/is_active\s*=\s*0[\s\S]*primary-sadc-news/);
+        expect(ecowasMigration).toMatch(/is_active\s*=\s*0[\s\S]*primary-ecowas-news/);
+        expect(TRUSTED_DISCOVERY_DOMAINS).toContain('ecowas.int');
     });
 
     it('caps rolling country and publisher concentration', () => {

@@ -45,6 +45,10 @@ export const BetaContinentalOverview: React.FC = () => {
   const headlineCodes = ['NY.GDP.MKTP.CD', 'SP.POP.TOTL', 'NY.GDP.MKTP.KD.ZG', 'BX.KLT.DINV.CD.WD'];
   const headlineIcons = [Landmark, Globe2, TrendingUp, Activity];
   const narratedBriefings = Array.isArray(data.narrated_briefings) ? data.narrated_briefings : [];
+  const regionalGdpTotal = data.regions.reduce((sum, region) => sum + region.gdp.value, 0);
+  const regionalPopulationTotal = data.regions.reduce((sum, region) => sum + region.population.value, 0);
+  const regionalFdiTotal = data.regions.reduce((sum, region) => sum + region.fdi.value, 0);
+  const share = (value: number, total: number) => total ? `${((value / total) * 100).toFixed(1)}%` : '0%';
 
   return <div className="min-h-screen bg-background pb-24 text-foreground">
     <SEO title="Continental Economic Overview | BOA-Story" description="Official continental and regional economic, trade, investment and sector-performance indicators across Africa’s 54 markets."/>
@@ -171,6 +175,37 @@ export const BetaContinentalOverview: React.FC = () => {
             <div className="border-t border-border bg-navy/[.035] px-5 py-5 md:px-8"><p className="text-sm leading-7 text-navy/85"><strong>Practical conclusion:</strong> use this overview to frame questions and identify patterns. Use the regional comparison to test geographic concentration, the sector view to examine operating structure, and country dossiers for decision-level detail.</p></div>
           </section>
 
+          <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="continental-decision-brief">
+            <div className="border-b border-border px-5 py-6 md:px-8">
+              <p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Decision brief</p>
+              <h2 id="continental-decision-brief" className="mt-2 font-serif text-3xl text-navy md:text-4xl">What the record establishes—and what a decision still requires</h2>
+              <p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">This is a structured reading of the published indicators, not a forecast. It connects scale, momentum, prices, external flows and capital formation while preserving each measure’s own period and coverage.</p>
+            </div>
+            <div className="grid lg:grid-cols-[1.15fr_.85fr]">
+              <div className="divide-y divide-border lg:border-r lg:border-border">
+                {[
+                  ['Economic scale', `${formatValue(indicators['NY.GDP.MKTP.CD'].value, indicators['NY.GDP.MKTP.CD'].unit)} recorded across ${indicators['NY.GDP.MKTP.CD'].countries_reported} countries.`, 'Use country and regional shares to locate concentration; do not treat the total as equally accessible demand.'],
+                  ['Typical growth and prices', `${formatValue(indicators['NY.GDP.MKTP.KD.ZG'].value, '%')} median real growth and ${formatValue(indicators['FP.CPI.TOTL.ZG'].value, '%')} median inflation.`, 'Check country-level growth composition, currency conditions and the exact inflation observation year before budgeting.'],
+                  ['Trade position', `${formatValue(indicators['NE.EXP.GNFS.CD+NE.IMP.GNFS.CD'].value, 'current US$')} recorded exports-minus-imports difference.`, 'Separate goods from services and identify the countries, products, corridors and currencies driving the balance.'],
+                  ['External capital', `${formatValue(indicators['BX.KLT.DINV.CD.WD'].value, 'current US$')} in latest recorded net FDI inflows.`, 'Verify whether flows represent greenfield projects, acquisitions, reinvested earnings or exceptional transactions.'],
+                  ['Investment intensity', `${formatValue(indicators['NE.GDI.FTOT.ZS'].value, '% of GDP')} median fixed investment across ${indicators['NE.GDI.FTOT.ZS'].countries_reported} reporting countries.`, 'Inspect public/private composition, project execution, financing costs and asset quality.'],
+                  ['External financing position', `${formatValue(indicators['BN.CAB.XOKA.GD.ZS'].value, '% of GDP')} median current-account balance.`, 'Assess reserve cover, debt service, exchange-rate regime and the durability of financing country by country.'],
+                ].map(([title,evidence,next]) => <article key={title} className="grid gap-3 px-5 py-5 md:grid-cols-[10rem_1fr_1fr] md:px-8"><h3 className="text-sm font-bold text-navy">{title}</h3><p className="text-sm leading-6 text-navy/80">{evidence}</p><p className="text-sm leading-6 text-muted-foreground"><strong className="text-navy">Next check:</strong> {next}</p></article>)}
+              </div>
+              <aside className="bg-navy/[.025] px-5 py-6 md:px-8">
+                <h3 className="font-serif text-2xl text-navy">Practical use by audience</h3>
+                <div className="mt-5 space-y-5">
+                  {[
+                    ['Investor or lender','Use the record to shortlist where scale, momentum and financing conditions warrant deeper country, company and transaction diligence.'],
+                    ['Operating company','Translate the macro record into demand, route-to-market, input-cost, currency, logistics, workforce and regulatory assumptions.'],
+                    ['Government or institution','Compare regional and country gaps, then test whether policy, infrastructure and financing interventions address the binding constraint.'],
+                    ['Research or advisory team','Record the indicator code, unit, period, country coverage and caveat in every downstream model or client presentation.'],
+                  ].map(([title,body],index) => <div key={title} className="grid grid-cols-[2rem_1fr] gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{index+1}</span><div><h4 className="text-sm font-bold text-navy">{title}</h4><p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p></div></div>)}
+                </div>
+              </aside>
+            </div>
+          </section>
+
           <section className="page-section">
             <div className="flex flex-col gap-3 border-b border-border pb-6 md:flex-row md:items-end md:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Trade, prices and investment</p><h2 className="mt-2 font-serif text-3xl text-navy">The other numbers needed for context</h2></div><span className="text-xs text-muted-foreground">{data.indicators.length} official measures in total</span></div>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -209,6 +244,13 @@ export const BetaContinentalOverview: React.FC = () => {
               </div>
             </article>)}
           </div>
+          <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-white">
+            <div className="border-b border-border px-5 py-6 md:px-8"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Regional concentration ledger</p><h3 className="mt-2 font-serif text-3xl text-navy">Compare scale, people, capital and operating pressure together</h3><p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">Shares use the sum of the five regional records shown on this page. Growth and inflation remain equal-country medians and should not be read as weighted regional rates.</p></div>
+            <div className="grid gap-3 p-4 md:hidden">
+              {[...data.regions].sort((a,b) => b.gdp.value-a.gdp.value).map(region => <article key={region.region} className="rounded-xl border border-border p-4"><div className="flex items-end justify-between gap-3"><h4 className="font-serif text-2xl text-navy">{region.region} Africa</h4><strong className="text-sm text-navy">{share(region.gdp.value,regionalGdpTotal)} of recorded GDP</strong></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-muted-foreground">Population share</dt><dd className="mt-1 font-semibold text-navy">{share(region.population.value,regionalPopulationTotal)}</dd></div><div><dt className="text-muted-foreground">FDI share</dt><dd className="mt-1 font-semibold text-navy">{share(region.fdi.value,regionalFdiTotal)}</dd></div><div><dt className="text-muted-foreground">Median growth</dt><dd className="mt-1 font-semibold text-navy">{formatValue(region.growth.value,'%')}</dd></div><div><dt className="text-muted-foreground">Median inflation</dt><dd className="mt-1 font-semibold text-navy">{formatValue(region.inflation.value,'%')}</dd></div></dl></article>)}
+            </div>
+            <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead className="bg-navy text-white"><tr>{['Region','Recorded GDP','GDP share','Population share','Net FDI share','Median growth','Median inflation','Fixed investment'].map(label => <th key={label} className="px-4 py-3 text-[10px] uppercase tracking-[.1em]">{label}</th>)}</tr></thead><tbody className="divide-y divide-border">{[...data.regions].sort((a,b) => b.gdp.value-a.gdp.value).map(region => <tr key={region.region} className="align-top"><th className="px-4 py-4 font-semibold text-navy">{region.region} Africa<span className="mt-1 block text-[10px] font-normal text-muted-foreground">{region.country_count} countries</span></th><td className="px-4 py-4 tabular-nums text-navy">{formatValue(region.gdp.value,'current US$')}</td><td className="px-4 py-4 tabular-nums">{share(region.gdp.value,regionalGdpTotal)}</td><td className="px-4 py-4 tabular-nums">{share(region.population.value,regionalPopulationTotal)}</td><td className="px-4 py-4 tabular-nums">{share(region.fdi.value,regionalFdiTotal)}</td><td className="px-4 py-4 tabular-nums">{formatValue(region.growth.value,'%')}</td><td className="px-4 py-4 tabular-nums">{formatValue(region.inflation.value,'%')}</td><td className="px-4 py-4 tabular-nums">{formatValue(region.investment.value,'% of GDP')}</td></tr>)}</tbody></table></div>
+          </div>
         </section>}
 
         {view === 'sectors' && <section className="page-section">
@@ -217,6 +259,9 @@ export const BetaContinentalOverview: React.FC = () => {
             {data.sector_performance.map(sector => <article key={sector.sector_id} className="rounded-2xl border border-border bg-white p-5 md:p-6">
               <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-muted-foreground">{sector.indicator_code}</p><h3 className="mt-1 font-serif text-2xl text-navy">{sector.sector_name}</h3></div><span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-navy">{sector.direction}</span></div>
               <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_1.2fr]"><div><p className="text-[10px] uppercase tracking-[.1em] text-muted-foreground">{sector.headline_label}</p><p className="mt-2 font-serif text-3xl text-navy">{formatValue(sector.headline_value,sector.headline_unit)}</p><p className="mt-2 text-xs text-muted-foreground">{sector.countries_reported} countries · {period(sector.period_start,sector.period_end)}</p></div><div className="grid gap-2">{sector.dimensions.map(item => <div key={item.indicator_code} className="flex items-center justify-between gap-3 rounded-lg bg-navy/[.035] px-3 py-2"><div><p className="text-xs font-semibold text-navy">{item.label}</p><p className="text-[9px] text-muted-foreground">{item.coverage_pct.toFixed(0)}% coverage · {period(item.period_start,item.period_end)}</p></div><span className="text-right text-sm font-semibold text-navy">{formatValue(item.value,item.unit)}</span></div>)}</div></div>
+              <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2"><div><p className="text-[9px] font-bold uppercase tracking-[.1em] text-navy/60">Highest recorded markets</p><ol className="mt-2 space-y-1.5">{sector.leaders.slice(0,3).map((market,index) => <li key={market.country_code} className="flex justify-between gap-3 text-xs"><Link to={`/countries/${market.country_code}`} className="font-semibold text-navy">{index+1}. {market.country_name}</Link><span className="tabular-nums text-muted-foreground">{formatValue(market.value,sector.headline_unit)}</span></li>)}</ol></div><div><p className="text-[9px] font-bold uppercase tracking-[.1em] text-navy/60">Lowest recorded markets</p><ol className="mt-2 space-y-1.5">{sector.laggards.slice(0,3).map((market,index) => <li key={market.country_code} className="flex justify-between gap-3 text-xs"><Link to={`/countries/${market.country_code}`} className="font-semibold text-navy">{index+1}. {market.country_name}</Link><span className="tabular-nums text-muted-foreground">{formatValue(market.value,sector.headline_unit)}</span></li>)}</ol></div></div>
+              <p className="mt-5 text-xs leading-5 text-muted-foreground"><strong className="text-navy">Interpretation boundary:</strong> {sector.caveat}</p>
+              <div className="mt-5"><p className="text-[9px] font-bold uppercase tracking-[.1em] text-navy/60">Decision questions</p><ol className="mt-2 space-y-2">{sector.diligence_questions.map((question,index) => <li key={question} className="grid grid-cols-[1.25rem_1fr] gap-2 text-xs leading-5 text-muted-foreground"><span>{index+1}.</span><span>{question}</span></li>)}</ol></div>
               <Link to={`/sectors/${sector.sector_id}/trends`} className="mt-5 flex items-center justify-between border-t border-border pt-4 text-xs font-semibold text-navy">Open full performance dossier <ArrowRight size={14}/></Link>
             </article>)}
           </div>

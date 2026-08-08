@@ -1565,6 +1565,138 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
     'A última verificação da fonte falhou em 1; conserva-se o último registo verificado',
   'The official source is overdue for a successful refresh; the last verified snapshot is retained':
     'A fonte oficial aguarda uma actualização bem sucedida; conserva-se o último registo verificado',
+  'What the record establishes—and what a decision still requires':
+    'O que o registo permite estabelecer — e aquilo de que uma decisão ainda necessita',
+  'This is a structured reading of the published indicators, not a forecast. It connects scale, momentum, prices, external flows and capital formation while preserving each measure’s own period and coverage.':
+    'Esta é uma leitura estruturada dos indicadores publicados, não uma previsão. Relaciona dimensão, evolução, preços, fluxos externos e formação de capital, preservando o período e a cobertura próprios de cada medida.',
+  '1 recorded across 1 countries.': '1 registado em 1 países.',
+  'Use country and regional shares to locate concentration; do not treat the total as equally accessible demand.':
+    'Utilize as parcelas nacionais e regionais para localizar a concentração; não trate o total como procura igualmente acessível.',
+  'Typical growth and prices': 'Crescimento e preços típicos',
+  '1 median real growth and 1 median inflation.': '1 de crescimento real mediano e 1 de inflação mediana.',
+  'Check country-level growth composition, currency conditions and the exact inflation observation year before budgeting.':
+    'Verifique a composição do crescimento nacional, as condições monetárias e o ano exacto da observação da inflação antes de elaborar o orçamento.',
+  'Separate goods from services and identify the countries, products, corridors and currencies driving the balance.':
+    'Separe bens de serviços e identifique os países, produtos, corredores e moedas que determinam o saldo.',
+  '1 median fixed investment across 1 reporting countries.': '1 de investimento fixo mediano em 1 países declarantes.',
+  'Inspect public/private composition, project execution, financing costs and asset quality.':
+    'Examine a composição pública e privada, a execução dos projectos, os custos de financiamento e a qualidade dos activos.',
+  '1 median current-account balance.': '1 de saldo mediano da balança corrente.',
+  'Assess reserve cover, debt service, exchange-rate regime and the durability of financing country by country.':
+    'Avalie a cobertura das reservas, o serviço da dívida, o regime cambial e a sustentabilidade do financiamento em cada país.',
+  'Next check:': 'Verificação seguinte:',
+  'Practical use by audience': 'Utilização prática por público',
+  'Use the record to shortlist where scale, momentum and financing conditions warrant deeper country, company and transaction diligence.':
+    'Utilize o registo para seleccionar os casos em que a dimensão, a evolução e as condições de financiamento justificam uma análise mais profunda do país, da empresa e da transacção.',
+  'Translate the macro record into demand, route-to-market, input-cost, currency, logistics, workforce and regulatory assumptions.':
+    'Converta o registo macroeconómico em pressupostos sobre procura, acesso ao mercado, custos de factores, moeda, logística, mão-de-obra e regulação.',
+  'Compare regional and country gaps, then test whether policy, infrastructure and financing interventions address the binding constraint.':
+    'Compare as lacunas regionais e nacionais e verifique depois se as intervenções de política, infra-estrutura e financiamento resolvem o constrangimento determinante.',
+  'Record the indicator code, unit, period, country coverage and caveat in every downstream model or client presentation.':
+    'Registe o código do indicador, a unidade, o período, a cobertura nacional e a ressalva em todos os modelos ou apresentações destinados a clientes.',
+  'Compare scale, people, capital and operating pressure together':
+    'Compare conjuntamente dimensão, população, capital e pressão operacional',
+  'Shares use the sum of the five regional records shown on this page. Growth and inflation remain equal-country medians and should not be read as weighted regional rates.':
+    'As parcelas utilizam a soma dos cinco registos regionais apresentados nesta página. O crescimento e a inflação continuam a ser medianas com igual peso por país e não devem ser lidos como taxas regionais ponderadas.',
+  'Median growth': 'Crescimento mediano',
+  'Fixed investment': 'Investimento fixo',
+  'Interpretation boundary:': 'Limite de interpretação:',
+  'Limited-coverage signal': 'Sinal com cobertura limitada',
+  'Broad upward movement': 'Movimento ascendente generalizado',
+  'Broad downward movement': 'Movimento descendente generalizado',
+  'Mixed country movement': 'Evolução nacional mista',
+  'Where the headline is broad, narrow or incomplete': 'Onde o sinal principal é generalizado, restrito ou incompleto',
+  'This matrix puts movement, country breadth, dispersion and coverage beside one another. It helps identify which patterns deserve country-level investigation; it does not rank investment attractiveness.':
+    'Esta matriz reúne a evolução, a amplitude nacional, a dispersão e a cobertura. Ajuda a identificar os padrões que justificam investigação nacional; não classifica a atractividade do investimento.',
+  'Median change': 'Variação mediana',
+  'Countries moving higher': 'Países com valor crescente',
+  'Country coverage': 'Cobertura nacional',
+  'Investigate countries and evidence': 'Investigar países e elementos comprovativos',
+  'Sector and measure': 'Sector e medida',
+  'Evidence pattern': 'Padrão dos dados',
+  '% higher': '% com valor superior',
+  'How to use it:': 'Como utilizar:',
+  'start with evidence pattern and coverage, inspect the highest and lowest recorded countries, then open the sector dossier to test supporting conditions and unanswered diligence questions.':
+    'comece pelo padrão dos dados e pela cobertura, examine os países com valores mais altos e mais baixos e abra depois o dossiê sectorial para testar as condições de apoio e as questões de diligência por responder.',
+  'Countries with a positive reading': 'Países com leitura positiva',
+  'What it cannot establish:': 'O que não permite estabelecer:',
+  'Highest recorded countries': 'Países com valores registados mais altos',
+  'Lowest recorded countries': 'Países com valores registados mais baixos',
+  'From continental signal to an evidence-ready decision': 'Do sinal continental a uma decisão sustentada por elementos comprovativos',
+  'Specify country, customer, product, time horizon, capital at risk and the decision that the evidence must support.':
+    'Especifique o país, o cliente, o produto, o horizonte temporal, o capital em risco e a decisão que os elementos comprovativos devem sustentar.',
+  'Build the comparison set': 'Construir o conjunto de comparação',
+  'Choose plausible countries and compare the same indicator, unit, observation period and coverage before interpreting differences.':
+    'Escolha países plausíveis e compare o mesmo indicador, unidade, período de observação e cobertura antes de interpretar diferenças.',
+  'Test market structure': 'Testar a estrutura do mercado',
+  'Add demand, competition, prices, regulation, infrastructure, labour, logistics, financing and currency evidence.':
+    'Acrescente dados sobre procura, concorrência, preços, regulação, infra-estrutura, trabalho, logística, financiamento e moeda.',
+  'Confirm licensing, ownership restrictions, tax, repatriation, procurement, land, data, standards and local-partner requirements.':
+    'Confirme licenças, restrições de propriedade, fiscalidade, repatriamento, contratação, terrenos, dados, normas e requisitos relativos a parceiros locais.',
+  'Stress-test the case': 'Submeter o caso a cenários adversos',
+  'Model adverse exchange-rate, inflation, demand, delay, financing-cost and policy scenarios before committing resources.':
+    'Modele cenários adversos de câmbio, inflação, procura, atraso, custo de financiamento e política antes de afectar recursos.',
+  'What the comparison terms mean': 'O significado dos termos de comparação',
+  'The middle country reading after values are ordered. It limits the influence of very large economies but is not a continental total.':
+    'A leitura do país intermédio depois de ordenados os valores. Limita a influência das economias muito grandes, mas não constitui um total continental.',
+  'The middle country-level change versus each market’s preceding available observation. Observation intervals may differ.':
+    'A variação nacional intermédia face à observação disponível anterior de cada mercado. Os intervalos de observação podem diferir.',
+  'The share of reporting countries moving higher. It shows how widely a direction appears, not how economically large those countries are.':
+    'A parcela dos países declarantes cujo valor aumenta. Mostra a amplitude de uma direcção, não a dimensão económica desses países.',
+  'Reporting countries divided by all 54 African countries. Missing countries reduce confidence and remain visible.':
+    'Países declarantes divididos pelos 54 países africanos. Os países em falta reduzem a confiança e permanecem visíveis.',
+  'The range between the lower and upper quartiles. A wide range signals substantial cross-country dispersion.':
+    'O intervalo entre os quartis inferior e superior. Um intervalo amplo assinala uma dispersão nacional considerável.',
+  'A position on one named measure, not an overall judgment of quality, opportunity, risk or investability.':
+    'Uma posição numa única medida identificada, não uma avaliação global de qualidade, oportunidade, risco ou aptidão para investimento.',
+  'Decision brief': 'Síntese para decisão',
+  'Decision matrix': 'Matriz de decisão',
+  'Decision questions': 'Questões para decisão',
+  'Economic scale': 'Dimensão económica',
+  'External capital': 'Capital externo',
+  'External financing position': 'Posição de financiamento externo',
+  'FDI share': 'Parcela do IDE',
+  'GDP share': 'Parcela do PIB',
+  'Net FDI share': 'Parcela do IDE líquido',
+  'Population share': 'Parcela da população',
+  'Regional concentration ledger': 'Registo de concentração regional',
+  'Region': 'Região',
+  'Investor or lender': 'Investidor ou financiador',
+  'Operating company': 'Empresa operacional',
+  'Government or institution': 'Governo ou instituição',
+  'Research or advisory team': 'Equipa de investigação ou consultoria',
+  'Highest recorded markets': 'Mercados com valores registados mais altos',
+  'Lowest recorded markets': 'Mercados com valores registados mais baixos',
+  'Median reading': 'Leitura mediana',
+  'Middle 50%': '50% central',
+  'middle half': 'metade central',
+  'Observed range:': 'Intervalo observado:',
+  'Core definitions': 'Definições fundamentais',
+  'Practical research protocol': 'Protocolo prático de investigação',
+  'Verify implementation': 'Verificar a execução',
+  'Leader or laggard': 'Posição superior ou inferior',
+  'of recorded GDP': 'do PIB registado',
+  'Verify whether flows represent greenfield projects, acquisitions, reinvested earnings or exceptional transactions.':
+    'Verifique se os fluxos representam projectos de raiz, aquisições, lucros reinvestidos ou transacções excepcionais.',
+  '[dynamic] in latest recorded net FDI inflows.': '[dynamic] nos últimos fluxos líquidos de IDE registados.',
+  '[dynamic] median current-account balance.': '[dynamic] de saldo mediano da balança corrente.',
+  '[dynamic] median fixed investment across reporting countries.': '[dynamic] de investimento fixo mediano nos países declarantes.',
+  '[dynamic] median real growth and median inflation.': '[dynamic] de crescimento real mediano e de inflação mediana.',
+  '[dynamic] recorded across countries.': '[dynamic] registado nos países.',
+  '[dynamic] recorded exports-minus-imports difference.': '[dynamic] de diferença registada entre exportações e importações.',
+  'in latest recorded net FDI inflows.': 'nos últimos fluxos líquidos de IDE registados.',
+  'median current-account balance.': 'de saldo mediano da balança corrente.',
+  'median fixed investment across reporting countries.': 'de investimento fixo mediano nos países declarantes.',
+  'median real growth and median inflation.': 'de crescimento real mediano e de inflação mediana.',
+  'recorded across countries.': 'registado nos países.',
+  'recorded exports-minus-imports difference.': 'de diferença registada entre exportações e importações.',
+  'NY.GDP.MKTP.CD': 'NY.GDP.MKTP.CD',
+  'NY.GDP.MKTP.KD.ZG': 'NY.GDP.MKTP.KD.ZG',
+  'FP.CPI.TOTL.ZG': 'FP.CPI.TOTL.ZG',
+  'BX.KLT.DINV.CD.WD': 'BX.KLT.DINV.CD.WD',
+  'NE.EXP.GNFS.CD+NE.IMP.GNFS.CD': 'NE.EXP.GNFS.CD+NE.IMP.GNFS.CD',
+  'NE.GDI.FTOT.ZS': 'NE.GDI.FTOT.ZS',
+  'BN.CAB.XOKA.GD.ZS': 'BN.CAB.XOKA.GD.ZS',
   'Review': 'Revisão',
   'Evidence policy': 'Política documental',
   'Critical claims require editorial review': 'As afirmações críticas exigem revisão editorial',

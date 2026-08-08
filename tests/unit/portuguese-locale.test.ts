@@ -164,6 +164,17 @@ describe('coded Portuguese interface locale', () => {
             .toBe('Nas páginas extensas, utilize a navegação principal fixa e a navegação entre secções.');
     });
 
+    it('translates split labels and interpolated interface copy without generated text', () => {
+        expect(translatePortugueseInterfaceText('Value')).toBe('Valor');
+        expect(translatePortugueseInterfaceText('unit')).toBe('unidade');
+        expect(translatePortugueseInterfaceText('Section 4')).toBe('Secção 4');
+        expect(translatePortugueseInterfaceText('Prepared 8 de Agosto de 2026')).toBe('Preparado em 8 de Agosto de 2026');
+        expect(translatePortugueseInterfaceText('12 source-linked records')).toBe('12 registos ligados às fontes');
+        expect(translatePortugueseInterfaceText('Return to Nigéria hub')).toBe('Voltar ao dossiê de Nigéria');
+        expect(translatePortugueseInterfaceText('Middle reading from 31 countries · 2024'))
+            .toBe('Leitura mediana de 31 países · 2024');
+    });
+
     it('covers direct copy across every reader-facing routed page', () => {
         const maintainedEnglish = new Set(Object.values(TRANSLATIONS.en));
         const readerCopyProperties = new Set([

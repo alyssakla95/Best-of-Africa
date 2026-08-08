@@ -2463,7 +2463,67 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Membership email address': 'Endereço de correio electrónico da adesão',
 };
 
+const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {
+  'Value': 'Valor',
+  'unit': 'unidade',
+  'and': 'e',
+  'of': 'de',
+  'for': 'para',
+  'from': 'de',
+  'with': 'com',
+  'Definition': 'Definição',
+  'Comparison': 'Comparação',
+  'Coverage': 'Cobertura',
+  'Timing': 'Período',
+  'Boundary': 'Limitação',
+  'Prepared': 'Preparado',
+  'Section': 'Secção',
+  'Observation': 'Observação',
+  'Projection': 'Projecção',
+  'change': 'variação',
+  'countries higher': 'países com valor superior',
+  'countries covered': 'países abrangidos',
+  'under review': 'em revisão',
+  'source-linked record': 'registo ligado à fonte',
+  'source-linked records': 'registos ligados às fontes',
+};
+
+const normaliseInterfaceKey = (value: string) => value
+  .replace(/[‘’]/g, "'")
+  .replace(/[“”]/g, '"')
+  .replace(/[–—]/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const NORMALISED_PORTUGUESE_INTERFACE_PHRASES = new Map<string, string>([
+  ...Object.entries(PORTUGUESE_INTERFACE_PHRASES),
+  ...Object.entries(PORTUGUESE_INTERFACE_FRAGMENTS),
+].map(([english, portuguese]) => [normaliseInterfaceKey(english), portuguese]));
+
+const translatePortugueseDynamicInterfaceText = (value: string): string | undefined => {
+  let match: RegExpMatchArray | null;
+  if ((match = value.match(/^Section (\d+)$/i))) return `Secção ${match[1]}`;
+  if ((match = value.match(/^Prepared (.+)$/i))) return `Preparado em ${match[1]}`;
+  if ((match = value.match(/^Last updated (.+)\.?$/i))) return `Última actualização: ${match[1]}.`;
+  if ((match = value.match(/^Official snapshot retrieved (.+)$/i))) return `Instantâneo oficial consultado em ${match[1]}`;
+  if ((match = value.match(/^Latest evidence (.+)$/i))) return `Evidência mais recente: ${match[1]}`;
+  if ((match = value.match(/^Return to (.+) hub$/i))) return `Voltar ao dossiê de ${match[1]}`;
+  if ((match = value.match(/^Capital:\s*(.+)$/i))) return `Capital: ${match[1]}`;
+  if ((match = value.match(/^(\d+) source-linked (record|records)$/i))) {
+    return `${match[1]} ${match[2].toLowerCase() === 'record' ? 'registo ligado à fonte' : 'registos ligados às fontes'}`;
+  }
+  if ((match = value.match(/^(Projection|Observation)\s+(.+)$/i))) {
+    return `${match[1].toLowerCase() === 'projection' ? 'Projecção' : 'Observação'} ${match[2]}`;
+  }
+  if ((match = value.match(/^Middle reading from (\d+) countries\s*(?:·|-)\s*(.+)$/i))) {
+    return `Leitura mediana de ${match[1]} países · ${match[2]}`;
+  }
+  return undefined;
+};
+
 export function translatePortugueseInterfaceText(value: string): string | undefined {
-  const exact = PORTUGUESE_INTERFACE_PHRASES[value];
-  return exact ? applyPortuguese1945Orthography(exact) : undefined;
+  const key = normaliseInterfaceKey(value);
+  const translated = NORMALISED_PORTUGUESE_INTERFACE_PHRASES.get(key)
+    || translatePortugueseDynamicInterfaceText(key);
+  return translated ? applyPortuguese1945Orthography(translated) : undefined;
 }

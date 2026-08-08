@@ -19,7 +19,7 @@ const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'aria-label', 'title', 'alt'];
 const MAX_BATCH_ITEMS = 24;
 const MAX_BATCH_CHARS = 12000;
 const PERSISTENT_TRANSLATION_AGE_MS = 90 * 24 * 60 * 60 * 1000;
-const ENGLISH_TEXT = /\b(?:the|and|for|with|from|your|this|that|what|how|which|use|source|market|country|countries|read|view|loading|available|official|report|story|stories|member|search|save|open|evidence|performance|data|sector|page|access|submit|register|settings|privacy|terms|contact|business|investment|trade|updated|current|failed|error|next|previous|learn|explore|support|apply|select|required|optional|prepared|change|higher|lower|growth|coverage|account|service)\b/i;
+const ENGLISH_TEXT = /\b(?:the|and|for|with|from|your|this|that|what|how|which|use|source|market|country|countries|read|view|loading|available|official|report|story|stories|member|search|save|open|evidence|performance|data|sector|page|access|submit|register|settings|privacy|terms|contact|business|investment|trade|updated|current|failed|error|next|previous|learn|explore|support|apply|select|required|optional|prepared|change|higher|lower|growth|coverage|account|service|definition|value|unit|comparison|timing|boundary|section|observation|projection|freshness|review|reporting)\b/i;
 const PORTUGUESE_OUTPUTS = new Set([
   ...Object.values(TRANSLATIONS.pt || {}),
   ...Object.values(PORTUGUESE_INTERFACE_PHRASES),
@@ -95,7 +95,7 @@ export function InterfaceTranslator() {
           const value = node.textContent?.trim() || '';
           const sourceLanguage = parent?.closest<HTMLElement>('[data-source-language]')?.dataset.sourceLanguage;
           if (!parent || parent.closest(SKIP) || sourceLanguage === language || !value || !/[A-Za-z]/.test(value)) return NodeFilter.FILTER_REJECT;
-          if (language === 'pt' && isPortugueseText(value)) return NodeFilter.FILTER_REJECT;
+          if (language === 'pt' && isPortugueseText(value) && !ENGLISH_TEXT.test(value)) return NodeFilter.FILTER_REJECT;
           if (language === 'pt' && !ENGLISH_TEXT.test(value) && !translatePortugueseInterfaceText(value)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
@@ -120,7 +120,7 @@ export function InterfaceTranslator() {
         for (const name of TRANSLATABLE_ATTRIBUTES) {
           const current = element.getAttribute(name);
           if (!current || !/[A-Za-z]/.test(current)) continue;
-          if (language === 'pt' && isPortugueseText(current)) continue;
+          if (language === 'pt' && isPortugueseText(current) && !ENGLISH_TEXT.test(current)) continue;
           if (language === 'pt' && !ENGLISH_TEXT.test(current) && !translatePortugueseInterfaceText(current)) continue;
           if (!originals.has(name)) originals.set(name, current);
           const value = originals.get(name)!;

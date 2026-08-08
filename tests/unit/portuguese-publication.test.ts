@@ -57,6 +57,10 @@ describe('Portuguese publication locale', () => {
         const outlookRoute = await fs.readFile('src/routes/market-intel.ts', 'utf8');
         expect(source).toContain("['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language)");
         expect(source).toContain("['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(lang)");
+        expect(source).toContain('const localizedEndpoint = withReaderLanguage(endpoint)');
+        expect(source).toContain("if (!params.has('lang')) params.set('lang', getReaderLanguage())");
+        expect(source).toContain("search: (query: string) => readerRequest");
+        expect(source).toContain("getCountryNarrative: (code: string) => readerRequest");
         expect(source).toContain('/outlook?lang=${getReaderLanguage()}');
         expect(articleRoute).toContain("aiContext && reqLang !== 'pt'");
         expect(outlookRoute).toContain('zero registos publicados na janela documental');

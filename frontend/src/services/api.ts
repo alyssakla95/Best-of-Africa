@@ -2,7 +2,7 @@ import type { Article, ArticleListItem, CalendarEvent, Country, CountryStats, Da
 import { readThroughCache } from '@/lib/persistentQueryCache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
-const ARTICLE_CONTENT_REVISION = 'pt1945-v2';
+const ARTICLE_CONTENT_REVISION = 'pt1945-v3';
 
 // Session helper
 const getSessionId = () => {
@@ -20,6 +20,14 @@ const getAdminToken = () => localStorage.getItem('boa_admin_token');
 const getReaderLanguage = () => {
     const language = localStorage.getItem('boa_lang') || 'en';
     return ['fr', 'ar', 'pt', 'de', 'hi', 'zh'].includes(language) ? language : 'en';
+};
+
+const withReaderLanguage = (endpoint: string) => {
+    const [path, query = ''] = endpoint.split('?', 2);
+    const params = new URLSearchParams(query);
+    if (!params.has('lang')) params.set('lang', getReaderLanguage());
+    if (!params.has('content_rev')) params.set('content_rev', ARTICLE_CONTENT_REVISION);
+    return `${path}?${params.toString()}`;
 };
 
 // Request helper
@@ -71,7 +79,8 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
 
 const readerRequest = <T>(endpoint: string, maxAgeMs?: number) => {
     const accessScope = getAuthToken() ? 'member' : 'public';
-    return readThroughCache<T>(`${accessScope}:${endpoint}`, () => request<T>(endpoint), maxAgeMs);
+    const localizedEndpoint = withReaderLanguage(endpoint);
+    return readThroughCache<T>(`${accessScope}:${localizedEndpoint}`, () => request<T>(localizedEndpoint), maxAgeMs);
 };
 
 export interface Campaign {
@@ -404,8 +413,8 @@ export const api = {
     }>(`/dashboards/continental/overview?contract=economy-v1&lang=${getReaderLanguage()}`),
 
     // Search
-    search: (query: string) => request<{ results: SearchResult[]; suggestions: string[]; editorial_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
-    autocomplete: (query: string) => request<{ suggestions: { text: string; type: string }[] }>(`/search/suggest?q=${encodeURIComponent(query)}`),
+    search: (query: string) => readerRequest<{ results: SearchResult[]; suggestions: string[]; editorial_answer?: string }>(`/search?q=${encodeURIComponent(query)}`),
+    autocomplete: (query: string) => readerRequest<{ suggestions: { text: string; type: string }[] }>(`/search/suggest?q=${encodeURIComponent(query)}`),
 
     // Intelligence
     getSectors: () => readerRequest<{ data: Sector[] }>('/market-intel/sectors', 24 * 60 * 60 * 1000),
@@ -441,7 +450,7 @@ export const api = {
     }>(`/countries/${code}/relationships`),
     getNarratives: (params: Record<string, string> = {}) => {
         const searchParams = new URLSearchParams(params);
-        return request<{
+        return readerRequest<{
             data: {
                 id: string;
                 country_code: string;
@@ -454,7 +463,7 @@ export const api = {
             }[]
         }>(`/narratives?${searchParams}`);
     },
-    getCountryNarrative: (code: string) => request<{
+    getCountryNarrative: (code: string) => readerRequest<{
         country: Country;
         narratives: {
             id: string;

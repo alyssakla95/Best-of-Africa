@@ -476,7 +476,15 @@ const SECTOR_TERMS: Array<[string, string, number]> = [
     ['healthcare', 'healthcare', 3], ['healthcare', 'health', 2], ['healthcare', 'medical', 2], ['healthcare', 'hospital', 2], ['healthcare', 'pharma', 2], ['healthcare', 'pharmaceutical', 3], ['healthcare', 'vaccine', 2], ['healthcare', 'clinic', 2], ['healthcare', 'disease', 1], ['healthcare', 'medicine', 1],
 ];
 
-export function matchSectorByKeywords(title: string, content: string): string | null {
+export type SectorKeywordEvidence = {
+    sector: string | null;
+    bestScore: number;
+    runnerUpScore: number;
+    confident: boolean;
+    scores: Record<string, number>;
+};
+
+export function classifySectorEvidence(title: string, content: string): SectorKeywordEvidence {
     const titleL = ` ${(title || '').toLowerCase()} `;
     const bodyL = ` ${(content || '').toLowerCase()} `;
     const scores: Record<string, number> = {};
@@ -499,8 +507,12 @@ export function matchSectorByKeywords(title: string, content: string): string | 
     // A lone incidental body word ("production", "fund" or "construction")
     // is not enough to label an article as market-sector evidence. Require a
     // meaningful signal and reject ambiguous ties for model review instead.
-    if (bestScore < 6 || (runnerUpScore > 0 && bestScore - runnerUpScore < 2)) return null;
-    return best;
+    const confident = bestScore >= 6 && !(runnerUpScore > 0 && bestScore - runnerUpScore < 2);
+    return { sector: confident ? best : null, bestScore, runnerUpScore, confident, scores };
+}
+
+export function matchSectorByKeywords(title: string, content: string): string | null {
+    return classifySectorEvidence(title, content).sector;
 }
 
 export async function identifySector(

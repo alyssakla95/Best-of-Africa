@@ -252,6 +252,49 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    // Sector labels affect coverage ledgers and related-story navigation. Track
+    // the historical re-audit explicitly so an unreviewed taxonomy cannot look
+    // like finished market evidence.
+    const sectorAuditStart = Date.now();
+    try {
+        const audit = await c.env.DB.prepare(`
+            SELECT COUNT(*) AS assigned,
+                   SUM(CASE WHEN sector_reviewed_at IS NOT NULL THEN 1 ELSE 0 END) AS reviewed,
+                   SUM(CASE WHEN sector_assignment_confidence >= 0.82 THEN 1 ELSE 0 END) AS qualified,
+                   SUM(CASE WHEN sector_assignment_method = 'needs_editorial_review' THEN 1 ELSE 0 END) AS needs_review,
+                   SUM(CASE WHEN sector_assignment_method IN ('keyword_evidence_review', 'deep_editorial_review') THEN 1 ELSE 0 END) AS evidence_reviewed,
+                   SUM(CASE WHEN sector_assignment_previous IS NOT NULL THEN 1 ELSE 0 END) AS corrected
+            FROM articles
+            WHERE status = 'published' AND sector_id IS NOT NULL AND sector_id != ''
+        `).first<Record<string, number | null>>();
+        const assigned = Number(audit?.assigned || 0);
+        const reviewed = Number(audit?.reviewed || 0);
+        const complete = assigned === 0 || reviewed >= assigned;
+        checks.push({
+            name: 'sector_assignment_audit',
+            status: complete ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - sectorAuditStart,
+            message: complete ? undefined : 'Historical sector assignments are still being checked against their article evidence.',
+            details: {
+                assigned,
+                reviewed,
+                pending: Math.max(0, assigned - reviewed),
+                qualified: Number(audit?.qualified || 0),
+                needsEditorialReview: Number(audit?.needs_review || 0),
+                evidenceReviewed: Number(audit?.evidence_reviewed || 0),
+                corrected: Number(audit?.corrected || 0),
+                minimumConfidenceForSectorStatistics: 0.82,
+            },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'sector_assignment_audit',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - sectorAuditStart,
+            message: error instanceof Error ? error.message : 'Sector assignment audit check failed',
+        });
+    }
+
     // Coverage health is an output invariant. A running ingestion cron is not
     // healthy when one country or publisher dominates the evidence window.
     const diversityStart = Date.now();

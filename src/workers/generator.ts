@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import type { Env, ContentGenerationMessage } from '../types';
-import { generateArticle as generateArticleContent, identifyCountry, identifySector, generateArticleImage, buildHeroPrompt, ARTICLE_PROMPT_VERSION, MODELS } from '../lib/ai';
+import { generateArticle as generateArticleContent, identifyCountry, identifySector, generateArticleImage, buildHeroPrompt, ARTICLE_PROMPT_VERSION, MODELS, callConfiguredAI, classifySectorEvidence } from '../lib/ai';
 import { getMedia, uploadImage, uploadArticleHero, makeHeroVariant, heroVariantKey } from '../lib/media';
 import { generateAudioNarration } from '../lib/audio';
 import { checkContentIntegrity } from '../lib';
@@ -471,6 +471,122 @@ export async function backfillSectors(env: Env, batch = 8): Promise<number> {
     }
     if (done) console.log(`[backfill-sectors] Classified ${done} article(s).`);
     return done;
+}
+
+type SectorAuditRow = {
+    id: string;
+    title: string;
+    summary: string | null;
+    content: string | null;
+    sector_id: string;
+};
+
+const AUDITABLE_SECTORS = new Set([...SECTOR_IDS, 'general']);
+
+/**
+ * Re-audit legacy sector assignments in bounded batches. Strong deterministic
+ * evidence is accepted immediately. Ambiguous rows are reviewed together by
+ * the configured deep-analysis provider; only high-confidence results become
+ * eligible for sector statistics. Everything else remains visible as an
+ * article but is explicitly excluded from sector-level evidence counts.
+ */
+export async function auditHistoricalSectorAssignments(
+    env: Env,
+    batch = 12,
+): Promise<{ checked: number; qualified: number; corrected: number; needsReview: number }> {
+    const limit = Math.max(1, Math.min(Math.trunc(batch), 16));
+    const rows = await env.DB.prepare(`
+        SELECT id, title, summary, content, sector_id
+        FROM articles INDEXED BY idx_articles_sector_review_queue
+        WHERE status = 'published'
+          AND sector_id IS NOT NULL
+          AND sector_id != ''
+          AND sector_reviewed_at IS NULL
+        ORDER BY published_at DESC, id ASC
+        LIMIT ?
+    `).bind(limit).all<SectorAuditRow>();
+    const candidates = rows.results || [];
+    if (!candidates.length) return { checked: 0, qualified: 0, corrected: 0, needsReview: 0 };
+
+    const statements: D1PreparedStatement[] = [];
+    const ambiguous: SectorAuditRow[] = [];
+    let qualified = 0;
+    let corrected = 0;
+    let needsReview = 0;
+
+    for (const row of candidates) {
+        const evidence = classifySectorEvidence(row.title, `${row.summary || ''}\n${(row.content || '').slice(0, 2400)}`);
+        if (!evidence.confident || !evidence.sector) {
+            ambiguous.push(row);
+            continue;
+        }
+        const confidence = Math.min(0.99, 0.82 + Math.min(0.17, evidence.bestScore / 100));
+        if (row.sector_id !== evidence.sector) corrected += 1;
+        qualified += 1;
+        statements.push(env.DB.prepare(`
+            UPDATE articles
+            SET sector_assignment_previous = CASE WHEN sector_id != ? THEN sector_id ELSE sector_assignment_previous END,
+                sector_id = ?, sector_assignment_method = 'keyword_evidence_review',
+                sector_assignment_confidence = ?, sector_reviewed_at = datetime('now'),
+                updated_at = datetime('now')
+            WHERE id = ?
+        `).bind(evidence.sector, evidence.sector, confidence, row.id));
+    }
+
+    if (ambiguous.length) {
+        const records = ambiguous.map(row => ({
+            id: row.id,
+            current_sector: row.sector_id,
+            title: repairReaderText(row.title),
+            evidence: repairReaderText(`${row.summary || ''} ${(row.content || '').slice(0, 900)}`),
+        }));
+        try {
+            const raw = await callConfiguredAI(env, {
+                prompt: `Review the sector assignment of every source-grounded business record below. Choose exactly one sector from tourism, energy, agriculture, technology, infrastructure, finance, manufacturing, healthcare, general. Use general for politics, sport, culture, personalities or cross-cutting material without enough evidence for one economic sector. Return only a JSON array of objects with id, sector, confidence (0 to 1). Do not infer a sector from a single incidental word.\n\n${JSON.stringify(records)}`,
+                max_tokens: 2200,
+                temperature: 0,
+                response_profile: 'deep-analysis',
+                structured_output: true,
+            });
+            const json = raw.match(/\[[\s\S]*\]/)?.[0] || '[]';
+            const decisions = JSON.parse(json) as Array<{ id?: string; sector?: string; confidence?: number }>;
+            const byId = new Map(decisions.map(decision => [String(decision.id || ''), decision]));
+            for (const row of ambiguous) {
+                const decision = byId.get(row.id);
+                const sector = String(decision?.sector || '').toLowerCase();
+                const confidence = Number(decision?.confidence || 0);
+                if (AUDITABLE_SECTORS.has(sector) && confidence >= 0.82) {
+                    if (row.sector_id !== sector) corrected += 1;
+                    qualified += 1;
+                    statements.push(env.DB.prepare(`
+                        UPDATE articles
+                        SET sector_assignment_previous = CASE WHEN sector_id != ? THEN sector_id ELSE sector_assignment_previous END,
+                            sector_id = ?, sector_assignment_method = 'deep_editorial_review',
+                            sector_assignment_confidence = ?, sector_reviewed_at = datetime('now'),
+                            updated_at = datetime('now')
+                        WHERE id = ?
+                    `).bind(sector, sector, Math.min(0.99, confidence), row.id));
+                } else {
+                    needsReview += 1;
+                    statements.push(env.DB.prepare(`
+                        UPDATE articles
+                        SET sector_assignment_method = 'needs_editorial_review',
+                            sector_assignment_confidence = 0,
+                            sector_reviewed_at = datetime('now')
+                        WHERE id = ?
+                    `).bind(row.id));
+                }
+            }
+        } catch (error) {
+            console.error('[sector-assignment-audit] deep review failed', error);
+            // Leave ambiguous rows unreviewed so the next scheduled tick retries.
+        }
+    }
+
+    if (statements.length) await env.DB.batch(statements);
+    const checked = statements.length;
+    if (checked) console.log(`[sector-assignment-audit] checked=${checked} qualified=${qualified} corrected=${corrected} needsReview=${needsReview}`);
+    return { checked, qualified, corrected, needsReview };
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

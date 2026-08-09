@@ -376,7 +376,7 @@ router.get('/analytics/summary', async (c) => {
             SELECT SUM(CASE WHEN published_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS total_articles,
                    SUM(CASE WHEN published_at >= datetime('now', '-14 days') AND published_at < datetime('now', '-7 days') THEN 1 ELSE 0 END) AS previous_articles,
                    COUNT(DISTINCT CASE WHEN published_at >= datetime('now', '-7 days') THEN country_code END) AS countries_covered,
-                   COUNT(DISTINCT CASE WHEN published_at >= datetime('now', '-7 days') AND sector_id != 'general' THEN sector_id END) AS sectors_covered,
+                   COUNT(DISTINCT CASE WHEN published_at >= datetime('now', '-7 days') AND sector_id != 'general' AND COALESCE(sector_assignment_confidence, 0) >= 0.82 THEN sector_id END) AS sectors_covered,
                    COUNT(DISTINCT CASE WHEN published_at >= datetime('now', '-7 days') THEN COALESCE(NULLIF(source_url, ''), NULLIF(source_title, ''), id) END) AS source_records,
                    SUM(CASE WHEN published_at >= datetime('now', '-7 days') THEN COALESCE(view_count, 0) ELSE 0 END) AS total_views,
                    AVG(CASE WHEN published_at >= datetime('now', '-7 days') THEN engagement_score END) AS audience_response,
@@ -394,6 +394,7 @@ router.get('/analytics/summary', async (c) => {
               ON a.sector_id = s.id
              AND a.status = 'published'
              AND a.published_at >= datetime('now', '-14 days')
+             AND COALESCE(a.sector_assignment_confidence, 0) >= 0.82
             WHERE s.id != 'general'
             GROUP BY s.id, s.name
             ORDER BY current_count DESC, previous_count DESC, s.name

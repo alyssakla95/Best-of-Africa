@@ -459,6 +459,15 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         return backfillSectors(env, 8);
     });
 
+    // Re-audit historical sector labels with recorded confidence. Until a
+    // legacy assignment clears this review it is excluded from sector-level
+    // evidence statistics, preventing politics or human-interest records from
+    // being presented as market-sector signals.
+    await safe('sector-assignment-audit', async () => {
+        const { auditHistoricalSectorAssignments } = await import('./workers/generator');
+        return auditHistoricalSectorAssignments(env, 12);
+    });
+
     // 2. Full optimization is intentionally bounded to every six hours. It
     // includes multiple synthesis calls and must not run thirty times an hour.
     if (hours % 6 === 0 && minutes === 10) {

@@ -51,6 +51,7 @@ describe('Health Check Endpoints', () => {
             expect(checkNames).toContain('database');
             expect(checkNames).toContain('kv_cache');
             expect(checkNames).toContain('rate_limit');
+            expect(checkNames).toContain('sector_assignment_audit');
             expect(checkNames).toContain('vectorize');
             expect(checkNames).toContain('editorial_generation');
             expect(checkNames).toContain('durable_objects');

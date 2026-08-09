@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { containsBrokenReaderText, normaliseReaderArticle, readerSummary, repairReaderText } from '../../src/lib/reader-text';
-import { matchSectorByKeywords } from '../../src/lib/ai';
+import { classifySectorEvidence, matchSectorByKeywords } from '../../src/lib/ai';
 
 describe('reader text integrity', () => {
     it('repairs common UTF-8 decoded as Windows-1252', () => {
@@ -30,5 +30,15 @@ describe('sector classification confidence', () => {
 
     it('defers an ambiguous cross-sector record instead of inventing precision', () => {
         expect(matchSectorByKeywords('Bank backs solar project', '')).toBeNull();
+    });
+
+    it('exposes the score and margin used by historical assignment review', () => {
+        const clear = classifySectorEvidence('Solar electricity grid expansion', 'Renewable power generation connected to the national grid.');
+        expect(clear).toMatchObject({ sector: 'energy', confident: true });
+        expect(clear.bestScore).toBeGreaterThan(clear.runnerUpScore);
+
+        const ambiguous = classifySectorEvidence('Bank backs solar project', '');
+        expect(ambiguous.sector).toBeNull();
+        expect(ambiguous.confident).toBe(false);
     });
 });

@@ -777,6 +777,7 @@ router.get('/coverage-pulse', async (c) => {
                 FROM articles a JOIN sectors s ON s.id = a.sector_id
                 WHERE a.status = 'published' AND a.published_at > datetime('now', '-7 days')
                   AND s.id != 'general'
+                  AND COALESCE(a.sector_assignment_confidence, 0) >= 0.82
                 GROUP BY s.id ORDER BY n DESC LIMIT 1
             `).first<{ name: string; n: number }>(),
             c.env.DB.prepare(`
@@ -796,6 +797,7 @@ router.get('/coverage-pulse', async (c) => {
                 FROM sectors s
                 LEFT JOIN articles a ON a.sector_id = s.id AND a.status = 'published'
                     AND a.published_at >= datetime('now', '-30 days')
+                    AND COALESCE(a.sector_assignment_confidence, 0) >= 0.82
                 WHERE s.id <> 'general'
                 GROUP BY s.id, s.name
                 ORDER BY records_30d DESC, s.name
@@ -1074,6 +1076,7 @@ router.get('/sector/:id/velocity', async (c) => {
                        COUNT(DISTINCT CASE WHEN published_at >= datetime('now', '-30 days') THEN COALESCE(NULLIF(source_url, ''), NULLIF(source_title, ''), id) END) AS source_records_30d
                 FROM articles
                 WHERE sector_id = ? AND status = 'published'
+                AND COALESCE(sector_assignment_confidence, 0) >= 0.82
                 AND published_at > datetime('now', '-60 days')
             `).bind(sectorId).first() as Record<string, any>;
 
@@ -1117,6 +1120,7 @@ router.get('/opportunities', async (c) => {
                 JOIN countries c ON a.country_code = c.code
                 JOIN sectors s ON a.sector_id = s.id
                 WHERE a.status = 'published' AND a.published_at > datetime('now', '-30 days')
+                  AND COALESCE(a.sector_assignment_confidence, 0) >= 0.82
                 GROUP BY c.code, s.id
                 ORDER BY article_count DESC, latest_reported_at DESC
                 LIMIT 6

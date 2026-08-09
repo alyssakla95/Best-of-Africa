@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     };
 
-    const logout = useCallback(() => {
+    const clearSession = useCallback(() => {
         setState({
             isAuthenticated: false,
             isSubscribed: false,
@@ -68,15 +68,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         localStorage.removeItem('boa_client_info');
         localStorage.removeItem('boa_client_tier');
-        // Let MemberContext (and any other listener) clear its session state too.
-        window.dispatchEvent(new Event('boa:auth:unauthorized'));
     }, []);
+
+    const logout = useCallback(() => {
+        clearSession();
+        // Let MemberContext (and any other listener) clear its session state too.
+        // The listener below handles this event itself via clearSession — never
+        // route this dispatch back through logout, which would recurse until the
+        // call stack overflows on every 401.
+        window.dispatchEvent(new Event('boa:auth:unauthorized'));
+    }, [clearSession]);
 
     // Listen for 401 unauthorized events from the API layer and log out globally.
     useEffect(() => {
-        window.addEventListener('boa:auth:unauthorized', logout);
-        return () => window.removeEventListener('boa:auth:unauthorized', logout);
-    }, [logout]);
+        window.addEventListener('boa:auth:unauthorized', clearSession);
+        return () => window.removeEventListener('boa:auth:unauthorized', clearSession);
+    }, [clearSession]);
 
     const checkSubscription = () => state.isSubscribed;
 

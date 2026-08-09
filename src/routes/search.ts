@@ -141,18 +141,29 @@ router.get('/', async (c) => {
                 };
             }).sort((a, b) => b.score - a.score);
 
-            // Generate Answer (The "Refined Delivery")
+            // Generate Answer (The "Refined Delivery") — cached like the hybrid
+            // path: an uncached 6,000-token synthesis made every first semantic
+            // query wait on the full generation (~40s cold).
             let aiAnswer = null;
             if (searchResults.length > 0) {
                 const context = searchResults.slice(0, 12).map((r, index) => {
                     const article = (articles.results || []).find((item: any) => item.id === r.article.id) as any;
                     return `[${index + 1}] Title: ${r.article.title}\nPublished: ${r.article.published_at || 'date unavailable'}\nCountry: ${r.article.country_name || 'not specified'}\nSource URL: ${article?.source_url || 'unavailable'}\nEvidence: ${(r.article.match_context || r.article.summary || '').slice(0, 1200)}`;
                 }).join('\n---\n');
-                try {
-                    const prompt = `System: Produce a detailed evidence-grounded research answer using only the supplied records. Cite titles inline, separate facts from implications, identify contradictions and missing evidence, and never pad thin context with general knowledge.\nUser: Query: ${q}\n\nContext:\n${context}`;
-                    const ansRes = await callConfiguredAI(c.env, { prompt, max_tokens: 6000, temperature: 0.2, response_profile: 'evidence-brief' });
-                    aiAnswer = ansRes?.trim();
-                } catch (e) { /* Ignore */ }
+                aiAnswer = await getCached(
+                    c.env,
+                    CACHE_KEYS.searchAiSummary(`${q}:semantic:depth-v5`),
+                    async () => {
+                        try {
+                            const prompt = `System: Produce a detailed evidence-grounded research answer using only the supplied records. Cite titles inline, separate facts from implications, identify contradictions and missing evidence, and never pad thin context with general knowledge.\nUser: Query: ${q}\n\nContext:\n${context}`;
+                            const ansRes = await callConfiguredAI(c.env, { prompt, max_tokens: 6000, temperature: 0.2, response_profile: 'evidence-brief' });
+                            return ansRes?.trim() || null;
+                        } catch (e) {
+                            return null;
+                        }
+                    },
+                    { ttl: CACHE_TTL.DASHBOARD },
+                );
             }
 
             return c.json({

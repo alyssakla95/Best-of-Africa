@@ -48,6 +48,10 @@ export const BetaSponsorDashboard: React.FC = () => {
   if (!isMember) {
     return (
       <>
+        <SEO
+          title="Sponsor Dashboard | BOA-Story"
+          description="Corporate sponsorship delivery records, isolated by sponsoring organization."
+        />
         <div className="min-h-[80vh] flex flex-col items-center justify-center text-center px-6 bg-background">
           <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-6">
             <Target className="w-10 h-10 text-accent" />
@@ -85,18 +89,28 @@ export const BetaSponsorDashboard: React.FC = () => {
 
   if (campaignsError) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col justify-center px-5 py-16 sm:px-6">
+      <>
+        <SEO
+          title="Sponsor Dashboard | BOA-Story"
+          description="Partner authorization is required to review private campaign delivery records."
+        />
+        <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col justify-center px-5 py-16 sm:px-6">
         <p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Partner authorization required</p>
         <h1 className="mt-3 font-serif text-4xl text-navy">Campaign records are isolated by sponsoring organization.</h1>
         <p className="mt-4 text-base leading-7 text-muted-foreground">Member preview opens subscriber editorial benefits, but it does not expose private partner campaign data. Sign in with the sponsoring organization’s authorized account to retrieve its delivery record.</p>
         <a href="/login" className="mt-7 inline-flex min-h-12 w-fit items-center justify-center rounded-lg bg-navy px-5 text-sm font-bold text-white">Open secure sign-in</a>
       </div>
+      </>
     );
   }
 
   if (campaigns.length === 0) {
     return (
       <>
+        <SEO
+          title="Sponsor Dashboard | BOA-Story"
+          description="Corporate sponsorship delivery records, isolated by sponsoring organization."
+        />
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 bg-background">
           <div className="w-16 h-16 bg-background/5 rounded-full flex items-center justify-center mb-6">
             <Target className="w-8 h-8 text-primary/40" />

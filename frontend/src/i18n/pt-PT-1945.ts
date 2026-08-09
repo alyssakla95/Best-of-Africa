@@ -2473,6 +2473,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Newsletter | BOA-Story': 'Boletim informativo | BOA-Story',
   'Photo Desk | BOA-Story': 'Arquivo fotográfico | BOA-Story',
   'Search | BOA-Story': 'Pesquisa | BOA-Story',
+  'Sponsor Dashboard | BOA-Story': 'Painel do patrocinador | BOA-Story',
+  'Partner authorization is required to review private campaign delivery records.': 'A consulta dos registos privados de desempenho das campanhas requer autorização do parceiro.',
   'Stories | BOA-Story': 'Histórias | BOA-Story',
   'Subscribed | BOA-Story': 'Subscrição confirmada | BOA-Story',
   'Summits & Events | BOA-Story': 'Cimeiras e eventos | BOA-Story',

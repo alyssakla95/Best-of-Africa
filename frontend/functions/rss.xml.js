@@ -1,4 +1,5 @@
 // Proxy the backend-generated RSS feed (see sitemap.xml.js for why).
+// BACKEND_ORIGIN is an installation-specific Pages environment variable.
 export async function onRequestGet(context) {
   const backend = String(context.env.BACKEND_ORIGIN || '').replace(/\/$/, '');
   if (!backend) return new Response('BACKEND_ORIGIN is not configured', { status: 503 });

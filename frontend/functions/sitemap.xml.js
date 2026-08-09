@@ -1,6 +1,7 @@
 // Proxy the backend-generated sitemap so crawlers get real XML at the site
 // origin instead of the SPA shell (the /* -> index.html rewrite otherwise
 // serves HTML for every unknown path, sitemap.xml included).
+// BACKEND_ORIGIN is an installation-specific Pages environment variable.
 export async function onRequestGet(context) {
   const backend = String(context.env.BACKEND_ORIGIN || '').replace(/\/$/, '');
   if (!backend) return new Response('BACKEND_ORIGIN is not configured', { status: 503 });

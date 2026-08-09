@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /settings
 Disallow: /member-access
 
-Sitemap: https://best-of-africa.pages.dev/sitemap.xml
+Sitemap: https://alyssa-boa-web.pages.dev/sitemap.xml

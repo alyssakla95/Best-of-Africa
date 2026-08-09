@@ -45,7 +45,7 @@ export const BetaLanding = () => {
             <p className="text-accent text-xs font-semibold uppercase tracking-[0.12em] mb-5">
               Africa business intelligence
             </p>
-            <h1 className="font-serif text-white text-[clamp(3rem,6vw,5.5rem)] leading-[0.98] tracking-tight max-w-3xl mb-6">
+            <h1 dir="auto" className="font-serif text-white text-[clamp(3rem,6vw,5.5rem)] leading-[0.98] tracking-tight max-w-3xl mb-6">
               Intelligence for decisions across Africa.
             </h1>
             <p className="text-white/75 text-lg md:text-xl leading-relaxed max-w-2xl mb-8">

@@ -47,6 +47,7 @@ const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 const READER_LANGUAGES = new Set(['fr', 'ar', 'pt', 'de', 'hi', 'zh']);
 const SOURCE_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
 const SOURCE_IMAGE_TYPES = new Set(['image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/webp']);
+const SOURCE_IMAGE_FAILURE_TTL_SECONDS = 6 * 60 * 60;
 
 function isEligiblePublisherUrl(url: URL): boolean {
     const hostname = url.hostname.toLowerCase();
@@ -505,6 +506,24 @@ router.get('/:id/image', validate('param', z.object({ id: z.string().uuid() })),
     const cached = await getMedia(c.env, mediaKey);
     if (cached) return sourceImageResponse(cached.body, cached.contentType, cached.etag);
 
+    // A publisher fetch that recently failed is remembered for a few hours so
+    // hot pages stop paying upstream latency (and stop hammering a publisher
+    // that is blocking or erroring) on every image request. The memo expires
+    // on its own, and the remediation cron can still replace the record.
+    const recentFailure = await getCachedValue<{ message: string }>(c.env, `source-image-failure:${id}`);
+    if (recentFailure) return sourceImageFailure(502, recentFailure.message);
+
+    const fail = async (message: string): Promise<Response> => {
+        try {
+            await c.env.CACHE.put(
+                `cache:source-image-failure:${id}`,
+                JSON.stringify({ data: { message }, timestamp: Math.floor(Date.now() / 1000), ttl: SOURCE_IMAGE_FAILURE_TTL_SECONDS }),
+                { expirationTtl: SOURCE_IMAGE_FAILURE_TTL_SECONDS },
+            );
+        } catch { /* failure memoization is best-effort */ }
+        return sourceImageFailure(502, message);
+    };
+
     const article = await c.env.DB.prepare(`
         SELECT hero_image_url, image_source_url
         FROM articles
@@ -541,18 +560,18 @@ router.get('/:id/image', validate('param', z.object({ id: z.string().uuid() })),
         const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
         const declaredSize = Number(upstream.headers.get('content-length') || 0);
         if (!upstream.ok || !SOURCE_IMAGE_TYPES.has(contentType) || declaredSize > SOURCE_IMAGE_MAX_BYTES) {
-            return sourceImageFailure(502, 'The publisher image could not be retrieved');
+            return fail('The publisher image could not be retrieved');
         }
         const bytes = await upstream.arrayBuffer();
         if (!bytes.byteLength || bytes.byteLength > SOURCE_IMAGE_MAX_BYTES) {
-            return sourceImageFailure(502, 'The publisher image could not be retrieved');
+            return fail('The publisher image could not be retrieved');
         }
         await putMedia(c.env, mediaKey, bytes, contentType);
         const stored = await getMedia(c.env, mediaKey);
-        if (!stored) return sourceImageFailure(502, 'The publisher image could not be stored');
+        if (!stored) return fail('The publisher image could not be stored');
         return sourceImageResponse(stored.body, stored.contentType, stored.etag);
     } catch {
-        return sourceImageFailure(502, 'The publisher image could not be retrieved');
+        return fail('The publisher image could not be retrieved');
     }
 });
 

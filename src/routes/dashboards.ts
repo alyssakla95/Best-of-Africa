@@ -9,7 +9,7 @@ import type { Env, Variables, Dashboard } from '../types';
 import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 import { getSectorPerformanceCache } from '../lib/sector-performance';
-import { getContinentalEconomyCache, getContinentalEconomyRefreshStatus } from '../lib/continental-economy';
+import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, getContinentalEconomyRefreshStatus, refreshContinentalEconomy } from '../lib/continental-economy';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
@@ -229,6 +229,9 @@ router.get('/continental/overview', async (c) => {
         sector_name: portugueseSectorName(sector.sector_name),
     } : sector);
     const briefingUpdatedAt = new Date().toISOString();
+    if (!continentalEconomyCacheIsFresh(continentalEconomy)) {
+        c.executionCtx.waitUntil(refreshContinentalEconomy(c.env).then(() => undefined));
+    }
 
     c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({

@@ -65,6 +65,7 @@ function latestPoints(records: WdiRecord[]): Point[] {
 }
 
 async function fetchSeries(code: string): Promise<Point[]> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
@@ -73,13 +74,27 @@ async function fetchSeries(code: string): Promise<Point[]> {
         // removed by the explicit 54-country allow-list below.
         const url = `${WORLD_BANK_API}/country/all/indicator/${code}?format=json&mrv=1&gapfill=y&per_page=500`;
         const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
-        if (!response.ok) throw new Error(`${code} returned ${response.status}`);
-        const payload = await response.json() as [unknown, WdiRecord[]];
+        if (!response.ok) continue;
+        const body = await response.text();
+        if (!body.trimStart().startsWith('[')) continue;
+        const payload = JSON.parse(body) as [unknown, WdiRecord[]];
         const records = Array.isArray(payload?.[1]) ? payload[1] : [];
         return latestPoints(records).filter(point => COUNTRY_CODE_SET.has(point.country_code));
+    } catch (error) {
+        if (attempt === 2) console.error(`[continental-economy] ${code} fetch failed`, error);
     } finally {
         clearTimeout(timeout);
     }
+  }
+  return [];
+}
+
+async function fetchAllSeries(): Promise<Point[][]> {
+    const results: Point[][] = [];
+    for (let offset = 0; offset < SERIES.length; offset += 4) {
+        results.push(...await Promise.all(SERIES.slice(offset, offset + 4).map(fetchSeries)));
+    }
+    return results;
 }
 
 const reading = (points: Point[], aggregation: 'sum' | 'median') => ({
@@ -128,7 +143,7 @@ export async function refreshContinentalEconomy(env: Env): Promise<Snapshot> {
     ]);
     try {
         const [seriesResults, countryResult] = await Promise.all([
-            Promise.all(SERIES.map(fetchSeries)),
+            fetchAllSeries(),
             env.DB.prepare('SELECT code, name, region FROM countries ORDER BY name').all<CountryMeta>(),
         ]);
         if (seriesResults.some(points => points.length < 35)) {

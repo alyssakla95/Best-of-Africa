@@ -148,6 +148,7 @@ export const BetaSearch: React.FC = () => {
                                 <input
                                     ref={inputRef}
                                     id="search-input"
+                                    aria-label="Search countries, sectors or companies"
                                     type="text"
                                     value={inputValue}
                                     onChange={(e) => {

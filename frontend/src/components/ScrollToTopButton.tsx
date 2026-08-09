@@ -39,8 +39,17 @@ export function ScrollToTopButton() {
       const headings = Array.from(document.querySelectorAll<HTMLElement>('main h2'))
         .filter(heading => heading.textContent?.trim() && heading.offsetParent !== null)
         .slice(0, 14);
+      const routeKey = pathname.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home';
+      const seen = new Set<string>();
       const next = headings.map((heading, index) => {
-        if (!heading.id) heading.id = `page-section-${index + 1}`;
+        const idIsDuplicated = Boolean(heading.id) && document.querySelectorAll(`#${CSS.escape(heading.id)}`).length > 1;
+        if (!heading.id || seen.has(heading.id) || idIsDuplicated) {
+          let candidate = `page-section-${routeKey}-${index + 1}`;
+          let suffix = 1;
+          while (document.getElementById(candidate) || seen.has(candidate)) candidate = `page-section-${routeKey}-${index + 1}-${++suffix}`;
+          heading.id = candidate;
+        }
+        seen.add(heading.id);
         if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
         return { id: heading.id, label: heading.textContent!.trim().replace(/\s+/g, ' ') };
       });

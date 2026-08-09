@@ -1301,6 +1301,10 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'This search request did not complete. Country records and the latest source-linked reporting remain available directly.':
     'Não foi possível concluir esta pesquisa. Os registos nacionais e a informação mais recente ligada às fontes continuam disponíveis directamente.',
   'Search saved items...': 'Pesquisar elementos guardados...',
+  'Search saved items': 'Pesquisar elementos guardados',
+  'Source image unavailable': 'Imagem da fonte indisponível',
+  'Subject to monitor': 'Assunto a acompanhar',
+  'Assunto a acompanhar': 'Assunto a acompanhar',
   'Organise evidence, monitor priority markets and carry research into the next decision.':
     'Organize os dados, acompanhe os mercados prioritários e leve a investigação até à decisão seguinte.',
   'Track countries, sectors, companies, projects, regulations or corridors important to your mandate.':

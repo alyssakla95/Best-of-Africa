@@ -76,6 +76,7 @@ export const BetaLibrary: React.FC = () => {
                     <div className="relative max-w-xl">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                         <Input
+                            aria-label={language === 'pt' ? 'Pesquisar itens guardados' : 'Search saved items'}
                             type="search"
                             placeholder="Search saved items..."
                             value={query}
@@ -100,7 +101,7 @@ export const BetaLibrary: React.FC = () => {
                             </button>
                         </div>
                         <form onSubmit={addWatch} className="mt-6 flex gap-2">
-                            <Input value={watchInput} onChange={event => setWatchInput(event.target.value)} placeholder="e.g. Kenya tax reform, African data centres" className="bg-white" />
+                            <Input aria-label={language === 'pt' ? 'Assunto a acompanhar' : 'Subject to monitor'} value={watchInput} onChange={event => setWatchInput(event.target.value)} placeholder="e.g. Kenya tax reform, African data centres" className="bg-white" />
                             <button className="inline-flex items-center gap-2 rounded-md bg-navy px-4 text-xs font-semibold text-white hover:bg-navy/90"><PlusIcon /> Add</button>
                         </form>
                         <div className="mt-4 flex min-h-10 flex-wrap gap-2">

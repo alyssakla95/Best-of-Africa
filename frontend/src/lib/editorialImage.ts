@@ -37,6 +37,15 @@ export function hideFailedEditorialImage(image: HTMLImageElement): void {
   const frame = image.parentElement;
   if (!frame) return;
   frame.dataset.editorialImageFailed = 'true';
+  if (!frame.querySelector('[data-editorial-image-fallback]')) {
+    const fallback = document.createElement('div');
+    fallback.dataset.editorialImageFallback = 'true';
+    fallback.className = 'absolute inset-0 flex items-end bg-navy p-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70';
+    fallback.textContent = localStorage.getItem('boa_lang') === 'pt'
+      ? 'Imagem da fonte indisponível'
+      : 'Source image unavailable';
+    frame.prepend(fallback);
+  }
   frame.querySelectorAll<HTMLElement>('[data-photo-credit]').forEach(credit => {
     credit.hidden = true;
   });

@@ -7,7 +7,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Env, Variables, UserPreference } from '../types';
 import { getCached, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
-import { callConfiguredAI, MODELS } from '../lib/ai';
+import { callConfiguredAI } from '../lib/ai';
 import { diversifyCoverageRows } from '../lib/source-quality';
 
 
@@ -356,15 +356,32 @@ router.get('/recommended', async (c) => {
 router.get('/feed/curated', async (c) => {
     const sessionId = c.req.header('X-Session-ID');
 
-    // Auth Check
+    // A session identifies the preference record; it is not a paywall.
     if (!sessionId) {
-        return c.json({ error: 'unauthorized', message: 'Session ID required for AI curation' }, 401);
+        return c.json({ error: 'unauthorized', message: 'Session ID required for a personalised feed' }, 401);
     }
 
     // Get Preferences
     const prefs = await c.env.DB.prepare('SELECT * FROM user_preferences WHERE session_id = ?').bind(sessionId).first();
     if (!prefs) {
-        return c.json({ error: 'no_prefs', message: 'Set preferences to enable AI curation' }, 400);
+        const popular = await c.env.DB.prepare(`
+            SELECT a.id, a.slug, a.title, a.summary, a.country_code, a.sector_id,
+                   c.name AS country_name, s.name AS sector_name,
+                   a.hero_image_url, a.image_credit, a.image_source_url,
+                   a.published_at, a.audio_url, a.audio_duration_seconds,
+                   a.source_title, a.source_quality_tier
+            FROM articles a
+            LEFT JOIN countries c ON a.country_code = c.code
+            LEFT JOIN sectors s ON a.sector_id = s.id
+            WHERE a.status = 'published'
+            ORDER BY a.curated DESC, a.published_at DESC, a.id DESC
+            LIMIT 80
+        `).all();
+        return c.json({
+            data: diversifyCoverageRows(popular.results || [], 8, 2, 1),
+            personalized: false,
+            feed_summary: 'A balanced selection of recent source-linked reporting. Choose country and sector interests in settings to tailor this briefing.',
+        });
     }
     const prefsData = prefs as Record<string, any>;
     const countries = prefsData.countries_of_interest ? JSON.parse(prefsData.countries_of_interest) : [];
@@ -447,7 +464,7 @@ router.get('/feed/curated', async (c) => {
                     data: finalFeed,
                     meta: {
                         curated_count: finalFeed.length,
-                        model: MODELS.TEXT_GENERATION
+                        method: 'preference-matched editorial selection'
                     }
                 };
 

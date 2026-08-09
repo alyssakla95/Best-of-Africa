@@ -11,6 +11,12 @@ describe('historical sector assignment audit', () => {
         expect(migration).toMatch(/sector_reviewed_at\s*=\s*NULL/);
     });
 
+    it('defines the cross-sector label required by the article foreign key', () => {
+        const migration = readFileSync('migrations/0063_general_sector.sql', 'utf8');
+        expect(migration).toMatch(/INSERT OR IGNORE INTO sectors/);
+        expect(migration).toContain("'general'");
+    });
+
     it('qualifies strong evidence and corrects a conflicting legacy label without a model call', async () => {
         const updates: unknown[][] = [];
         const rows = [

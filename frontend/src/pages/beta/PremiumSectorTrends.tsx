@@ -57,7 +57,7 @@ export const PremiumSectorTrends: React.FC = () => {
         <Link to="/intelligence/sectors" className="inline-flex items-center gap-2 text-sm text-white/65 hover:text-white"><ArrowLeft size={15}/> Market Intelligence</Link>
         <p className="mt-12 text-[11px] font-bold uppercase tracking-[.22em] text-white/60">Official sector-performance guide</p>
         <h1 className="mt-4 max-w-4xl font-serif text-5xl leading-[.95] tracking-tight md:text-7xl">{text(sector.name)}</h1>
-        <p className="mt-7 max-w-3xl text-base leading-7 text-white/70 md:text-lg">Understand the main measure first, then use three separate measures to see structure and operating conditions. Dates, country coverage and limitations remain visible throughout.</p>
+        <p className="mt-7 max-w-3xl text-base leading-7 text-white/70 md:text-lg">Understand the main measure first, then use five separate measures to examine structure, capacity, access, cost and operating conditions. Dates, country coverage and limitations remain visible throughout.</p>
       </div>
     </header>
 
@@ -88,9 +88,9 @@ export const PremiumSectorTrends: React.FC = () => {
 
       <section className="mt-14 border-t border-border pt-10">
         <p className="text-[10px] font-bold uppercase tracking-[.18em] text-navy/60">Supporting evidence</p>
-        <h2 className="mt-2 max-w-3xl font-serif text-3xl text-navy md:text-4xl">Three other measures to read alongside the main one</h2>
+        <h2 className="mt-2 max-w-3xl font-serif text-3xl text-navy md:text-4xl">Five other measures to read alongside the main one</h2>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">No single number explains a sector. These measures add information about structure, access, capacity, cost or operating conditions. Their different units must remain separate.</p>
-        <div className="mt-7 grid gap-5 lg:grid-cols-3">
+        <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {performance.dimensions.map(item => <article key={item.indicator_code} className="flex flex-col rounded-2xl border border-border bg-white p-5 md:p-6">
             <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-navy/60">{text(item.label)}</p><h3 className="mt-2 text-base font-bold leading-6 text-navy">{text(item.indicator_name)}</h3></div><span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-navy">{text(item.movement)}</span></div>
             <p className="mt-6 font-serif text-4xl leading-none text-navy">{valueWithUnit(item.value,item.unit,text(item.unit))}</p>

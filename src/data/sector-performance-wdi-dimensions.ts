@@ -45,6 +45,13 @@ const metadata: Record<string, Metadata> = {
     'IT.NET.SECR.P6': { indicator_name: 'Secure internet servers', label: 'Digital transaction infrastructure', unit: 'per 1 million people', comparison_unit: 'per 1 million people', interpretation: 'Provides a supply-side signal of internet infrastructure able to host encrypted transactions.', caveat: 'Cloud hosting location and server configuration make it an infrastructure proxy, not a digital-economy valuation.' },
     'ST.INT.RCPT.CD': { indicator_name: 'International tourism receipts', label: 'Reported inbound receipts', unit: 'current US$', comparison_unit: 'current US$', interpretation: 'Shows the latest reported inbound visitor receipts and their absolute movement.', caveat: 'The current WDI release is dated for many countries and values are affected by exchange rates and pandemic-era reporting.' },
     'ST.INT.ARVL': { indicator_name: 'International tourism arrivals', label: 'Reported international arrivals', unit: 'visitors', comparison_unit: 'visitors', interpretation: 'Shows the latest reported count of international inbound arrivals.', caveat: 'The current WDI release is dated for many countries and national counting methods differ.' },
+    'IT.NET.USER.ZS': { indicator_name: 'Individuals using the internet', label: 'Digital reach', unit: '% of population', comparison_unit: 'percentage points', interpretation: 'Shows the population share using the internet, an important route-to-market and information-access condition.', caveat: 'Usage does not establish affordability, connection quality, digital skills or commercial conversion.' },
+    'SP.URB.TOTL.IN.ZS': { indicator_name: 'Urban population', label: 'Urban concentration', unit: '% of population', comparison_unit: 'percentage points', interpretation: 'Shows how much of the population is concentrated in urban areas where infrastructure, customers and services may cluster.', caveat: 'National definitions of urban areas differ, and urbanisation is not a direct measure of income or infrastructure quality.' },
+    'NE.TRD.GNFS.ZS': { indicator_name: 'Trade in goods and services', label: 'Trade intensity', unit: '% of GDP', comparison_unit: 'percentage points', interpretation: 'Shows exports plus imports relative to output, providing context on cross-border exposure and input dependence.', caveat: 'A high ratio does not establish route efficiency, margins, product sophistication or resilience.' },
+    'DT.DOD.DECT.GN.ZS': { indicator_name: 'External debt stocks', label: 'External leverage', unit: '% of GNI', comparison_unit: 'percentage points', interpretation: 'Places recorded external debt against national income as context for financing and foreign-exchange exposure.', caveat: 'Maturity, currency, creditor, interest cost and public-private composition determine practical risk.' },
+    'IC.BUS.NDNS.ZS': { indicator_name: 'New business density', label: 'Formal business entry', unit: 'per 1,000 working-age people', comparison_unit: 'per 1,000 working-age people', interpretation: 'Shows newly registered limited-liability firms relative to the working-age population.', caveat: 'Registration does not prove survival, scale, credit access, competition or a reduction in informality.' },
+    'SP.DYN.LE00.IN': { indicator_name: 'Life expectancy at birth', label: 'Population health outcome', unit: 'years', comparison_unit: 'years', interpretation: 'Provides a broad population-health and living-conditions outcome alongside health-system inputs.', caveat: 'It is not a direct measure of clinical capacity, workforce health, service quality or commercial demand.' },
+    'SH.H2O.BASW.ZS': { indicator_name: 'People using at least basic drinking-water services', label: 'Basic water access', unit: '% of population', comparison_unit: 'percentage points', interpretation: 'Shows national coverage of basic drinking-water services, relevant to welfare and operating infrastructure.', caveat: 'National access does not establish industrial supply, continuity, water quality or local network capacity.' },
 };
 
 const readings: Record<string, Reading> = {
@@ -71,17 +78,24 @@ const readings: Record<string, Reading> = {
     'IT.NET.SECR.P6': { value: 52.3, comparison_value: 4.2, markets_rising_pct: 77.8, countries_reported: 54, coverage_pct: 100, period_start: 2024, period_end: 2024 },
     'ST.INT.RCPT.CD': { value: 191000000, comparison_value: -90000000, markets_rising_pct: 20.9, countries_reported: 43, coverage_pct: 79.6, period_start: 2016, period_end: 2020 },
     'ST.INT.ARVL': { value: 351000, comparison_value: -70600, markets_rising_pct: 35.6, countries_reported: 45, coverage_pct: 83.3, period_start: 2016, period_end: 2020 },
+    'IT.NET.USER.ZS': { value: 41.2, comparison_value: 1, markets_rising_pct: 88.2, countries_reported: 51, coverage_pct: 94.4, period_start: 2024, period_end: 2024 },
+    'SP.URB.TOTL.IN.ZS': { value: 45.7, comparison_value: 0.5, markets_rising_pct: 100, countries_reported: 54, coverage_pct: 100, period_start: 2025, period_end: 2025 },
+    'NE.TRD.GNFS.ZS': { value: 60.9, comparison_value: 0.1, markets_rising_pct: 53.1, countries_reported: 49, coverage_pct: 90.7, period_start: 2023, period_end: 2025 },
+    'DT.DOD.DECT.GN.ZS': { value: 43.9, comparison_value: -1.9, markets_rising_pct: 27.1, countries_reported: 48, coverage_pct: 88.9, period_start: 2022, period_end: 2024 },
+    'IC.BUS.NDNS.ZS': { value: 1.1, comparison_value: 0, markets_rising_pct: 54.8, countries_reported: 42, coverage_pct: 77.8, period_start: 2022, period_end: 2024 },
+    'SP.DYN.LE00.IN': { value: 65.8, comparison_value: 0.2, markets_rising_pct: 100, countries_reported: 54, coverage_pct: 100, period_start: 2024, period_end: 2024 },
+    'SH.H2O.BASW.ZS': { value: 74.7, comparison_value: 0.6, markets_rising_pct: 94.2, countries_reported: 52, coverage_pct: 96.3, period_start: 2021, period_end: 2024 },
 };
 
 const sectors: Record<string, string[]> = {
-    agriculture: ['NV.AGR.TOTL.ZS', 'SL.AGR.EMPL.ZS', 'AG.YLD.CREL.KG'],
-    energy: ['EG.ELC.ACCS.ZS', 'EG.FEC.RNEW.ZS', 'EG.ELC.LOSS.ZS'],
-    finance: ['FX.OWN.TOTL.ZS', 'FB.ATM.TOTL.P5', 'FR.INR.LEND'],
-    healthcare: ['SH.XPD.CHEX.GD.ZS', 'SH.MED.PHYS.ZS', 'SH.MED.BEDS.ZS'],
-    infrastructure: ['NE.GDI.FTOT.ZS', 'IS.AIR.PSGR', 'IS.SHP.GOOD.TU'],
-    manufacturing: ['NV.IND.MANF.ZS', 'TX.VAL.MANF.ZS.UN', 'SL.IND.EMPL.ZS'],
-    technology: ['IT.CEL.SETS.P2', 'IT.NET.BBND.P2', 'IT.NET.SECR.P6'],
-    tourism: ['IS.AIR.PSGR', 'ST.INT.RCPT.CD', 'ST.INT.ARVL'],
+    agriculture: ['NV.AGR.TOTL.ZS', 'SL.AGR.EMPL.ZS', 'AG.YLD.CREL.KG', 'EG.ELC.ACCS.ZS', 'SH.H2O.BASW.ZS'],
+    energy: ['EG.ELC.ACCS.ZS', 'EG.FEC.RNEW.ZS', 'EG.ELC.LOSS.ZS', 'NV.IND.MANF.ZS', 'NE.TRD.GNFS.ZS'],
+    finance: ['FX.OWN.TOTL.ZS', 'FB.ATM.TOTL.P5', 'FR.INR.LEND', 'DT.DOD.DECT.GN.ZS', 'IC.BUS.NDNS.ZS'],
+    healthcare: ['SH.XPD.CHEX.GD.ZS', 'SH.MED.PHYS.ZS', 'SH.MED.BEDS.ZS', 'SP.DYN.LE00.IN', 'SH.H2O.BASW.ZS'],
+    infrastructure: ['NE.GDI.FTOT.ZS', 'IS.AIR.PSGR', 'IS.SHP.GOOD.TU', 'EG.ELC.ACCS.ZS', 'SP.URB.TOTL.IN.ZS'],
+    manufacturing: ['NV.IND.MANF.ZS', 'TX.VAL.MANF.ZS.UN', 'SL.IND.EMPL.ZS', 'EG.ELC.ACCS.ZS', 'NE.TRD.GNFS.ZS'],
+    technology: ['IT.CEL.SETS.P2', 'IT.NET.BBND.P2', 'IT.NET.SECR.P6', 'EG.ELC.ACCS.ZS', 'SP.URB.TOTL.IN.ZS'],
+    tourism: ['IS.AIR.PSGR', 'ST.INT.RCPT.CD', 'ST.INT.ARVL', 'IT.NET.USER.ZS', 'EG.ELC.ACCS.ZS'],
 };
 
 export const BUNDLED_WDI_SECTOR_DIMENSIONS: Record<string, SectorPerformanceDimension[]> = Object.fromEntries(

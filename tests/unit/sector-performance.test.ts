@@ -64,7 +64,7 @@ describe('official sector performance aggregation', () => {
     it('provides three source-linked structural or operating dimensions for every sector', () => {
         expect(Object.keys(BUNDLED_WDI_SECTOR_DIMENSIONS)).toHaveLength(8);
         for (const dimensions of Object.values(BUNDLED_WDI_SECTOR_DIMENSIONS)) {
-            expect(dimensions).toHaveLength(3);
+            expect(dimensions).toHaveLength(5);
             for (const dimension of dimensions) {
                 expect(dimension.countries_reported).toBeGreaterThan(0);
                 expect(dimension.coverage_pct).toBeGreaterThan(0);

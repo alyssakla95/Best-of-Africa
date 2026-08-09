@@ -260,7 +260,7 @@ export const BetaContinentalOverview: React.FC = () => {
         </section>}
 
         {view === 'sectors' && <section className="page-section">
-          <div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Official sector series</p><h2 className="mt-2 font-serif text-3xl text-navy md:text-5xl">Sector performance across Africa</h2><p className="mt-4 text-sm leading-7 text-muted-foreground">Eight sector dossiers combine a primary performance proxy with three structural or operating dimensions. Incompatible units remain separate.</p></div>
+          <div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Official sector series</p><h2 className="mt-2 font-serif text-3xl text-navy md:text-5xl">Sector performance across Africa</h2><p className="mt-4 text-sm leading-7 text-muted-foreground">Eight sector dossiers combine a primary performance proxy with five structural or operating dimensions. Incompatible units remain separate.</p></div>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {data.sector_performance.map(sector => <article key={sector.sector_id} className="rounded-2xl border border-border bg-white p-5 md:p-6">
               <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-muted-foreground">{sector.indicator_code}</p><h3 className="mt-1 font-serif text-2xl text-navy">{sector.sector_name}</h3></div><span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-navy">{sector.direction}</span></div>

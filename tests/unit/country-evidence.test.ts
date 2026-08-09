@@ -4,6 +4,7 @@ import { aggregateTradeTotal, getTradeBalance } from '../../src/lib/trade-data';
 import { publisherNameForArticle, publisherNameForStoredArticle } from '../../src/lib/source-attribution';
 import { parseHTMLListing, parseRSS, rankCandidatesForCoverage } from '../../src/workers/ingestion';
 import { createMockEnv } from '../mocks/env';
+import { getCountryEconomicProfile } from '../../src/lib/economics';
 
 const worldBankProfile = {
     country_code: 'NG',
@@ -32,10 +33,39 @@ describe('country evidence integrity', () => {
         });
     });
 
+    it('retains a dated observation history and calculates the preceding change', async () => {
+        vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
+            const url = String(input);
+            if (/\/country\/NG\?format=json$/.test(url)) {
+                return new Response(JSON.stringify([{}, [{ name: 'Nigeria' }]]), { status: 200 });
+            }
+            if (url.includes('/indicator/NY.GDP.MKTP.CD')) {
+                return new Response(JSON.stringify([{}, [
+                    { date: '2025', value: 110 },
+                    { date: '2024', value: 100 },
+                    { date: '2023', value: null },
+                ]]), { status: 200 });
+            }
+            return new Response(JSON.stringify([{}, []]), { status: 200 });
+        }));
+
+        const profile = await getCountryEconomicProfile(createMockEnv(), 'NG', { refresh: true });
+        expect(profile?.indicators).toHaveLength(1);
+        expect(profile?.indicators[0]).toMatchObject({
+            code: 'NY.GDP.MKTP.CD',
+            value: 110,
+            year: 2025,
+            previous_value: 100,
+            absolute_change: 10,
+            percentage_change: 10,
+            history: [{ year: 2024, value: 100 }, { year: 2025, value: 110 }],
+        });
+    });
+
     it('marks an assembled snapshot stale without erasing it', () => {
         const snapshot = {
             retrieved_at: '2026-07-18T00:00:00.000Z',
-            macroeconomics: { official_profile: { indicators: Array.from({ length: 20 }) } },
+            macroeconomics: { official_profile: { indicators: Array.from({ length: 20 }, () => ({ history: [{ year: 2024, value: 1 }, { year: 2025, value: 2 }] })) } },
         } as unknown as CountryEvidenceSnapshot;
         expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T05:59:59.000Z'))).toBe(false);
         expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T06:00:01.000Z'))).toBe(true);
@@ -45,6 +75,14 @@ describe('country evidence integrity', () => {
         const snapshot = {
             retrieved_at: '2026-07-18T00:00:00.000Z',
             macroeconomics: { official_profile: { indicators: Array.from({ length: 12 }) } },
+        } as unknown as CountryEvidenceSnapshot;
+        expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T00:05:00.000Z'))).toBe(true);
+    });
+
+    it('refreshes a broad latest-value snapshot when observation histories are missing', () => {
+        const snapshot = {
+            retrieved_at: '2026-07-18T00:00:00.000Z',
+            macroeconomics: { official_profile: { indicators: Array.from({ length: 25 }, () => ({ value: 1 })) } },
         } as unknown as CountryEvidenceSnapshot;
         expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T00:05:00.000Z'))).toBe(true);
     });

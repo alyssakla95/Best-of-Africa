@@ -163,13 +163,13 @@ const BUNDLED_SNAPSHOT: SectorPerformanceResponse = {
     })),
     sectors_measured: SECTOR_PERFORMANCE_SERIES.length,
     countries_in_scope: 54,
-    methodology: 'Each sector combines a primary official performance proxy with three structural or operating dimensions. Country-level observations use the latest available annual records in the World Bank WDI bulk release retrieved 18 July 2026. Values are cross-country medians, not continental totals; comparison values are median changes versus each country\'s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
+    methodology: 'Each sector combines a primary official performance proxy with five structural or operating dimensions. Country-level observations use the latest available annual records in the World Bank WDI bulk release retrieved 18 July 2026. Values are cross-country medians, not continental totals; comparison values are median changes versus each country\'s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
     retrieved_at: '2026-07-18T16:15:31.000Z',
     source_name: 'World Bank World Development Indicators',
     source_url: 'https://data.worldbank.org/indicator',
 };
 
-const CACHE_KEY = 'market-intel:sector-performance:wdi:v2';
+const CACHE_KEY = 'market-intel:sector-performance:wdi:v3';
 const REFRESH_LOCK_KEY = 'market-intel:sector-performance:wdi:refresh-lock:v1';
 const REFRESH_STATUS_KEY = 'market-intel:sector-performance:wdi:refresh-status:v1';
 // Re-check the official upstream release frequently while preserving the
@@ -358,7 +358,7 @@ export async function refreshSectorPerformance(env: Env): Promise<SectorPerforma
             data,
             sectors_measured: data.length,
             countries_in_scope: 54,
-            methodology: 'Each sector combines a primary official performance proxy with three structural or operating dimensions. Country-level observations use the latest available annual records within the retrieval window. Values are cross-country medians, not continental totals; comparison values are median changes versus each country’s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
+            methodology: 'Each sector combines a primary official performance proxy with five structural or operating dimensions. Country-level observations use the latest available annual records within the retrieval window. Values are cross-country medians, not continental totals; comparison values are median changes versus each country’s preceding observation; breadth is the share of reporting markets moving higher. Higher is not automatically better for contextual or adverse indicators. Series with different units are never combined into a synthetic score or investment ranking.',
             retrieved_at: new Date().toISOString(),
             source_name: 'World Bank World Development Indicators',
             source_url: 'https://data.worldbank.org/indicator',

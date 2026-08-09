@@ -8,7 +8,7 @@ import { getSectorPerformanceCache } from '../../src/lib/sector-performance';
 async function seedFreshOfficialCaches(env: ReturnType<typeof createMockEnv>) {
     await env.CACHE.put('continental:economy:wdi:v2', JSON.stringify({ ...CONTINENTAL_WDI_SNAPSHOT, retrieved_at: new Date().toISOString() }));
     const sector = await getSectorPerformanceCache(env);
-    await env.CACHE.put('market-intel:sector-performance:wdi:v2', JSON.stringify({ ...sector, retrieved_at: new Date().toISOString() }));
+    await env.CACHE.put('market-intel:sector-performance:wdi:v3', JSON.stringify({ ...sector, retrieved_at: new Date().toISOString() }));
 }
 
 describe('GET /dashboards/continental/overview', () => {

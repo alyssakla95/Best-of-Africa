@@ -54,6 +54,10 @@ export interface EconomicIndicator {
     decision_use?: string;
     underlying_source?: string;
     underlying_source_url?: string;
+    history?: Array<{ year: number; value: number }>;
+    previous_value?: number;
+    absolute_change?: number;
+    percentage_change?: number;
     period_status?: 'historical_observation' | 'estimate_or_projection';
 }
 
@@ -82,12 +86,13 @@ const fetchWithTimeout = async (url: string, timeoutMs = 8000): Promise<Response
 async function fetchIndicator(
     countryCode: string,
     indicatorCode: string
-): Promise<{ value: number | null; year: number } | null> {
+): Promise<{ value: number | null; year: number; history: Array<{ year: number; value: number }> } | null> {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
         // MRNEV means "most recent non-empty value". MRV can return the latest
         // calendar row even when its value is null, hiding a valid older release.
-        const url = `${WORLD_BANK_API}/country/${countryCode}/indicator/${indicatorCode}?format=json&per_page=1&mrnev=1`;
+        const currentYear = new Date().getUTCFullYear();
+        const url = `${WORLD_BANK_API}/country/${countryCode}/indicator/${indicatorCode}?format=json&date=${currentYear - 10}:${currentYear}&per_page=100`;
         const response = await fetchWithTimeout(url);
 
         if (!response.ok) continue;
@@ -103,10 +108,18 @@ async function fetchIndicator(
             continue;
         }
 
-        const record = data[1][0];
+        const history = (data[1] as Array<{ date?: string; value?: number | null }>)
+            .flatMap(record => record.value === null || record.value === undefined
+                ? []
+                : [{ year: Number(record.date), value: Number(record.value) }])
+            .filter(record => Number.isFinite(record.year) && Number.isFinite(record.value))
+            .sort((a, b) => a.year - b.year);
+        const record = history.at(-1);
+        if (!record) continue;
         return {
             value: record.value,
-            year: parseInt(record.date),
+            year: record.year,
+            history,
         };
       } catch (error) {
         if (attempt === 2) console.error(`Failed to fetch indicator ${indicatorCode} for ${countryCode}:`, error);
@@ -150,6 +163,8 @@ export async function getCountryEconomicProfile(
             for (let offset = 0; offset < entries.length; offset += 5) {
                 const batch = await Promise.all(entries.slice(offset, offset + 5).map(async ([name, code]) => {
                     const result = await fetchIndicator(normalizedCode, code);
+                    const previous = result?.history.at(-2);
+                    const absoluteChange = result && previous ? result.value! - previous.value : undefined;
                     return {
                         code,
                         name: formatIndicatorName(name),
@@ -159,6 +174,12 @@ export async function getCountryEconomicProfile(
                         source_url: `https://data.worldbank.org/indicator/${code}?locations=${normalizedCode}`,
                         category: getIndicatorCategory(name),
                         decision_use: getIndicatorDecisionUse(name),
+                        ...(result?.history.length ? { history: result.history } : {}),
+                        ...(previous ? {
+                            previous_value: previous.value,
+                            absolute_change: absoluteChange,
+                            percentage_change: previous.value !== 0 ? (absoluteChange! / Math.abs(previous.value)) * 100 : undefined,
+                        } : {}),
                         ...getIndicatorUnderlyingSource(name),
                     } satisfies EconomicIndicator;
                 }));

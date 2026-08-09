@@ -7,6 +7,7 @@ import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { IntelligenceTrustPanel } from '../../components/intelligence/IntelligenceTrustPanel';
 import { DecisionWorkspace } from '../../components/intelligence/DecisionWorkspace';
+import { EvidenceFitnessPanel } from '../../components/intelligence/EvidenceFitnessPanel';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { useAudio } from '../../context/AudioContext';
 import { stripMarkdown } from '../../lib/utils';
@@ -61,6 +62,12 @@ export const BetaContinentalOverview: React.FC = () => {
     indicators: data.indicators.filter(item => !headlineCodes.includes(item.indicator_code) && item.category === category),
   })).filter(group => group.indicators.length > 0);
   const narratedBriefings = Array.isArray(data.narrated_briefings) ? data.narrated_briefings : [];
+  const fitnessSeries = data.indicators.map(item => ({
+    label: item.label,
+    coveragePct: (item.countries_reported / data.countries_in_scope) * 100,
+    periodStart: item.period_start,
+    periodEnd: item.period_end,
+  }));
   const regionalGdpTotal = data.regions.reduce((sum, region) => sum + region.gdp.value, 0);
   const regionalPopulationTotal = data.regions.reduce((sum, region) => sum + region.population.value, 0);
   const regionalFdiTotal = data.regions.reduce((sum, region) => sum + region.fdi.value, 0);
@@ -109,6 +116,8 @@ export const BetaContinentalOverview: React.FC = () => {
               {headlineCodes.map((code,index) => { const item=indicators[code]; const Icon=headlineIcons[index]; return <article key={code} className="rounded-2xl border border-border bg-white p-5 md:p-6"><Icon size={18} className="text-navy/65"/><p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground">{item.label}</p><p className="mt-2 break-words font-serif text-3xl text-navy">{formatValue(item.value,item.unit)}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">{item.aggregation} · {item.countries_reported} countries · {period(item.period_start,item.period_end)}</p><p className="mt-4 border-t border-border pt-4 text-xs leading-5 text-navy/75"><strong>In plain language:</strong> {item.interpretation}</p></article>; })}
             </div>
           </section>
+
+          <EvidenceFitnessPanel series={fitnessSeries} language={language} />
 
           <DataReadingGuide subject="the continental overview" />
 

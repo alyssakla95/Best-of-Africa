@@ -6,6 +6,7 @@ import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { IntelligenceTrustPanel } from '../../components/intelligence/IntelligenceTrustPanel';
 import { DecisionWorkspace } from '../../components/intelligence/DecisionWorkspace';
+import { EvidenceFitnessPanel } from '../../components/intelligence/EvidenceFitnessPanel';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { useLanguage } from '../../context/LanguageContext';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
@@ -53,6 +54,10 @@ export const BetaIntelligence = () => {
   const performance = query.data;
   const signalCount = performance?.data.reduce((total, sector) => total + 1 + sector.dimensions.length, 0) || 0;
   const coverageValues = performance?.data.flatMap(sector => [sector.continent_coverage_pct, ...sector.dimensions.map(item => item.coverage_pct)]) || [];
+  const fitnessSeries = performance?.data.flatMap(sector => [
+    { label: `${sector.sector_name}: ${sector.indicator_name}`, coveragePct: sector.continent_coverage_pct, periodStart: sector.period_start, periodEnd: sector.period_end },
+    ...sector.dimensions.map(item => ({ label: `${sector.sector_name}: ${item.label}`, coveragePct: item.coverage_pct, periodStart: item.period_start, periodEnd: item.period_end })),
+  ]) || [];
   const averageCoverage = coverageValues.length ? coverageValues.reduce((sum, value) => sum + value, 0) / coverageValues.length : 0;
   const downloadSectorMatrix = () => performance && saveCsv('boa-africa-sector-performance.csv', [
     ['sector','indicator_code','indicator','unit','median_reading','change','comparison_unit','countries_higher_pct','countries_reported','countries_in_scope','middle_50_low','middle_50_high','period_start','period_end','source'],
@@ -113,6 +118,8 @@ export const BetaIntelligence = () => {
               ].map(([Icon,label,value,detail]) => { const MetricIcon=Icon as typeof Activity; return <article key={label as string} className="rounded-2xl border border-border bg-white p-5 md:p-6"><MetricIcon size={18} className="text-navy/65"/><p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground">{label as string}</p><p className="mt-2 font-serif text-3xl text-navy">{value as string | number}</p><p className="mt-2 text-xs text-muted-foreground">{detail as string}</p></article>; })}
             </div>
           </section>
+
+          <EvidenceFitnessPanel series={fitnessSeries} language={language} />
 
           <DataReadingGuide subject="the market-intelligence dashboard" />
 

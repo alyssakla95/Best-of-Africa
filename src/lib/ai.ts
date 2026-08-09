@@ -486,7 +486,20 @@ export function matchSectorByKeywords(title: string, content: string): string | 
         if (score > 0) scores[sector] = (scores[sector] || 0) + score;
     }
     let best: string | null = null, bestScore = 0;
-    for (const [s, sc] of Object.entries(scores)) { if (sc > bestScore) { bestScore = sc; best = s; } }
+    let runnerUpScore = 0;
+    for (const [sector, score] of Object.entries(scores).sort((a, b) => b[1] - a[1])) {
+        if (!best) {
+            best = sector;
+            bestScore = score;
+        } else {
+            runnerUpScore = score;
+            break;
+        }
+    }
+    // A lone incidental body word ("production", "fund" or "construction")
+    // is not enough to label an article as market-sector evidence. Require a
+    // meaningful signal and reject ambiguous ties for model review instead.
+    if (bestScore < 6 || (runnerUpScore > 0 && bestScore - runnerUpScore < 2)) return null;
     return best;
 }
 

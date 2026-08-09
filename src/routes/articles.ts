@@ -16,6 +16,7 @@ import { publisherNameForStoredArticle } from '../lib/source-attribution';
 import { getMedia, putMedia } from '../lib/media';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoveragePage, diversifyCoverageRows } from '../lib/source-quality';
+import { normaliseReaderArticle, repairReaderText } from '../lib/reader-text';
 
 // Temporary read-only stakeholder review mode. Keep authenticated actions
 // (including paid TTS generation) protected; only article truncation is lifted.
@@ -78,9 +79,10 @@ function sourceImageFailure(status: 404 | 502, message: string): Response {
 }
 
 export async function localizeArticleList<T extends { id?: string; country_code?: string | null; country_name?: string | null; sector_name?: string | null }>(env: Env, rows: T[], language: string | undefined): Promise<T[]> {
-    if (!language || !READER_LANGUAGES.has(language) || !rows.length) return rows;
-    const ids = rows.map(row => row.id).filter((id): id is string => !!id);
-    if (!ids.length) return rows;
+    const normalizedRows = rows.map(row => normaliseReaderArticle(row as Record<string, unknown>) as T);
+    if (!language || !READER_LANGUAGES.has(language) || !normalizedRows.length) return normalizedRows;
+    const ids = normalizedRows.map(row => row.id).filter((id): id is string => !!id);
+    if (!ids.length) return normalizedRows;
     const placeholders = ids.map(() => '?').join(',');
     const translations = await env.DB.prepare(`
         SELECT article_id, title, subtitle, summary
@@ -88,14 +90,14 @@ export async function localizeArticleList<T extends { id?: string; country_code?
         WHERE language = ? AND quality >= 0 AND article_id IN (${placeholders})
     `).bind(language, ...ids).all<{ article_id: string; title: string; subtitle: string | null; summary: string | null }>();
     const byId = new Map((translations.results || []).map(translation => [translation.article_id, translation]));
-    return rows.flatMap(row => {
+    return normalizedRows.flatMap(row => {
         const translation = row.id ? byId.get(row.id) : undefined;
         if (!translation) return language === 'pt' ? [] : [row];
         return [{
             ...row,
-            title: language === 'pt' ? normalisePortuguesePortugal1945(translation.title) : translation.title,
-            ...(translation.subtitle ? { subtitle: language === 'pt' ? normalisePortuguesePortugal1945(translation.subtitle) : translation.subtitle } : {}),
-            ...(translation.summary ? { summary: language === 'pt' ? normalisePortuguesePortugal1945(translation.summary) : translation.summary } : {}),
+            title: language === 'pt' ? normalisePortuguesePortugal1945(repairReaderText(translation.title)) : repairReaderText(translation.title),
+            ...(translation.subtitle ? { subtitle: language === 'pt' ? normalisePortuguesePortugal1945(repairReaderText(translation.subtitle)) : repairReaderText(translation.subtitle) } : {}),
+            ...(translation.summary ? { summary: language === 'pt' ? normalisePortuguesePortugal1945(repairReaderText(translation.summary)) : repairReaderText(translation.summary) } : {}),
             ...(language === 'pt' && row.country_name ? { country_name: portugueseCountryName(row.country_code, row.country_name) } : {}),
             ...(language === 'pt' && row.sector_name ? { sector_name: portugueseSectorName(row.sector_name) } : {}),
             title_language: language,
@@ -266,7 +268,9 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
     );
 
     // Global Briefing (The "World View")
-    const evidenceArticles = (articles as unknown as ArticleListItem[]).slice(0, 12);
+    const normalizedArticles = (articles as unknown as ArticleListItem[])
+        .map(article => normaliseReaderArticle(article as unknown as Record<string, unknown>) as unknown as ArticleListItem);
+    const evidenceArticles = normalizedArticles.slice(0, 12);
     const evidence = evidenceArticles.map((article, index) =>
                 `[${index + 1}] ${article.published_at || 'date unavailable'} — ${article.title}\n${article.summary || 'Summary unavailable.'}`
     ).join('\n\n');
@@ -291,7 +295,7 @@ router.get('/featured', validate('query', ArticleQuerySchema.pick({ limit: true,
         `${index + 1}. ${article.title}. ${(article.summary || '').slice(0, 320)}`
     ).join('\n\n');
 
-    const localizedArticles = await localizeArticleList(c.env, articles as ArticleListItem[], reqLang);
+    const localizedArticles = await localizeArticleList(c.env, normalizedArticles, reqLang);
     const portugueseBriefing = localizedArticles.slice(0, 5).map((article, index) =>
         `${index + 1}. ${article.title}. ${(article.summary || '').slice(0, 320)}`
     ).join('\n\n');
@@ -446,7 +450,8 @@ router.get('/sector/:id', validate('param', UuidParamSchema), validate('query', 
     LIMIT ? OFFSET ?
   `).bind(sectorId, Math.min(200, limitNum * 8), offset).all();
 
-    const sectorArticles = diversifyCoverageRows(articles.results || [], limitNum);
+    const sectorArticles = diversifyCoverageRows(articles.results || [], limitNum)
+        .map(article => normaliseReaderArticle(article as Record<string, unknown>));
 
     const sectorEvidenceRows = (sectorArticles as any[]).slice(0, 10);
     const sectorEvidence = sectorEvidenceRows.map((article, index) =>
@@ -574,6 +579,7 @@ router.get('/:slug', validate('param', SlugParamSchema), async (c) => {
     // Two-tier byline: only human-reviewed (curated) stories carry the personal
     // byline; automated briefing coverage is attributed to the desk.
     const a = article as unknown as Record<string, unknown>;
+    Object.assign(a, normaliseReaderArticle(a));
     a.author_name = a.curated ? 'Mailles Cortes' : 'BOA Briefing Desk';
     a.source_title = publisherNameForStoredArticle(article);
 

@@ -11,6 +11,7 @@ import { checkContentIntegrity } from '../lib';
 import { publisherNameForArticle } from '../lib/source-attribution';
 import { sourceEvidenceFailure } from '../lib/editorial-quality';
 import { coverageAdmissionFailure, sourceQualityProfile } from '../lib/source-quality';
+import { readerSummary, repairReaderText } from '../lib/reader-text';
 
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -148,10 +149,10 @@ export async function generateArticleFromQueue(
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_audit', 'pending', NULL, datetime('now'))
         `).bind(
             articleId, slug,
-            generated.title,
-            generated.subtitle ?? null,
-            generated.content,
-            generated.summary ?? null,
+            repairReaderText(generated.title),
+            generated.subtitle ? repairReaderText(generated.subtitle) : null,
+            repairReaderText(generated.content),
+            readerSummary(generated.content, generated.summary),
             countryCode ?? null,
             sectorId    ?? null,
             generated.tags ? JSON.stringify(generated.tags) : '[]',
@@ -205,6 +206,44 @@ export async function generateArticleFromQueue(
         ).run();
         if (!terminal) throw error;
     }
+}
+
+/**
+ * Repair bounded historical reader records that predate the current summary
+ * and encoding gates. The query self-terminates once no affected rows remain.
+ */
+export async function backfillReaderText(env: Env, batch = 8): Promise<number> {
+    const rows = await env.DB.prepare(`
+        SELECT id, title, subtitle, summary, content
+        FROM articles
+        WHERE status = 'published'
+          AND (summary IS NULL OR length(trim(summary)) = 0)
+        ORDER BY published_at DESC, id DESC
+        LIMIT ?
+    `).bind(Math.max(1, Math.min(batch, 25))).all<{
+        id: string; title: string; subtitle: string | null; summary: string | null; content: string;
+    }>();
+
+    let repaired = 0;
+    for (const article of rows.results || []) {
+        const title = repairReaderText(article.title);
+        const subtitle = article.subtitle ? repairReaderText(article.subtitle) : null;
+        const content = repairReaderText(article.content);
+        const summary = readerSummary(content, article.summary);
+        const narrationChanged = title !== article.title || content !== article.content;
+        await env.DB.prepare(`
+            UPDATE articles
+            SET title = ?, subtitle = ?, summary = ?, content = ?,
+                audio_regen = CASE WHEN ? THEN 1 ELSE audio_regen END,
+                updated_at = datetime('now')
+            WHERE id = ?
+        `).bind(title, subtitle, summary, content, narrationChanged ? 1 : 0, article.id).run();
+        if (narrationChanged) {
+            await env.DB.prepare('DELETE FROM article_translations WHERE article_id = ?').bind(article.id).run();
+        }
+        repaired += 1;
+    }
+    return repaired;
 }
 
 // Alias for queue handler compatibility

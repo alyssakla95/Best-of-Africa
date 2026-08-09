@@ -3070,6 +3070,19 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Other attributed source': 'Outra fonte atribuída',
   'Publisher counts use attributed published records in the rolling 30-day window. Primary/global share includes quality-tier-four institutions and globally authoritative newsrooms; it measures evidence provenance, not truth by itself.':
     'A contagem de editores utiliza registos publicados e atribuídos na janela móvel de 30 dias. A proporção primária/global inclui instituições de nível quatro e redacções de autoridade mundial; mede a proveniência dos dados, não a sua veracidade isoladamente.',
+  'Evidence fitness': 'Adequação da evidência',
+  'What can be compared confidently—and where to stop': 'O que pode ser comparado com confiança — e onde deve parar',
+  'This is not a market rating. It separates geographic breadth from observation period so readers can see where a continental comparison is broad, partial or too limited.':
+    'Esta leitura não é uma classificação de mercados. Separa a amplitude geográfica do período de observação para mostrar onde uma comparação continental é robusta, parcial ou demasiado limitada.',
+  'Broad coverage': 'Cobertura ampla',
+  'Partial coverage': 'Cobertura parcial',
+  'Limited coverage': 'Cobertura limitada',
+  'Full observation range': 'Período total das observações',
+  'Series requiring the most caution': 'Séries que exigem maior prudência',
+  'Practical use': 'Utilização prática',
+  'Start with broad-coverage series to frame a comparison. For partial series, identify the missing countries. Do not use a limited series as a continental conclusion; open the source and country records before making a decision.':
+    'Comece pelas séries de cobertura ampla para enquadrar a comparação. Nas séries parciais, confirme quais os países ausentes. Não utilize uma série limitada como conclusão continental; abra a fonte e os registos nacionais antes de tomar uma decisão.',
+  'of countries': 'dos países',
 };
 
 const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {

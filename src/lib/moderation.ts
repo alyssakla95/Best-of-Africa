@@ -12,6 +12,7 @@ import { onArticlePublished } from './alerts';
 import { autoPostArticle } from './social';
 import { generateAudioNarration } from './audio';
 import { autoTranslateArticle } from './translate';
+import { containsBrokenReaderText, readerSummary } from './reader-text';
 
 export interface ModerationResult {
     status: 'approved' | 'flagged' | 'needs_review';
@@ -131,6 +132,9 @@ Return no more than six findings, ordered by severity. Keep each message under 3
 }
 
 export interface AuditableArticle {
+    title?: string | null;
+    subtitle?: string | null;
+    summary?: string | null;
     content: string;
     investorBrief?: string | null;
     sourceUrl?: string | null;
@@ -140,6 +144,12 @@ export function automaticPublicationFailure(
     article: AuditableArticle,
     moderation: ModerationResult,
 ): string | null {
+    if (!article.summary?.trim()) {
+        return 'A substantive reader summary is required.';
+    }
+    if ([article.title, article.subtitle, article.summary, article.content].some(containsBrokenReaderText)) {
+        return 'Reader text contains malformed character encoding.';
+    }
     const articleWords = countResponseWords(article.content);
     if (articleWords < MIN_PUBLISHABLE_ARTICLE_WORDS) {
         return `Article depth is ${articleWords} words; ${MIN_PUBLISHABLE_ARTICLE_WORDS} are required.`;
@@ -226,6 +236,9 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
             continue;
         }
         const failure = automaticPublicationFailure({
+            title: article.title,
+            subtitle: article.subtitle,
+            summary: article.summary,
             content: article.content,
             investorBrief: article.ai_investor_brief,
             sourceUrl: article.source_url,
@@ -266,7 +279,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
                         repaired.title,
                         repaired.subtitle || null,
                         repaired.content,
-                        repaired.summary || null,
+                        readerSummary(repaired.content, repaired.summary),
                         repaired.investor_brief,
                         JSON.stringify(repaired.tags),
                         Math.max(1, Math.ceil(countResponseWords(repaired.content) / 200)),

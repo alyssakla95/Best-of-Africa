@@ -372,6 +372,13 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         return result;
     });
 
+    // Bring pre-gate archive records up to the same reader-text contract as
+    // newly approved stories. This is bounded and stops doing work when clean.
+    await safe('backfill-reader-text', async () => {
+        const { backfillReaderText } = await import('./workers/generator');
+        return backfillReaderText(env, 8);
+    });
+
     // Regenerate existing narration newest-first, then extend audio coverage.
     // This runs before expensive ingestion and image workloads so those jobs
     // cannot consume the invocation budget before TTS is reached.

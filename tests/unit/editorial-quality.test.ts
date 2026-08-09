@@ -35,6 +35,8 @@ describe('editorial publication gate', () => {
 
 describe('automated editorial publication gate', () => {
     const article = {
+        title: 'Verified market development',
+        summary: 'A source-linked account of the verified development, affected stakeholders and stated implementation timetable.',
         content: Array.from({ length: 900 }, () => 'reported').join(' '),
         investorBrief: Array.from({ length: 200 }, () => 'evidence').join(' '),
         sourceUrl: 'https://publisher.example/report',
@@ -51,6 +53,8 @@ describe('automated editorial publication gate', () => {
 
     it.each([
         [{ ...article, content: 'too short' }, cleanAudit, 'Article depth'],
+        [{ ...article, summary: null }, cleanAudit, 'reader summary'],
+        [{ ...article, title: 'Broken \u00e2\u20ac\u2011 headline' }, cleanAudit, 'malformed character'],
         [{ ...article, investorBrief: 'too short' }, cleanAudit, 'Professional brief depth'],
         [{ ...article, sourceUrl: null }, cleanAudit, 'source URL'],
         [article, { ...cleanAudit, score: 0.79 }, 'below 80'],

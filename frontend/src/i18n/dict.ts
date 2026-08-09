@@ -1087,6 +1087,40 @@ for (const lang of Object.keys(PAGE_TRANSLATIONS)) {
   TRANSLATIONS[lang] = { ...PAGE_TRANSLATIONS[lang], ...(TRANSLATIONS[lang] || {}) };
 }
 
+const TRANSLATION_STATUS: Record<string, UIDict> = {
+  en: {
+    'translation.applying': 'Applying the reviewed interface language…',
+    'translation.partial': 'Reviewed navigation is translated. Longer interface passages remain in the English source language.',
+  },
+  fr: {
+    'translation.applying': 'Application de la langue d’interface révisée…',
+    'translation.partial': 'La navigation révisée est traduite. Les passages d’interface plus longs restent dans la langue source anglaise.',
+  },
+  pt: {
+    'translation.applying': 'A aplicar o idioma revisto da interface…',
+    'translation.partial': 'A navegação revista está traduzida. As passagens mais extensas da interface mantêm-se na língua de origem inglesa.',
+  },
+  de: {
+    'translation.applying': 'Die redaktionell geprüfte Oberflächensprache wird angewendet…',
+    'translation.partial': 'Die geprüfte Navigation ist übersetzt. Längere Oberflächentexte bleiben in der englischen Ausgangssprache.',
+  },
+  zh: {
+    'translation.applying': '正在应用已审核的界面语言…',
+    'translation.partial': '已审核的导航内容已翻译。较长的界面段落仍保留英文原文。',
+  },
+  ar: {
+    'translation.applying': 'جارٍ تطبيق لغة الواجهة المراجعة…',
+    'translation.partial': 'تمّت ترجمة عناصر التنقل المراجعة. وتبقى فقرات الواجهة الأطول بلغة المصدر الإنكليزية.',
+  },
+  hi: {
+    'translation.applying': 'समीक्षित इंटरफ़ेस भाषा लागू की जा रही है…',
+    'translation.partial': 'समीक्षित नेविगेशन का अनुवाद हो चुका है। इंटरफ़ेस के लंबे अंश अंग्रेज़ी स्रोत भाषा में रहते हैं।',
+  },
+};
+for (const lang of Object.keys(TRANSLATION_STATUS)) {
+  Object.assign(TRANSLATIONS[lang], TRANSLATION_STATUS[lang]);
+}
+
 // Portuguese is maintained as pt-PT using the orthography preceding the 1990
 // agreement. Normalising the complete merged table here also covers older
 // page namespaces without sending any interface copy to a remote service.

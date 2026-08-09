@@ -72,6 +72,13 @@ export function applyPortuguese1945Orthography(value: string): string {
  * to explicit translation keys.
  */
 export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
+  'Loading the complete evidence ledger': 'A carregar o registo completo de evidência',
+  'Evidence-ledger request interrupted': 'Pedido do registo de evidência interrompido',
+  'The official performance record is available, but the publishing ledger did not load.': 'O registo oficial de desempenho está disponível, mas não foi possível carregar o registo de publicações.',
+  'Retry this independent request without reloading the sector-performance evidence already on the page.': 'Repita este pedido independente sem voltar a carregar a evidência de desempenho sectorial já apresentada na página.',
+  'Retry evidence ledger': 'Repetir o pedido do registo de evidência',
+  'Download sector evidence': 'Descarregar a evidência sectorial',
+  'Download regional evidence': 'Descarregar a evidência regional',
   'Source breadth and concentration': 'Amplitude e concentração das fontes',
   'Publisher breadth, authority and concentration are shown separately from story volume. The concentration readings make an imbalanced evidence window visible instead of allowing a long source list to conceal it.': 'A diversidade, a autoridade e a concentração dos editores são apresentadas separadamente do volume de publicações. As medidas de concentração tornam visível um conjunto de evidência desequilibrado, em vez de permitirem que uma lista extensa de fontes o oculte.',
   'Leading source share': 'Peso da principal fonte',

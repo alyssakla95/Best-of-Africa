@@ -41,7 +41,8 @@ export const AdminClientsTab: React.FC = () => {
     };
 
     useEffect(() => {
-        loadData();
+        const timer = window.setTimeout(() => { void loadData(); }, 0);
+        return () => window.clearTimeout(timer);
     }, []);
 
     const handleCreate = async (event: React.FormEvent) => {

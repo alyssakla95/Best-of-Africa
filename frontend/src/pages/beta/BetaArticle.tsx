@@ -181,6 +181,7 @@ const ArticleSkeleton = () => (
 // were the article page's heaviest bundle and tanked LCP). Raw < > are encoded
 // first, so only the known tags we inject below are emitted (XSS-safe for our
 // material prepared by the publishing pipeline).
+// eslint-disable-next-line react-refresh/only-export-components
 export function renderArticleHtml(md: string): string {
   if (!md) return '';
   let s = md.replace(/</g, '&lt;').replace(/>/g, '&gt;');

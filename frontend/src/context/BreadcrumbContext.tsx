@@ -19,9 +19,11 @@ export const BreadcrumbProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   return <BreadcrumbCtx.Provider value={{ override, setOverride }}>{children}</BreadcrumbCtx.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBreadcrumbOverride = () => useContext(BreadcrumbCtx);
 
 /** Page-side helper: register a label for the current route's last crumb. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSetBreadcrumb(label?: string | null) {
   const { setOverride } = useBreadcrumbOverride();
   const { pathname } = useLocation();

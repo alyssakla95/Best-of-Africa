@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ArrowRight, BarChart3, ExternalLink, Globe2, Scale } from 'lucide-react';
+import { Activity, ArrowRight, BarChart3, Download, ExternalLink, Globe2, Scale } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link, useParams } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
@@ -21,6 +21,12 @@ const changeWithUnit = (value: number, unit: string) => {
   return `${sign}${compact(value)} ${unit}`;
 };
 const period = (start: number, end: number) => start === end ? String(end) : `${start}–${end}`;
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const saveCsv = (filename: string, rows: unknown[][]) => {
+  const body = rows.map(row => row.map(csvCell).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/csv;charset=utf-8' }));
+  const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
+};
 
 export const BetaIntelligence = () => {
   const { language } = useLanguage();
@@ -41,12 +47,17 @@ export const BetaIntelligence = () => {
     staleTime: 0,
     refetchInterval: 60 * 1000,
     refetchOnWindowFocus: true,
+    placeholderData: previous => previous,
   });
 
   const performance = query.data;
   const signalCount = performance?.data.reduce((total, sector) => total + 1 + sector.dimensions.length, 0) || 0;
   const coverageValues = performance?.data.flatMap(sector => [sector.continent_coverage_pct, ...sector.dimensions.map(item => item.coverage_pct)]) || [];
   const averageCoverage = coverageValues.length ? coverageValues.reduce((sum, value) => sum + value, 0) / coverageValues.length : 0;
+  const downloadSectorMatrix = () => performance && saveCsv('boa-africa-sector-performance.csv', [
+    ['sector','indicator_code','indicator','unit','median_reading','change','comparison_unit','countries_higher_pct','countries_reported','countries_in_scope','middle_50_low','middle_50_high','period_start','period_end','source'],
+    ...performance.data.map(sector => [sector.sector_name,sector.indicator_code,sector.indicator_name,sector.headline_unit,sector.headline_value,sector.comparison_value,sector.comparison_unit,sector.improving_markets_pct,sector.countries_reported,performance.countries_in_scope,sector.dispersion_low,sector.dispersion_high,sector.period_start,sector.period_end,performance.source_name]),
+  ]);
   const sectorPattern = (sector: NonNullable<typeof performance>['data'][number]) => {
     if (sector.continent_coverage_pct < 60) return text('Limited-coverage signal');
     if (sector.comparison_value > 0.25 && sector.improving_markets_pct >= 60) return text('Broad upward movement');
@@ -105,6 +116,9 @@ export const BetaIntelligence = () => {
 
           <DataReadingGuide subject="the market-intelligence dashboard" />
 
+          {coverageQuery.isLoading && <section className="page-section animate-pulse rounded-2xl border border-border bg-white p-5 md:p-8" aria-label="Loading the complete evidence ledger"><div className="h-4 w-44 rounded bg-navy/10"/><div className="mt-5 h-10 max-w-2xl rounded bg-navy/10"/><div className="mt-7 grid gap-4 sm:grid-cols-2"><div className="h-40 rounded-xl bg-navy/5"/><div className="h-40 rounded-xl bg-navy/5"/></div></section>}
+          {coverageQuery.isError && !coverageQuery.data && <section className="page-section rounded-2xl border border-border bg-white p-5 md:p-8" role="alert"><p className="text-xs font-bold uppercase tracking-[.12em] text-navy/60">Evidence-ledger request interrupted</p><h2 className="mt-2 font-serif text-3xl text-navy">The official performance record is available, but the publishing ledger did not load.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Retry this independent request without reloading the sector-performance evidence already on the page.</p><button type="button" onClick={() => coverageQuery.refetch()} className="mt-6 min-h-12 rounded-md bg-navy px-5 text-sm font-bold text-white">Retry evidence ledger</button></section>}
+
           {coverageQuery.data && <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="all-market-scope">
             <div className="grid gap-6 border-b border-border px-5 py-6 md:grid-cols-[1fr_auto] md:items-end md:px-8">
               <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Live briefing scope</p><h2 id="all-market-scope" className="mt-2 font-serif text-3xl text-navy md:text-4xl">Every African country and every economic sector is checked</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">The evidence ledger refreshes every minute. Countries or sectors with zero current records remain visible as evidence gaps; they are never omitted or filled with assumptions.</p></div>
@@ -152,7 +166,7 @@ export const BetaIntelligence = () => {
           </section>
 
           <section className="page-section overflow-hidden rounded-2xl border border-border bg-white" aria-labelledby="sector-decision-matrix">
-            <div className="border-b border-border px-5 py-6 md:px-8"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Decision matrix</p><h2 id="sector-decision-matrix" className="mt-2 font-serif text-3xl text-navy md:text-4xl">Where the headline is broad, narrow or incomplete</h2><p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">This matrix puts movement, country breadth, dispersion and coverage beside one another. It helps identify which patterns deserve country-level investigation; it does not rank investment attractiveness.</p></div>
+            <div className="border-b border-border px-5 py-6 md:px-8"><div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Decision matrix</p><h2 id="sector-decision-matrix" className="mt-2 font-serif text-3xl text-navy md:text-4xl">Where the headline is broad, narrow or incomplete</h2><p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">This matrix puts movement, country breadth, dispersion and coverage beside one another. It helps identify which patterns deserve country-level investigation; it does not rank investment attractiveness.</p></div><button type="button" onClick={downloadSectorMatrix} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md border border-navy px-4 text-sm font-bold text-navy"><Download size={16}/>Download sector evidence</button></div></div>
             <div className="grid gap-3 p-4 md:hidden">{performance.data.map(sector => <article key={sector.sector_id} className="rounded-xl border border-border p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-serif text-xl text-navy">{text(sector.sector_name)}</h3><p className="mt-1 text-[10px] text-muted-foreground">{text(sector.indicator_name)}</p></div><span className="rounded-full bg-navy/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-navy">{sectorPattern(sector)}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-muted-foreground">Median reading</dt><dd className="mt-1 font-semibold text-navy">{valueWithUnit(sector.headline_value,text(sector.headline_unit))}</dd></div><div><dt className="text-muted-foreground">Median change</dt><dd className="mt-1 font-semibold text-navy">{changeWithUnit(sector.comparison_value,text(sector.comparison_unit))}</dd></div><div><dt className="text-muted-foreground">Countries moving higher</dt><dd className="mt-1 font-semibold text-navy">{sector.improving_markets_pct.toFixed(0)}%</dd></div><div><dt className="text-muted-foreground">Country coverage</dt><dd className="mt-1 font-semibold text-navy">{sector.countries_reported}/54</dd></div></dl><p className="mt-4 text-xs leading-5 text-muted-foreground"><strong className="text-navy">Observed range:</strong> middle half {sector.dispersion_low.toFixed(1)}–{sector.dispersion_high.toFixed(1)} {text(sector.headline_unit)}.</p><Link to={`/sectors/${sector.sector_id}/trends`} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-navy">Investigate countries and evidence <ArrowRight size={13}/></Link></article>)}</div>
             <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[1100px] border-collapse text-left text-sm"><thead className="bg-navy text-white"><tr>{['Sector and measure','Median reading','Change','Breadth','Coverage','Middle 50%','Highest recorded markets','Evidence pattern'].map(label => <th key={label} className="px-4 py-3 text-[10px] uppercase tracking-[.1em]">{text(label)}</th>)}</tr></thead><tbody className="divide-y divide-border">{performance.data.map(sector => <tr key={sector.sector_id} className="align-top"><th className="px-4 py-4"><Link to={`/sectors/${sector.sector_id}/trends`} className="font-semibold text-navy hover:underline">{text(sector.sector_name)}</Link><span className="mt-1 block max-w-[14rem] text-[10px] font-normal leading-4 text-muted-foreground">{text(sector.indicator_name)}</span></th><td className="px-4 py-4 tabular-nums text-navy">{valueWithUnit(sector.headline_value,text(sector.headline_unit))}</td><td className="px-4 py-4 tabular-nums">{changeWithUnit(sector.comparison_value,text(sector.comparison_unit))}</td><td className="px-4 py-4 tabular-nums">{sector.improving_markets_pct.toFixed(0)}% higher</td><td className="px-4 py-4 tabular-nums">{sector.countries_reported}/54</td><td className="px-4 py-4 tabular-nums">{sector.dispersion_low.toFixed(1)}–{sector.dispersion_high.toFixed(1)}</td><td className="px-4 py-4 text-xs leading-5 text-muted-foreground">{sector.leaders.slice(0,3).map(market => countryName(market.country_code, market.country_name)).join(' · ')}</td><td className="px-4 py-4"><span className="rounded-full bg-navy/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-navy">{sectorPattern(sector)}</span></td></tr>)}</tbody></table></div>
             <div className="border-t border-border bg-navy/[.025] px-5 py-5 text-sm leading-7 text-navy/80 md:px-8"><strong>How to use it:</strong> start with evidence pattern and coverage, inspect the highest and lowest recorded countries, then open the sector dossier to test supporting conditions and unanswered diligence questions.</div>

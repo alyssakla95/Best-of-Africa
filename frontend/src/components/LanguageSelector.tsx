@@ -10,6 +10,15 @@ import {
 export function LanguageSelector() {
   const { language, setLanguage, t } = useLanguage();
   const current = SUPPORTED_LANGUAGES.find(item => item.code === language) ?? SUPPORTED_LANGUAGES[0];
+  const interfaceCoverage: Record<string, string> = {
+    en: 'Full interface',
+    pt: 'Interface completa',
+    fr: 'Navigation révisée',
+    de: 'Geprüfte Navigation',
+    ar: 'تنقّل مراجع',
+    hi: 'समीक्षित नेविगेशन',
+    zh: '已审核导航',
+  };
 
   return (
     <DropdownMenu>
@@ -30,8 +39,8 @@ export function LanguageSelector() {
             onSelect={() => setLanguage(item.code)}
             className="flex cursor-pointer items-center justify-between gap-4"
           >
-            <span data-no-translate>{item.name}</span>
-            {item.code === language && <CheckIcon className="h-4 w-4 text-accent-ink" />}
+            <span className="min-w-0" data-no-translate><span className="block">{item.name}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{interfaceCoverage[item.code]}</span></span>
+            {item.code === language && <CheckIcon className="h-4 w-4 shrink-0 text-accent-ink" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

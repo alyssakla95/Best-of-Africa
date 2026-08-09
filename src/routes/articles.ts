@@ -15,7 +15,7 @@ import { verifyJWT } from '../lib/auth';
 import { publisherNameForStoredArticle } from '../lib/source-attribution';
 import { getMedia, putMedia } from '../lib/media';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
-import { diversifyCoverageRows } from '../lib/source-quality';
+import { diversifyCoveragePage, diversifyCoverageRows } from '../lib/source-quality';
 
 // Temporary read-only stakeholder review mode. Keep authenticated actions
 // (including paid TTS generation) protected; only article truncation is lifted.
@@ -122,7 +122,7 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
 
     const pageNum = Math.max(1, page);
     const limitNum = Math.max(1, Math.min(100, limit));
-    const offset = (pageNum - 1) * limitNum;
+    const candidateLimit = Math.min(1200, pageNum * limitNum * 6);
 
     // Build query
     const reqLang = c.req.query('lang')?.toLowerCase();
@@ -189,12 +189,12 @@ router.get('/', validate('query', ArticleQuerySchema), async (c) => {
     LEFT JOIN sectors s ON a.sector_id = s.id
     ${whereClause}
     ORDER BY a.is_sponsored DESC, ${sortCol} ${sortOrder}, a.id DESC
-    LIMIT ? OFFSET ?
-  `).bind(...params, Math.min(200, limitNum * 6), offset).all<ArticleListItem & { source_title?: string | null }>();
+    LIMIT ?
+  `).bind(...params, candidateLimit).all<ArticleListItem & { source_title?: string | null }>();
 
         articleResults = await localizeArticleList(
             c.env,
-            diversifyCoverageRows(articles.results || [], limitNum, country ? limitNum : 2, 1),
+            diversifyCoveragePage(articles.results || [], pageNum, limitNum, country ? limitNum : 2, 1),
             reqLang,
         );
     } catch (err) {

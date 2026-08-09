@@ -242,3 +242,19 @@ export function diversifyCoverageRows<T extends { country_code?: string | null; 
     }
     return picked;
 }
+
+/** Build deterministic pages without repeating a record selected earlier. */
+export function diversifyCoveragePage<T extends { country_code?: string | null; source_title?: string | null; source_quality_tier?: number | null }>(
+    rows: T[], page: number, limit: number, maxPerCountry = 2, maxPerPublisher = 1,
+): T[] {
+    let remaining = [...rows];
+    const targetPage = Math.max(1, page);
+    for (let currentPage = 1; currentPage <= targetPage; currentPage += 1) {
+        const selected = diversifyCoverageRows(remaining, limit, maxPerCountry, maxPerPublisher);
+        if (currentPage === targetPage) return selected;
+        const selectedRows = new Set(selected);
+        remaining = remaining.filter(row => !selectedRows.has(row));
+        if (!remaining.length) return [];
+    }
+    return [];
+}

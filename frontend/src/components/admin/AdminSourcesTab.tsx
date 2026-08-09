@@ -38,7 +38,8 @@ export const AdminSourcesTab: React.FC = () => {
     };
 
     useEffect(() => {
-        loadData();
+        const timer = window.setTimeout(() => { void loadData(); }, 0);
+        return () => window.clearTimeout(timer);
     }, []);
 
     const handleDelete = async (id: string) => {

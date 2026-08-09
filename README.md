@@ -104,7 +104,7 @@ The interface supports:
 - Modern Standard Arabic, including right-to-left layout
 - Hindi
 
-Published article translations are stored for the six non-English languages and served only after quality checks. Interface strings can also be translated on demand and cached. When a verified long-form translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
+Published article translations are stored for the six non-English languages and served only after quality checks. Interface copy resolves only from source-controlled language catalogues; it is never generated on demand. Portuguese has the complete maintained reader-interface catalogue, while the other non-English locales currently translate reviewed navigation and keyed product copy and explicitly preserve longer English source passages. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
 
 ### Editorial and intelligence controls
 

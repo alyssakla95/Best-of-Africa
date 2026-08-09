@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Activity, ArrowRight, ExternalLink, Globe2, Headphones, Landmark, Play, Scale, TrendingUp } from 'lucide-react';
+import { Activity, ArrowRight, Download, ExternalLink, Globe2, Headphones, Landmark, Play, Scale, TrendingUp } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
@@ -26,6 +26,12 @@ const formatValue = (value: number, unit: string) => {
 };
 
 const period = (start: number, end: number) => start === end ? String(end) : `${start}–${end}`;
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const saveCsv = (filename: string, rows: unknown[][]) => {
+  const body = rows.map(row => row.map(csvCell).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/csv;charset=utf-8' }));
+  const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
+};
 
 export const BetaContinentalOverview: React.FC = () => {
   const { language } = useLanguage();
@@ -59,6 +65,10 @@ export const BetaContinentalOverview: React.FC = () => {
   const regionalPopulationTotal = data.regions.reduce((sum, region) => sum + region.population.value, 0);
   const regionalFdiTotal = data.regions.reduce((sum, region) => sum + region.fdi.value, 0);
   const share = (value: number, total: number) => total ? `${((value / total) * 100).toFixed(1)}%` : '0%';
+  const downloadRegionalMatrix = () => saveCsv('boa-africa-regional-comparison.csv', [
+    ['region','countries','recorded_gdp_current_usd','gdp_share','population','population_share','net_fdi_current_usd','fdi_share','median_growth_pct','median_inflation_pct','fixed_investment_pct_gdp'],
+    ...data.regions.map(region => [region.region,region.country_count,region.gdp.value,share(region.gdp.value,regionalGdpTotal),region.population.value,share(region.population.value,regionalPopulationTotal),region.fdi.value,share(region.fdi.value,regionalFdiTotal),region.growth.value,region.inflation.value,region.investment.value]),
+  ]);
 
   return <div className="min-h-screen bg-background pb-24 text-foreground">
     <SEO title="Continental Economic Overview | BOA-Story" description="Official continental and regional economic, trade, investment and sector-performance indicators across Africa’s 54 markets."/>
@@ -242,7 +252,7 @@ export const BetaContinentalOverview: React.FC = () => {
         </>}
 
         {view === 'regions' && <section className="page-section">
-          <div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Five-region comparison</p><h2 className="mt-2 font-serif text-3xl text-navy md:text-5xl">How Africa’s regions differ</h2><p className="mt-4 text-sm leading-7 text-muted-foreground">GDP, population and foreign investment are added across countries. Growth, inflation and investment use the middle country reading. Each card shows how many countries supplied the data.</p></div>
+          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Five-region comparison</p><h2 className="mt-2 font-serif text-3xl text-navy md:text-5xl">How Africa’s regions differ</h2><p className="mt-4 text-sm leading-7 text-muted-foreground">GDP, population and foreign investment are added across countries. Growth, inflation and investment use the middle country reading. Each card shows how many countries supplied the data.</p></div><button type="button" onClick={downloadRegionalMatrix} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md border border-navy px-4 text-sm font-bold text-navy"><Download size={16}/>Download regional evidence</button></div>
           <div className="mt-8 grid gap-5 lg:grid-cols-2">
             {data.regions.map(region => <article key={region.region} className="rounded-2xl border border-border bg-white p-5 md:p-7">
               <div className="flex items-end justify-between gap-4 border-b border-border pb-5"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-navy/60">{region.country_count} countries</p><h3 className="mt-1 font-serif text-3xl text-navy">{region.region} Africa</h3></div><Link to={`/countries?region=${region.region}`} className="text-xs font-semibold text-navy">Open countries <ArrowRight size={12} className="inline"/></Link></div>

@@ -26,7 +26,7 @@ const isPortugueseText = (value: string) => {
 };
 
 export function InterfaceTranslator() {
-    const { language } = useLanguage();
+    const { language, t } = useLanguage();
     const location = useLocation();
     const [status, setStatus] = useState<'source' | 'translating' | 'translated' | 'partial'>('source');
 
@@ -199,8 +199,8 @@ export function InterfaceTranslator() {
       className="fixed bottom-4 left-4 right-4 z-[100] rounded-md bg-navy px-4 py-3 text-sm font-medium text-white shadow-xl sm:left-auto sm:max-w-sm"
     >
       {status === 'translating'
-        ? 'Translating this page…'
-        : 'Some text remains in English because translation could not be completed. Try again shortly.'}
+        ? t('translation.applying', 'Applying the reviewed interface language…')
+        : t('translation.partial', 'Reviewed navigation is translated. Longer interface passages remain in the English source language.')}
     </div>
   );
 }

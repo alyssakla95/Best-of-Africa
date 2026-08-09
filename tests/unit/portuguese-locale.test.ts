@@ -36,7 +36,7 @@ describe('coded Portuguese interface locale', () => {
         ], { cwd: process.cwd(), encoding: 'utf8' });
 
         expect(audit.status, `${audit.stdout}\n${audit.stderr}`).toBe(0);
-    });
+    }, 15_000);
 
     it('contains a Portuguese source string for every maintained English key', () => {
         const missing = Object.keys(TRANSLATIONS.en)

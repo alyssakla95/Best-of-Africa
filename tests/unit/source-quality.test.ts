@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { coverageAdmissionFailure, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_CATALOG, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
+import { coverageAdmissionFailure, diversifyCoveragePage, diversifyCoverageRows, sourceQualityProfile, TRUSTED_DISCOVERY_CATALOG, TRUSTED_DISCOVERY_DOMAINS } from '../../src/lib/source-quality';
 
 describe('source quality and coverage admission', () => {
     it('distinguishes authoritative, established, national and aggregator sources', () => {
@@ -134,5 +134,21 @@ describe('source quality and coverage admission', () => {
             { id: 5, country_code: 'KE', source_title: 'Business Daily Africa', source_quality_tier: 3 },
         ];
         expect(diversifyCoverageRows(rows, 5, 5, 1).map(row => row.id)).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it('builds diversified pages without repeating records from an earlier page', () => {
+        const rows = [
+            { id: 1, country_code: 'KE', source_title: 'Reuters', source_quality_tier: 4 },
+            { id: 2, country_code: 'ZA', source_title: 'Financial Times', source_quality_tier: 4 },
+            { id: 3, country_code: 'GH', source_title: 'African Business', source_quality_tier: 3 },
+            { id: 4, country_code: 'MA', source_title: 'BBC Africa', source_quality_tier: 4 },
+            { id: 5, country_code: 'EG', source_title: 'Associated Press', source_quality_tier: 4 },
+            { id: 6, country_code: 'RW', source_title: 'The Africa Report', source_quality_tier: 3 },
+        ];
+        const first = diversifyCoveragePage(rows, 1, 3);
+        const second = diversifyCoveragePage(rows, 2, 3);
+        expect(first.map(row => row.id)).toEqual([1, 2, 3]);
+        expect(second.map(row => row.id)).toEqual([4, 5, 6]);
+        expect(second.some(row => first.includes(row))).toBe(false);
     });
 });

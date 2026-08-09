@@ -102,6 +102,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useMember = () => {
   const context = useContext(MemberContext);
   if (context === undefined) {

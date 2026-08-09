@@ -86,21 +86,22 @@ export const BetaStories = () => {
   const [allArticles, setAllArticles] = useState<ArticleListItem[]>([]);
 
   // Reset pagination + accumulation whenever the sector filter changes.
-  useEffect(() => { setPage(1); setAllArticles([]); }, [activeFilter]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { setPage(1); setAllArticles([]); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeFilter]);
 
   useEffect(() => {
-    if (data?.data && !isError) {
-      if (page === 1) {
-        setAllArticles(data.data.slice(0, itemsPerPage));
-      } else {
-        // Append new articles, filter dupes
-        setAllArticles(prev => {
-          const newIds = new Set(data.data.map((a: ArticleListItem) => a.id || a.slug));
-          const filteredPrev = prev.filter((a: ArticleListItem) => !newIds.has(a.id || a.slug));
-          return [...filteredPrev, ...data.data];
-        });
-      }
-    }
+    if (!data?.data || isError) return;
+    const timer = window.setTimeout(() => {
+      if (page === 1) setAllArticles(data.data.slice(0, itemsPerPage));
+      else setAllArticles(prev => {
+        const newIds = new Set(data.data.map((a: ArticleListItem) => a.id || a.slug));
+        const filteredPrev = prev.filter((a: ArticleListItem) => !newIds.has(a.id || a.slug));
+        return [...filteredPrev, ...data.data];
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [data, isError, page]);
 
   const { data: searchData, isFetching: isSearching } = useQuery({

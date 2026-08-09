@@ -70,7 +70,10 @@ export const AdminInboxTab: React.FC = () => {
         }
     };
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        const timer = window.setTimeout(() => { void loadData(); }, 0);
+        return () => window.clearTimeout(timer);
+    }, []);
 
     const changePilot = (id: string, changes: Partial<AdminPilotRequest>) => {
         setData(current => current ? {

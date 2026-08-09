@@ -64,11 +64,13 @@ export const AdminPage: React.FC = () => {
     // Initial Check
     useEffect(() => {
         const storedToken = localStorage.getItem('boa_admin_token');
-        if (storedToken) {
+        if (!storedToken) return;
+        const timer = window.setTimeout(() => {
             setToken(storedToken);
             setStatus('success');
             void fetchArticles();
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [fetchArticles]);
 
     const handleLogin = async (e: React.FormEvent) => {

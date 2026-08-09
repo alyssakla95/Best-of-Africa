@@ -52,7 +52,7 @@ describe('Health Check Endpoints', () => {
             expect(checkNames).toContain('kv_cache');
             expect(checkNames).toContain('rate_limit');
             expect(checkNames).toContain('vectorize');
-            expect(checkNames).toContain('ai_service');
+            expect(checkNames).toContain('editorial_generation');
             expect(checkNames).toContain('durable_objects');
 
             // Verify check structure

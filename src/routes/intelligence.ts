@@ -453,7 +453,7 @@ Aim for 3,200-4,800 words when evidence is sufficiently rich. Include an evidenc
 
   } catch (error) {
     console.error('AI Chat Error:', error);
-    return c.json({ error: 'AI service failed', details: String(error) }, 500);
+    return c.json({ error: 'Editorial analysis service failed', details: String(error) }, 500);
   }
 });
 

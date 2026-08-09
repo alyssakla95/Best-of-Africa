@@ -457,21 +457,21 @@ router.get('/health/deep', async (c) => {
         const aiEmbeddingsStatus = await getCircuitBreakerStatus(c.env, 'ai-embeddings');
         
         checks.push({
-            name: 'ai_service',
+            name: 'editorial_generation',
             status: aiTextGenStatus.state === 'OPEN' ? 'degraded' : 'healthy',
             responseTimeMs: Date.now() - aiStart,
             details: {
-                textGenCircuit: aiTextGenStatus.state,
-                embeddingsCircuit: aiEmbeddingsStatus.state,
-                textGenFailures: aiTextGenStatus.failures,
+                generationCircuit: aiTextGenStatus.state,
+                retrievalCircuit: aiEmbeddingsStatus.state,
+                generationFailures: aiTextGenStatus.failures,
             },
         });
     } catch (error) {
         checks.push({
-            name: 'ai_service',
+            name: 'editorial_generation',
             status: 'degraded',
             responseTimeMs: Date.now() - aiStart,
-            message: error instanceof Error ? error.message : 'AI status check failed',
+            message: error instanceof Error ? error.message : 'Editorial generation status check failed',
         });
     }
 

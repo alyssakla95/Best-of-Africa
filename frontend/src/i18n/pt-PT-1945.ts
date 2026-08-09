@@ -2227,7 +2227,6 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'No verified transactional email provider and sender are configured':
     'Não estão configurados uma entidade e um remetente verificados para correio electrónico transaccional',
   'Thank you for your inquiry. We will respond shortly.': 'Obrigado pelo seu pedido. Responderemos em breve.',
-  'AI status check failed': 'A verificação do serviço de informação falhou',
   'Database connection failed': 'A ligação à base de dados falhou',
   'Durable Objects unavailable': 'O serviço de estado persistente está inacessível',
   'KV cache unavailable': 'A memória intermédia está inacessível',

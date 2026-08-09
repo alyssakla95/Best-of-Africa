@@ -861,8 +861,7 @@ router.post('/:slug/audio', validate('param', SlugParamSchema), async (c) => {
             success: true,
             audio_url: result.audioUrl,
             duration_seconds: result.durationSeconds,
-            message: 'Audio successfully synthesized.',
-            note: c.env.ELEVENLABS_API_KEY ? 'Powered by ElevenLabs' : 'Powered by Cloudflare Workers AI'
+            message: 'Audio successfully synthesized.'
         });
     } else {
         return c.json({

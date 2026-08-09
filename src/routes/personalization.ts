@@ -419,7 +419,7 @@ router.get('/feed/curated', async (c) => {
 
             if (balancedCandidates.length < 3) {
                 // Fallback if not enough matches
-                return { curated: [], message: "Not enough matching content for AI curation yet." };
+                return { curated: [], message: "Not enough matching source material for a tailored briefing yet." };
             }
 
             // 2. Curation Logic

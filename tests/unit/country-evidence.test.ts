@@ -33,9 +33,20 @@ describe('country evidence integrity', () => {
     });
 
     it('marks an assembled snapshot stale without erasing it', () => {
-        const snapshot = { retrieved_at: '2026-07-18T00:00:00.000Z' } as CountryEvidenceSnapshot;
+        const snapshot = {
+            retrieved_at: '2026-07-18T00:00:00.000Z',
+            macroeconomics: { official_profile: { indicators: Array.from({ length: 20 }) } },
+        } as unknown as CountryEvidenceSnapshot;
         expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T05:59:59.000Z'))).toBe(false);
         expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T06:00:01.000Z'))).toBe(true);
+    });
+
+    it('refreshes a recent legacy snapshot when its official evidence set is still narrow', () => {
+        const snapshot = {
+            retrieved_at: '2026-07-18T00:00:00.000Z',
+            macroeconomics: { official_profile: { indicators: Array.from({ length: 12 }) } },
+        } as unknown as CountryEvidenceSnapshot;
+        expect(isCountryEvidenceStale(snapshot, Date.parse('2026-07-18T00:05:00.000Z'))).toBe(true);
     });
 
     it('never converts empty UN Comtrade responses into a zero-trade fact', async () => {

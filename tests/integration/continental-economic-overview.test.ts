@@ -6,7 +6,7 @@ import { CONTINENTAL_WDI_SNAPSHOT } from '../../src/data/continental-wdi-snapsho
 import { getSectorPerformanceCache } from '../../src/lib/sector-performance';
 
 async function seedFreshOfficialCaches(env: ReturnType<typeof createMockEnv>) {
-    await env.CACHE.put('continental:economy:wdi:v1', JSON.stringify({ ...CONTINENTAL_WDI_SNAPSHOT, retrieved_at: new Date().toISOString() }));
+    await env.CACHE.put('continental:economy:wdi:v2', JSON.stringify({ ...CONTINENTAL_WDI_SNAPSHOT, retrieved_at: new Date().toISOString() }));
     const sector = await getSectorPerformanceCache(env);
     await env.CACHE.put('market-intel:sector-performance:wdi:v2', JSON.stringify({ ...sector, retrieved_at: new Date().toISOString() }));
 }
@@ -45,7 +45,14 @@ describe('GET /dashboards/continental/overview', () => {
 
         expect(response.status).toBe(200);
         expect(prepare).toHaveBeenCalledTimes(3);
-        expect(body.indicators).toHaveLength(11);
+        expect(body.indicators).toHaveLength(27);
+        expect(body.indicators).toEqual(expect.arrayContaining([
+            expect.objectContaining({ indicator_code: 'EG.ELC.ACCS.ZS', category: 'Infrastructure and digital access', countries_reported: 54 }),
+            expect.objectContaining({ indicator_code: 'FS.AST.PRVT.GD.ZS', category: 'Finance and external resilience' }),
+            expect.objectContaining({ indicator_code: 'SH.H2O.BASW.ZS', category: 'Human development', underlying_source: expect.stringContaining('WHO/UNICEF') }),
+            expect.objectContaining({ indicator_code: 'SL.UEM.TOTL.ZS', underlying_source: expect.stringContaining('International Labour Organization') }),
+            expect.objectContaining({ indicator_code: 'FI.RES.TOTL.CD', underlying_source: expect.stringContaining('International Monetary Fund') }),
+        ]));
         expect(body.regions).toHaveLength(5);
         expect(body.sector_performance).toHaveLength(8);
         expect(body.official_data_refresh).toMatchObject({ state: 'current' });

@@ -55,6 +55,10 @@ type CountryRecord = {
 export const countryEvidenceCacheKey = (code: string) => `${CACHE_PREFIX}${code.toUpperCase()}`;
 
 export function isCountryEvidenceStale(snapshot: CountryEvidenceSnapshot, now = Date.now()): boolean {
+    // Snapshots created before the expanded decision-evidence registry remain
+    // usable, but should be refreshed immediately in the background so a
+    // recently checked legacy dossier does not mask the broader official set.
+    if ((snapshot.macroeconomics?.official_profile?.indicators?.length || 0) < 20) return true;
     const retrieved = Date.parse(snapshot.retrieved_at);
     return !Number.isFinite(retrieved) || now - retrieved > COUNTRY_EVIDENCE_MAX_AGE_MS;
 }

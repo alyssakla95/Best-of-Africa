@@ -7,9 +7,9 @@ import {
 } from '../data/continental-wdi-snapshot';
 
 const WORLD_BANK_API = 'https://api.worldbank.org/v2';
-const CACHE_KEY = 'continental:economy:wdi:v1';
-const REFRESH_LOCK_KEY = 'continental:economy:wdi:refresh-lock:v1';
-const REFRESH_STATUS_KEY = 'continental:economy:wdi:refresh-status:v1';
+const CACHE_KEY = 'continental:economy:wdi:v2';
+const REFRESH_LOCK_KEY = 'continental:economy:wdi:refresh-lock:v2';
+const REFRESH_STATUS_KEY = 'continental:economy:wdi:refresh-status:v2';
 const FRESH_MS = 15 * 60 * 1000;
 const COUNTRY_CODES = [
     'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CD', 'CG', 'CI',
@@ -21,6 +21,10 @@ const SERIES = [
     'NY.GDP.MKTP.CD', 'SP.POP.TOTL', 'NY.GDP.MKTP.KD.ZG', 'FP.CPI.TOTL.ZG',
     'BX.KLT.DINV.CD.WD', 'NE.EXP.GNFS.CD', 'NE.IMP.GNFS.CD', 'NY.GDP.PCAP.CD',
     'NE.GDI.FTOT.ZS', 'BN.CAB.XOKA.GD.ZS',
+    'IT.NET.USER.ZS', 'IT.NET.BBND.P2', 'EG.ELC.ACCS.ZS', 'SP.URB.TOTL.IN.ZS',
+    'SL.TLF.CACT.ZS', 'SL.UEM.TOTL.ZS', 'FS.AST.PRVT.GD.ZS', 'FI.RES.TOTL.CD',
+    'BX.TRF.PWKR.CD.DT', 'DT.DOD.DECT.GN.ZS', 'NE.TRD.GNFS.ZS', 'NV.IND.MANF.ZS',
+    'IC.BUS.NDNS.ZS', 'SP.DYN.LE00.IN', 'SH.H2O.BASW.ZS', 'SH.STA.BASS.ZS',
 ] as const;
 
 type Snapshot = typeof CONTINENTAL_WDI_SNAPSHOT;

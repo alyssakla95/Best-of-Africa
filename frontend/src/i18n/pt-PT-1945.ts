@@ -2914,6 +2914,20 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Inspect every sector evidence state': 'Examinar o estado documental de todos os sectores',
   'The briefing explicitly checks all 54 African countries and every configured economic sector. A zero identifies no published record in the 30-day window and is not replaced with an inference.':
     'A síntese verifica explicitamente os 54 países africanos e todos os sectores económicos configurados. Um valor zero identifica a ausência de registos publicados na janela de 30 dias e não é substituído por uma inferência.',
+  'Scale and demand': 'Dimensão e procura',
+  'Prices and labour': 'Preços e trabalho',
+  'Finance and external resilience': 'Financiamento e resiliência externa',
+  'Trade and production': 'Comércio e produção',
+  'Infrastructure and digital access': 'Infra-estruturas e acesso digital',
+  'Human development': 'Desenvolvimento humano',
+  'observed country indicators': 'indicadores nacionais observados',
+  'Official observations are organised by the decision question they help answer. Every measure retains its year, unit, series code and direct provider link.':
+    'As observações oficiais estão organizadas segundo a questão de decisão que ajudam a esclarecer. Cada medida conserva o ano, a unidade, o código da série e a ligação directa ao fornecedor.',
+  'Inspect complete provider record': 'Examinar o registo completo do fornecedor',
+  'Series source': 'Fonte da série',
+  'Underlying authority:': 'Entidade de origem:',
+  'Source institution': 'Instituição de origem',
+  'WDI series record': 'Registo da série WDI',
 };
 
 const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {

@@ -45,6 +45,11 @@ export const BetaContinentalOverview: React.FC = () => {
   const indicators = Object.fromEntries(data.indicators.map(item => [item.indicator_code, item]));
   const headlineCodes = ['NY.GDP.MKTP.CD', 'SP.POP.TOTL', 'NY.GDP.MKTP.KD.ZG', 'BX.KLT.DINV.CD.WD'];
   const headlineIcons = [Landmark, Globe2, TrendingUp, Activity];
+  const indicatorCategories = ['Scale and demand', 'Prices and labour', 'Finance and external resilience', 'Trade and production', 'Infrastructure and digital access', 'Human development'] as const;
+  const supportingIndicatorGroups = indicatorCategories.map(category => ({
+    category,
+    indicators: data.indicators.filter(item => !headlineCodes.includes(item.indicator_code) && item.category === category),
+  })).filter(group => group.indicators.length > 0);
   const narratedBriefings = Array.isArray(data.narrated_briefings) ? data.narrated_briefings : [];
   const regionalGdpTotal = data.regions.reduce((sum, region) => sum + region.gdp.value, 0);
   const regionalPopulationTotal = data.regions.reduce((sum, region) => sum + region.population.value, 0);
@@ -209,14 +214,14 @@ export const BetaContinentalOverview: React.FC = () => {
 
           <section className="page-section">
             <div className="flex flex-col gap-3 border-b border-border pb-6 md:flex-row md:items-end md:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-navy/60">Trade, prices and investment</p><h2 className="mt-2 font-serif text-3xl text-navy">The other numbers needed for context</h2></div><span className="text-xs text-muted-foreground">{data.indicators.length} official measures in total</span></div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {data.indicators.filter(item => !headlineCodes.includes(item.indicator_code)).map(item => <article key={item.indicator_code} className="rounded-xl border border-border bg-white p-5">
+            <div className="mt-7 space-y-10">
+              {supportingIndicatorGroups.map(group => <section key={group.category} aria-label={group.category}><div className="flex items-center justify-between gap-3 border-b border-border pb-3"><h3 className="text-lg font-bold text-navy">{group.category}</h3><span className="text-xs text-muted-foreground">{group.indicators.length} measures</span></div><div className="mt-4 grid gap-4 md:grid-cols-2">{group.indicators.map(item => <article key={item.indicator_code} className="rounded-xl border border-border bg-white p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-muted-foreground">{item.indicator_code}</p><h3 className="mt-1 font-serif text-2xl text-navy">{item.label}</h3></div><span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-navy/60">{item.aggregation}</span></div>
                 <p className="mt-5 font-serif text-3xl text-navy">{formatValue(item.value,item.unit)}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{item.countries_reported} countries · observations {period(item.period_start,item.period_end)}</p>
                 <p className="mt-5 text-sm leading-6 text-navy/80">{item.interpretation}</p><p className="mt-4 border-l-2 border-navy/20 pl-3 text-xs leading-5 text-muted-foreground"><strong className="text-navy">Limit:</strong> {item.caveat}</p>
-                <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-navy underline decoration-navy/25 underline-offset-4">Official series <ExternalLink size={12}/></a>
-              </article>)}
+                <div className="mt-5 border-t border-border pt-4"><p className="text-xs leading-5 text-muted-foreground">Underlying authority: {item.underlying_source}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2"><a href={item.underlying_source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-navy underline decoration-navy/25 underline-offset-4">Source institution <ExternalLink size={12}/></a><a href={item.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-navy underline decoration-navy/25 underline-offset-4">WDI series record <ExternalLink size={12}/></a></div></div>
+              </article>)}</div></section>)}
             </div>
           </section>
 

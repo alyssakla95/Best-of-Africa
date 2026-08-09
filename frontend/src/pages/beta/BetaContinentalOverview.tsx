@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
 import { api } from '../../services/api';
 import { IntelligenceTrustPanel } from '../../components/intelligence/IntelligenceTrustPanel';
+import { DecisionWorkspace } from '../../components/intelligence/DecisionWorkspace';
 import { DataReadingGuide } from '../../components/PageReadingGuide';
 import { useAudio } from '../../context/AudioContext';
 import { stripMarkdown } from '../../lib/utils';
@@ -27,7 +28,7 @@ const period = (start: number, end: number) => start === end ? String(end) : `${
 export const BetaContinentalOverview: React.FC = () => {
   const { view: requestedView = 'overview' } = useParams<{ view?: string }>();
   const { playTrack } = useAudio();
-  const view = ['overview', 'regions', 'sectors'].includes(requestedView) ? requestedView : 'overview';
+  const view = ['overview', 'regions', 'sectors', 'countries'].includes(requestedView) ? requestedView : 'overview';
   const query = useQuery({
     queryKey: ['continental-economic-overview', 'economy-v1'],
     queryFn: api.getContinentalOverview,
@@ -76,7 +77,7 @@ export const BetaContinentalOverview: React.FC = () => {
 
     <nav className="sticky top-[4.5rem] z-30 border-b border-navy/15 bg-white/95 backdrop-blur-md lg:top-16" aria-label="Continental dashboard sections">
       <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
-        {[['overview','Continental record'],['regions','Regional comparison'],['sectors','Sector performance']].map(([slug,label]) => <Link key={slug} to={`/dashboards/${slug}`} aria-current={view === slug ? 'page' : undefined} className={`shrink-0 rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${view === slug ? 'bg-navy text-white' : 'text-navy/70 hover:bg-navy/5 hover:text-navy'}`}>{label}</Link>)}
+        {[['overview','Continental record'],['regions','Regional comparison'],['sectors','Sector performance'],['countries','Country workspace']].map(([slug,label]) => <Link key={slug} to={`/dashboards/${slug}`} aria-current={view === slug ? 'page' : undefined} className={`shrink-0 rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${view === slug ? 'bg-navy text-white' : 'text-navy/70 hover:bg-navy/5 hover:text-navy'}`}>{label}</Link>)}
       </div>
     </nav>
 
@@ -266,6 +267,8 @@ export const BetaContinentalOverview: React.FC = () => {
             </article>)}
           </div>
         </section>}
+
+        {view === 'countries' && <DecisionWorkspace context="continental" />}
 
         <section className="page-section rounded-2xl border border-border bg-navy p-6 text-white md:p-8"><div className="flex items-start gap-4"><Scale className="mt-1 shrink-0" size={20}/><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-white/60">Method and comparability</p><p className="mt-3 text-sm leading-7 text-white/75">{view === 'sectors' ? data.sector_methodology : data.methodology}</p><a href={data.source_url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-white underline underline-offset-4">Inspect {data.source_name} <ExternalLink size={12}/></a></div></div></section>
       </main>

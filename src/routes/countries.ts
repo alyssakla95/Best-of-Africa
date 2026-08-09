@@ -433,6 +433,12 @@ ${context}`;
 // source year and unit; forecasts are separated from historical observations.
 router.get('/:code/dossier', async (c) => {
     const code = c.req.param('code').toUpperCase();
+    const reqLang = c.req.query('lang')?.toLowerCase();
+    const portugueseJoin = reqLang === 'pt'
+        ? "LEFT JOIN article_translations pt ON pt.article_id = a.id AND pt.language = 'pt' AND pt.quality >= 0"
+        : '';
+    const dossierTitle = reqLang === 'pt' ? 'COALESCE(pt.title, a.title)' : 'a.title';
+    const dossierSummary = reqLang === 'pt' ? 'COALESCE(pt.summary, a.summary)' : 'a.summary';
     const country = await c.env.DB.prepare('SELECT * FROM countries WHERE code = ?').bind(code).first<Record<string, any>>();
     if (!country) return c.json({ error: 'not_found', message: 'Country not found' }, 404);
 
@@ -443,9 +449,15 @@ router.get('/:code/dossier', async (c) => {
         c.env.DB.prepare(`SELECT s.id, s.name, COUNT(a.id) article_count, MAX(a.published_at) latest_evidence_at
             FROM sectors s JOIN articles a ON a.sector_id=s.id
             WHERE a.country_code=? AND a.status='published' GROUP BY s.id ORDER BY article_count DESC, s.name ASC`).bind(code).all(),
-        c.env.DB.prepare(`SELECT title, slug, summary, source_url, published_at, updated_at, reviewed_at
-            FROM articles WHERE country_code=? AND status='published' AND source_url IS NOT NULL
-            ORDER BY published_at DESC LIMIT 20`).bind(code).all(),
+        c.env.DB.prepare(`SELECT ${dossierTitle} AS title, a.slug, ${dossierSummary} AS summary,
+                a.source_url, COALESCE(NULLIF(TRIM(a.source_title), ''), a.source_url) AS source_name,
+                a.source_quality_tier, a.sector_id, s.name AS sector_name,
+                a.published_at, a.updated_at, a.reviewed_at
+            FROM articles a
+            ${portugueseJoin}
+            LEFT JOIN sectors s ON s.id = a.sector_id
+            WHERE a.country_code=? AND a.status='published' AND a.source_url IS NOT NULL
+            ORDER BY a.published_at DESC LIMIT 40`).bind(code).all(),
     ]);
 
     if (!externalEvidence) {
@@ -487,6 +499,7 @@ router.get('/:code/dossier', async (c) => {
         ['Tourism portal', country.tourism_portal_url], ['Investment agency', country.investment_agency_url],
     ].filter((entry) => entry[1]).map(([name, url]) => ({ name, url, source_type: 'official portal' }));
 
+    c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({
         country: processCountries([country as Country])[0],
         dossier: {

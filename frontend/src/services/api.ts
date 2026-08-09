@@ -758,12 +758,12 @@ export const api = {
                 | { kind: 'external_balance'; year: number; current_account_percent_gdp?: number; current_account_usd?: number; period_status: 'historical_observation' | 'estimate_or_projection'; provider: 'IMF World Economic Outlook'; source_name: string; source_url: string; retrieved_at: string });
             sector_evidence: { id: string; name: string; article_count: number; latest_evidence_at: string }[];
             upcoming_events: { id: string; title: string; category: string; date_start: string; location: string; source_url?: string }[];
-            recent_source_record: { title: string; slug: string; summary: string; source_url: string; published_at: string; reviewed_at: string | null }[];
+            recent_source_record: { title: string; slug: string; summary: string; source_url: string; source_name: string; source_quality_tier: number | null; sector_id: string | null; sector_name: string | null; published_at: string; reviewed_at: string | null }[];
             official_resources: { name: string; url: string; source_type: string }[];
             freshness: { provider: string; source_url: string; checked_at: string; observation_period: string; state: 'current_snapshot' | 'last_verified_snapshot' | 'checked_no_series' }[];
         };
         provenance: { sources: { name: string; section: string; url: string | null }[]; generated_at: string; retrieved_at: string; methodology: string };
-    }>(`/countries/${code}/dossier`, 7 * 24 * 60 * 60 * 1000),
+    }>(`/countries/${code}/dossier?lang=${getReaderLanguage()}`, 0),
 
     // Administrative Intelligence & Moderation
     getAdminArticles: () => request<{ data: ArticleListItem[] }>('/admin/articles'),

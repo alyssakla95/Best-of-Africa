@@ -1697,6 +1697,148 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'NE.EXP.GNFS.CD+NE.IMP.GNFS.CD': 'NE.EXP.GNFS.CD+NE.IMP.GNFS.CD',
   'NE.GDI.FTOT.ZS': 'NE.GDI.FTOT.ZS',
   'BN.CAB.XOKA.GD.ZS': 'BN.CAB.XOKA.GD.ZS',
+  'Verified national reporting': 'Informação nacional verificada',
+  'Source-linked record': 'Registo ligado à fonte',
+  'Economic and demand scale': 'Dimensão económica e da procura',
+  '1 official macroeconomic observations; population and GDP retain their reported periods.':
+    '1 observações macroeconómicas oficiais; a população e o PIB mantêm os respectivos períodos declarados.',
+  'Test addressable customers, purchasing power, informality and subnational concentration.':
+    'Avalie os clientes acessíveis, o poder de compra, a informalidade e a concentração subnacional.',
+  'Growth and fiscal outlook': 'Perspectivas de crescimento e fiscais',
+  'Observed + labelled projection': 'Observado + projecção identificada',
+  'Historical observations are separated from IMF estimate or projection fields.':
+    'As observações históricas estão separadas dos campos de estimativa ou projecção do FMI.',
+  'Stress-test revenue and costs against growth, inflation, debt, fiscal and currency scenarios.':
+    'Submeta as receitas e os custos a cenários de crescimento, inflação, dívida, situação fiscal e moeda.',
+  '1 plus 1 supporting indicators across reporting African markets.':
+    '1 e mais 1 indicadores complementares nos mercados africanos declarantes.',
+  'Verify the selected measure directly for 1 and compare it with peers using the official series.':
+    'Verifique directamente a medida seleccionada para 1 e compare-a com países semelhantes através da série oficial.',
+  'Trade and logistics': 'Comércio e logística',
+  '1 exports, imports and balance for the stated periods.': '1: exportações, importações e saldo nos períodos indicados.',
+  'IMF external-balance evidence for the stated period.': 'Dados do FMI sobre o saldo externo no período indicado.',
+  'Add commodity, corridor, port, border, freight, insurance and delivery-time evidence for the proposed route.':
+    'Acrescente dados sobre mercadorias, corredores, portos, fronteiras, frete, seguro e prazo de entrega para a rota proposta.',
+  'Competition and pricing': 'Concorrência e preços',
+  'Source-led verification': 'Verificação orientada pelas fontes',
+  '1 recent country1 records from 1 distinct attributed sources.':
+    '1 registos nacionais1 recentes provenientes de 1 fontes distintas e atribuídas.',
+  'Identify current competitors, substitutes, price points, margins, procurement channels and customer switching costs from primary filings and fieldwork.':
+    'Identifique concorrentes actuais, substitutos, níveis de preços, margens, canais de contratação e custos de mudança dos clientes através de documentos primários e trabalho de campo.',
+  'Regulation and market entry': 'Regulação e entrada no mercado',
+  'Official verification route': 'Via oficial de verificação',
+  '1 official portals are linked for registration, investment, visa or tourism checks.':
+    'Estão ligados 1 portais oficiais para verificações de registo, investimento, vistos ou turismo.',
+  'Confirm the current legal instrument, licence, ownership, tax, repatriation, standards, data and local-partner requirements with the responsible authority.':
+    'Confirme junto da autoridade responsável o instrumento jurídico vigente e os requisitos de licença, propriedade, fiscalidade, repatriamento, normas, dados e parceiros locais.',
+  'The decision workspace could not load its verified records.': 'Não foi possível carregar os registos verificados do espaço de decisão.',
+  'Retry evidence workspace': 'Repetir o carregamento do espaço documental',
+  'Official external-sector source': 'Fonte oficial do sector externo',
+  'Country and sector decision workspace': 'Espaço de decisão por país e sector',
+  'Build a traceable market case from official observations': 'Construa um caso de mercado rastreável a partir de observações oficiais',
+  'Select a country and sector to connect macroeconomics, labelled projections, trade, operating benchmarks, official entry portals and source-linked records. Every section states what the evidence supports and what still requires primary verification.':
+    'Seleccione um país e um sector para relacionar macroeconomia, projecções identificadas, comércio, referências operacionais, portais oficiais de entrada e registos ligados às fontes. Cada secção declara o que os dados sustentam e o que ainda exige verificação primária.',
+  'Official country code 1': 'Código oficial do país 1',
+  '1 records in this exportable ledger': '1 registos neste livro exportável',
+  'Decision readiness register': 'Registo de preparação da decisão',
+  'What is evidenced now, and what must be verified next': 'O que está documentado agora e o que deve ser verificado em seguida',
+  'Next verification:': 'Verificação seguinte:',
+  'Evidence state': 'Estado dos dados',
+  'Current record': 'Registo actual',
+  'Next verification': 'Verificação seguinte',
+  'Observed country indicators': 'Indicadores nacionais observados',
+  'Inspect official provider': 'Examinar o fornecedor oficial',
+  'Estimate or projection': 'Estimativa ou projecção',
+  'Historical observation': 'Observação histórica',
+  'Current dated outlook inputs': 'Dados datados das perspectivas actuais',
+  'Real GDP growth': 'Crescimento real do PIB',
+  'Current account': 'Balança corrente',
+  '· estimate or projection': '· estimativa ou projecção',
+  'Trade and external position': 'Comércio e posição externa',
+  'Recorded cross-border evidence': 'Dados transfronteiriços registados',
+  'IMF external-balance evidence, explicitly labelled': 'Dados do FMI sobre o saldo externo, expressamente identificados',
+  'Inspect external-sector source': 'Examinar a fonte do sector externo',
+  'Median country reading': 'Leitura nacional mediana',
+  'Country evidence:': 'Dados nacionais:',
+  'records are indexed for': 'registos estão indexados para',
+  '; coverage is not market performance.': '; a cobertura não representa o desempenho do mercado.',
+  'Official market-entry verification': 'Verificação oficial da entrada no mercado',
+  'Go to the responsible authority before committing capital': 'Consulte a autoridade responsável antes de afectar capital',
+  'The linked portals establish where current registration, investment, visa and sector requirements must be checked. They do not replace legal, tax or technical advice.':
+    'Os portais ligados indicam onde devem ser verificados os requisitos vigentes de registo, investimento, vistos e sector. Não substituem aconselhamento jurídico, fiscal ou técnico.',
+  'Open full country dossier': 'Abrir o dossiê nacional completo',
+  'Open authority': 'Abrir a autoridade',
+  'Legal form, ownership restrictions, beneficial ownership, registration sequence and statutory filings.':
+    'Forma jurídica, restrições de propriedade, beneficiário efectivo, sequência de registo e declarações obrigatórias.',
+  'Tax and repatriation': 'Fiscalidade e repatriamento',
+  'Corporate and indirect tax, withholding, customs, transfer pricing, incentives, exchange controls and profit repatriation.':
+    'Imposto sobre sociedades e impostos indirectos, retenção, alfândegas, preços de transferência, incentivos, controlos cambiais e repatriamento de lucros.',
+  'Operating licence, technical standards, product registration, data rules, environmental approval and regulator reporting.':
+    'Licença de exploração, normas técnicas, registo de produtos, regras sobre dados, aprovação ambiental e informação ao regulador.',
+  'Land, utilities, labour, immigration, procurement, local content, logistics, insurance and dispute resolution.':
+    'Terrenos, serviços públicos, trabalho, imigração, contratação, conteúdo local, logística, seguros e resolução de litígios.',
+  'Downloadable source ledger': 'Livro de fontes descarregável',
+  'Inspect the records behind the workspace': 'Examine os registos que sustentam o espaço de decisão',
+  '1 recent country records': '1 registos nacionais recentes',
+  'are shown because each retains an attributed source and publication date.':
+    'são apresentados porque cada um conserva uma fonte atribuída e a data de publicação.',
+  'Evidence CSV': 'Dados em CSV',
+  'Country-wide evidence': 'Dados do conjunto do país',
+  'Evidence freshness': 'Actualidade dos dados',
+  'Retrieval time and observation period are separate. A recent check does not turn an older annual observation into current-year data.':
+    'O momento de obtenção e o período de observação são distintos. Uma verificação recente não transforma uma observação anual anterior em dados do ano corrente.',
+  'Country workspace': 'Espaço nacional',
+  'Decision workspace': 'Espaço de decisão',
+  'Attributed sources': 'Fontes atribuídas',
+  'Balance': 'Saldo',
+  'Corporate establishment': 'Constituição da empresa',
+  'Currency': 'Moeda',
+  'Decision area': 'Área de decisão',
+  'External balance ·': 'Saldo externo ·',
+  'Fiscal balance': 'Saldo orçamental',
+  'Full snapshot JSON': 'Registo completo em JSON',
+  'GDP per person': 'PIB por pessoa',
+  'Government debt': 'Dívida pública',
+  'IMF scenario anchors': 'Referências de cenário do FMI',
+  'Implementation conditions': 'Condições de execução',
+  'Inflation': 'Inflação',
+  'Macroeconomic record': 'Registo macroeconómico',
+  'National currency recorded': 'Moeda nacional registada',
+  'Observation:': 'Observação:',
+  'Primary link': 'Ligação primária',
+  'Provider-by-provider status': 'Estado por fornecedor',
+  'Sector': 'Sector',
+  'Sector benchmark': 'Referência sectorial',
+  'Sector permissions': 'Autorizações sectoriais',
+  'Top recorded export partners': 'Principais parceiros de exportação registados',
+  'Top recorded import partners': 'Principais parceiros de importação registados',
+  'USD per person': 'USD por pessoa',
+  '. Totals do not establish sector demand, margins or route economics.':
+    '. Os totais não permitem estabelecer a procura sectorial, as margens ou a economia da rota.',
+  'These are provider estimates or projections where their year is':
+    'Estes valores são estimativas ou projecções do fornecedor quando o respectivo ano é',
+  'or later. They are scenario inputs, not BOA forecasts.':
+    'ou posterior. Constituem dados para cenários, não previsões da BOA.',
+  '· exports': '· exportações',
+  '· imports': '· importações',
+  'Official country code': 'Código oficial do país',
+  'recent country records': 'registos nacionais recentes',
+  'records in this exportable ledger': 'registos neste livro exportável',
+  'sector-specific records': 'registos específicos do sector',
+  '-decision-workspace': '-decision-workspace',
+  'Official provider': 'Fornecedor oficial',
+  'country evidence snapshot': 'instantâneo documental nacional',
+  '1 country evidence snapshot': 'instantâneo documental nacional de 1',
+  '1 recent country1 records plus 1 official provider records from 1 distinct attributed sources.':
+    '1 registo nacional recente, acrescido de 1 registo de fornecedor oficial, proveniente de 1 fonte atribuída distinta.',
+  'The provider snapshot contains no numeric forward estimate for this country.':
+    'O instantâneo do fornecedor não contém uma estimativa prospectiva numérica para este país.',
+  'Use the dated historical observations in the macroeconomic record and inspect the provider status below before constructing a scenario. No projection has been inferred.':
+    'Utilize as observações históricas datadas do registo macroeconómico e examine abaixo o estado do fornecedor antes de construir um cenário. Não foi inferida qualquer projecção.',
+  'The ledger combines': 'O livro combina',
+  'dated official-provider snapshots with': 'instantâneos datados de fornecedores oficiais com',
+  '. Reporting coverage is supporting context, not a substitute for official market data.':
+    '. A cobertura jornalística constitui contexto de apoio, não substitui dados oficiais de mercado.',
   'Review': 'Revisão',
   'Evidence policy': 'Política documental',
   'Critical claims require editorial review': 'As afirmações críticas exigem revisão editorial',
@@ -2828,6 +2970,17 @@ const translatePortugueseDynamicInterfaceText = (value: string): string | undefi
   if ((match = value.match(/^Capital:\s*(.+)$/i))) return `Capital: ${match[1]}`;
   if ((match = value.match(/^(\d+) source-linked (record|records)$/i))) {
     return `${match[1]} ${match[2].toLowerCase() === 'record' ? 'registo ligado à fonte' : 'registos ligados às fontes'}`;
+  }
+  if ((match = value.match(/^(\d+) recent country(-sector)? records plus (\d+) official provider records from (\d+) distinct attributed sources\.$/i))) {
+    const scope = match[2] ? 'nacionais e sectoriais recentes' : 'nacionais recentes';
+    return `${match[1]} registos ${scope}, acrescidos de ${match[3]} registos de fornecedores oficiais, provenientes de ${match[4]} fontes atribuídas distintas.`;
+  }
+  if ((match = value.match(/^(.+) country evidence snapshot$/i))) {
+    return `Instantâneo documental nacional de ${match[1]}`;
+  }
+  if ((match = value.match(/^The ledger combines (\d+) dated official-provider snapshots with (\d+) (sector-specific records|recent country records)\. Reporting coverage is supporting context, not a substitute for official market data\.$/i))) {
+    const reportingScope = match[3].toLowerCase() === 'sector-specific records' ? 'registos específicos do sector' : 'registos nacionais recentes';
+    return `O livro combina ${match[1]} instantâneos datados de fornecedores oficiais com ${match[2]} ${reportingScope}. A cobertura jornalística constitui contexto de apoio, não substitui dados oficiais de mercado.`;
   }
   if ((match = value.match(/^(Projection|Observation)\s+(.+)$/i))) {
     return `${match[1].toLowerCase() === 'projection' ? 'Projecção' : 'Observação'} ${match[2]}`;

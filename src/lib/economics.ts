@@ -119,8 +119,8 @@ export async function getCountryEconomicProfile(
 ): Promise<CountryEconomicProfile | null> {
     const normalizedCode = countryCode.toUpperCase();
     const cacheKey = `economic:v3:${normalizedCode}`;
+    const cached = await env.CACHE.get(cacheKey, 'json') as CountryEconomicProfile | null;
     if (!options.refresh) {
-        const cached = await env.CACHE.get(cacheKey, 'json') as CountryEconomicProfile | null;
         if (cached) return cached;
     }
 
@@ -137,25 +137,36 @@ export async function getCountryEconomicProfile(
             }
 
             // Fetch all indicators in parallel
-            const indicatorPromises = Object.entries(INDICATORS).map(async ([name, code]) => {
-                const result = await fetchIndicator(normalizedCode, code);
-                return {
-                    code,
-                    name: formatIndicatorName(name),
-                    value: result?.value ?? null,
-                    year: result?.year ?? new Date().getFullYear(),
-                    unit: getIndicatorUnit(name),
-                    source_url: `https://data.worldbank.org/indicator/${code}?locations=${normalizedCode}`,
-                    category: getIndicatorCategory(name),
-                    decision_use: getIndicatorDecisionUse(name),
-                    ...getIndicatorUnderlyingSource(name),
-                };
-            });
+            const entries = Object.entries(INDICATORS);
+            const indicators: EconomicIndicator[] = [];
+            // Bounded concurrency avoids rate-limit loss from firing every
+            // official series at the provider simultaneously.
+            for (let offset = 0; offset < entries.length; offset += 5) {
+                const batch = await Promise.all(entries.slice(offset, offset + 5).map(async ([name, code]) => {
+                    const result = await fetchIndicator(normalizedCode, code);
+                    return {
+                        code,
+                        name: formatIndicatorName(name),
+                        value: result?.value ?? null,
+                        year: result?.year ?? new Date().getFullYear(),
+                        unit: getIndicatorUnit(name),
+                        source_url: `https://data.worldbank.org/indicator/${code}?locations=${normalizedCode}`,
+                        category: getIndicatorCategory(name),
+                        decision_use: getIndicatorDecisionUse(name),
+                        ...getIndicatorUnderlyingSource(name),
+                    } satisfies EconomicIndicator;
+                }));
+                indicators.push(...batch);
+            }
 
-            const indicators = await Promise.all(indicatorPromises);
-            const verifiedIndicators = indicators.filter(i => i.value !== null);
+            const previousByCode = new Map((cached?.indicators || []).map(indicator => [indicator.code, indicator]));
+            const verifiedIndicators = indicators.flatMap(indicator => {
+                if (indicator.value !== null) return [indicator];
+                const previous = previousByCode.get(indicator.code);
+                return previous ? [{ ...previous, category: indicator.category, decision_use: indicator.decision_use, underlying_source: indicator.underlying_source, underlying_source_url: indicator.underlying_source_url }] : [];
+            });
             if (!verifiedIndicators.length) {
-                return await env.CACHE.get(cacheKey, 'json') as CountryEconomicProfile | null;
+                return cached;
             }
 
             const profile: CountryEconomicProfile = {
@@ -172,7 +183,7 @@ export async function getCountryEconomicProfile(
             return profile;
     } catch (error) {
         console.error(`World Bank profile refresh failed for ${normalizedCode}:`, error);
-        return await env.CACHE.get(cacheKey, 'json') as CountryEconomicProfile | null;
+        return cached;
     }
 }
 

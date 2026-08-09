@@ -49,7 +49,7 @@ The product records first-party evidence needed to evaluate this pathway: monthl
 
 The reader product remains in pre-audience-validation state. No subscriber conversion, churn, willingness-to-pay, acquisition-cost, or consumer-revenue claim is made without observed external evidence.
 
-Reader membership is live at US$4, US$9, and US$19 per month with Ko-fi monthly billing. Every tier includes complete reader access; the higher tiers are voluntary support rather than additional entitlements.
+Reader membership pricing is published at US$4, US$9, and US$19 per month through Ko-fi. Every tier is configured for the same complete reader product; the higher tiers are voluntary support rather than additional entitlements. In the currently verified deployment, read-only member content remains open for stakeholder review and email-dependent sign-in and delivery cannot operate until a verified transactional sender is configured.
 
 ## Live deployment
 
@@ -82,15 +82,34 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 
 ### Reader experience
 
-- Source-attributed African reporting with article pages, related coverage, audio playback, reading tools, and saved articles.
-- Country directory and country hubs with current evidence, trade and economic context, sector coverage, narrative analysis, events, and linked sources.
-- Market Intelligence with official sector-performance indicators, country coverage, evidence notes, methodology, and verifiable platform reporting activity.
-- Continental Overview with regional comparisons, official indicator context, narrated briefings, evidence tables, limitations, and supporting records.
-- Search across articles and countries, autocomplete, filters, and a command menu.
-- Events, consultation requests, travel information, a personal library, reader settings, notifications, and personalized feeds.
-- A distinct Africa Briefing pathway for diaspora and globally connected readers without reducing the Enterprise, Market Intelligence, or Continental Overview position.
-- A global Enterprise pilot page, structured application and protected qualification workflow, plus a Trust Center for data handling, operational controls, and procurement review.
-- Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables.
+- Source-attributed African reporting with article pages, related coverage, attributable photography, a Photo Desk, audio playback, verified translations, reading tools, and bookmarks.
+- Country coverage for all 54 African states, with country hubs, economic and trade context, current evidence, linked sources, events, decision dossiers, and a country narrative toolkit.
+- Market Intelligence, dedicated sector-performance dossiers, generated reports, and a Continental Overview built around official indicators, evidence notes, comparison boundaries, counter-signals, and narrated briefings when available.
+- Search across reporting and countries with autocomplete, filters, similar-story retrieval, a command menu, and a cached research-answer path grounded in retrieved platform records.
+- An Africa Briefing and curated feed, plus Mission Control preferences for role, country, and sector. Preview mode exposes the read-only experience; persisted personalization and account actions retain their API access checks.
+- A Decision Workspace for saved articles and country comparisons, embedded decision panels on intelligence pages, reader settings, density controls, route-specific reading guides, notifications for authenticated sessions, and a global audio player.
+- Events and event registration, consultation intake, curated travel information with an explicit no-booking disclaimer, newsletter subscription records, and contact forms. Email confirmations and digest delivery remain unavailable in the verified deployment until transactional email is configured.
+- Published membership tiers, a one-time Ko-fi support path, a supporter-transparency feed, and a separately authorized sponsor dashboard for organization-isolated campaign delivery records.
+- A global Enterprise offer, structured pilot application, protected qualification inbox, and Trust Center for data handling, operational controls, procurement review, and current limitations.
+- Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables and right-to-left layout for Arabic.
+
+### Application surfaces and access boundaries
+
+| Surface | Routes | Current boundary |
+| --- | --- | --- |
+| Editorial home and archive | `/`, `/about`, `/posts`, `/posts/:slug`, `/gallery` | Public; article truncation is disabled during stakeholder review |
+| Membership and access | `/membership`, `/member-access`, `/login`, `/settings` | Pricing is public; OTP login requires configured email; account changes require a valid session |
+| Briefing and workspace | `/feed`, `/library` | Read-only member views are open in preview; persisted reader state remains session scoped |
+| Country research | `/countries`, `/countries/:code`, `/countries/:code/narratives` | Public in preview; some generated enrichments are returned only when available |
+| Intelligence and reports | `/intelligence`, `/intelligence/reports`, `/intelligence/reports/:id`, `/sectors/:id/trends`, `/dashboards/overview` | Public read-only views; protected or cost-incurring generation remains authenticated |
+| Search and analyst assistance | `/search` and the member chat widget | Retrieval is public within rate limits; analyst actions are rate limited and the widget follows member-preview state |
+| Events, travel and consultation | `/events`, `/travel`, `/request-consultation` | Browsing and intake are public; registration writes are validated and session/origin protected where required |
+| Reader communications | `/newsletter`, notification controls | Subscription records can be created; outbound email is unavailable without a verified sender |
+| Supporter and sponsor reporting | `/supporter-feed`, `/sponsor/dashboard` | Supporter transparency follows preview membership; campaign records require partner authorization |
+| Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/trust` | Offer and application are public; qualification records and private notes are administrator only |
+| Administration | `/admin` | Requires `ADMIN_API_KEY`; reader and client sessions do not grant administrator access |
+| Legal and support | `/privacy`, `/terms`, `/contact` | Public |
+| Seasonal archive | `/world-cup` | Route and data contract remain in code; global World Cup promotion is currently disabled |
 
 ### Languages
 
@@ -104,7 +123,14 @@ The interface supports:
 - Modern Standard Arabic, including right-to-left layout
 - Hindi
 
-Published article translations are stored for the six non-English languages and served only after quality checks. Interface copy resolves only from source-controlled language catalogues; it is never generated on demand. Portuguese has the complete maintained reader-interface catalogue, while the other non-English locales currently translate reviewed navigation and keyed product copy and explicitly preserve longer English source passages. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
+Published article translations are stored for the six non-English languages and served only after quality checks. The frontend resolves interface copy from source-controlled catalogues rather than generating it during rendering. Portuguese has the complete maintained reader-interface catalogue, while the other non-English locales currently translate reviewed navigation and keyed product copy and explicitly preserve longer English source passages. A separate throttled and cached `/api/v1/translate/interface` fallback API exists for controlled integrations but is not called by the current frontend. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
+
+### Discoverability and distribution
+
+- The Worker generates the XML sitemap, latest-story RSS feed, and Daily Pulse podcast feed.
+- Pages Functions expose those documents at `/sitemap.xml`, `/rss.xml`, and `/podcast.xml` on the reader origin by proxying the configured `BACKEND_ORIGIN`.
+- `robots.txt` excludes administrator, settings, and member-access screens and advertises the sitemap.
+- The frontend publishes branded manifest and icon metadata, canonical URLs, page titles and descriptions, and RSS discovery links.
 
 ### Editorial and intelligence controls
 
@@ -122,14 +148,30 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 
 ### Administration and platform services
 
-- Admin authentication and article review.
-- Source management and deletion.
-- Client provisioning with hashed credentials and one-time API-key display.
-- Editorial inbox, structured pilot qualification and private review notes, audit controls, analytics, and worker health.
+- Admin authentication; article creation, review, curation, publication, rejection, audit, quarantine, restoration, and deletion.
+- Source creation, monitoring and deletion; country record maintenance; editorial rule evolution; and protected operational triggers.
+- Client provisioning with hashed credentials and one-time API-key display, plus Ko-fi webhook provisioning for reader memberships when its verification token is configured.
+- Editorial and pilot inboxes, structured qualification and private review notes, audience reporting, source and sector-quality audits, analytics, provider controls, and worker health.
 - Operator-only audience reporting with explicit metric definitions, zero-safe empty states, and no substituted estimates.
-- Member authentication, preferences, notifications, bookmarks, campaign authorization, events, newsletters, and reporting APIs.
+- Member OTP authentication, profiles, preferences, notifications, bookmarks, campaign authorization, events, newsletters, and reporting APIs. OTP and other outbound messages fail honestly when email delivery is unavailable.
 - OpenAPI/Swagger documentation under `/api/v1/docs`.
 - Lightweight, readiness, liveness, and deep-health endpoints.
+
+### API capability map
+
+`/api/v1` is the canonical API prefix; `/api` remains a legacy alias. The principal route families are:
+
+| Capability | Route families |
+| --- | --- |
+| Reporting and media | `/articles`, article images and audio, root `/sitemap.xml`, `/rss.xml`, `/podcast.xml` |
+| Retrieval and research | `/search`, `/countries`, `/intel`, `/market-intel`, `/dashboards`, `/narratives`, `/world-cup` |
+| Reader state | `/members`, `/auth`, `/personalization`, `/bookmarks`, `/notifications`, `/analytics` |
+| Services and communications | `/services`, `/events`, `/newsletter`, `/contact`, `/translate/interface` |
+| Commercial reporting | `/campaigns` and sponsor-scoped analytics |
+| Administration | `/admin`, `/audit`, protected client/source/editorial and pilot-inbox operations |
+| Autonomous processing | `/agent`, `/agent/providers`, provider OAuth/bootstrap routes, `/self-improve` |
+| Operations | `/health`, `/health/live`, `/health/ready`, `/health/deep`, `/status`, `/config`, `/docs` |
+| Development maintenance | `/dev` routes protected by `DEV_SECRET`; these are not public product APIs |
 
 ## Current review configuration
 
@@ -151,7 +193,7 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Frontend | React 18, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS, Radix UI, Framer Motion, Recharts |
 | API | TypeScript Cloudflare Worker using Hono and Zod |
 | Relational data | Cloudflare D1 with versioned SQL migrations |
-| Cache and sessions | Cloudflare KV |
+| Cache, sessions and throttling | Separate Cloudflare KV namespaces for cache/session state and rate-limit counters |
 | Media | R2 when available; KV-backed media storage as the portable fallback |
 | Search | D1 full-text search plus Cloudflare Vectorize semantic retrieval |
 | Editorial processing | Cloudflare-native preparation, source-grounded audit, repair, translation, narration, and retrieval services |
@@ -160,6 +202,7 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Metrics | Analytics Engine and persisted `agent_metrics` telemetry |
 | Reader evidence | D1 engagement events plus Analytics Engine delivery, using hashed sessions, stored IP addresses, and one-way user-agent fingerprints |
 | Live state | Durable Object `LiveCounter` |
+| Transactional email | Optional Cloudflare Email Sending binding or Resend; unavailable when no verified sender/provider is configured |
 | Frontend hosting | Cloudflare Pages |
 
 ### Autonomous lifecycle
@@ -178,6 +221,21 @@ Each scheduled step is isolated so one provider failure does not stop unrelated 
 
 The one-minute schedule is a processing cadence, not a promise to publish one article per minute. Publication occurs only when a new source is eligible and the resulting article passes every evidence and quality gate.
 
+The current bounded cadence is:
+
+| Cadence | Work |
+| --- | --- |
+| Every tick | Pending-task recovery, sector-assignment audit, editorial audit, reader-text cleanup, audio coverage, ingestion, source-image recovery, hero variants, translations, and sector backfills |
+| Every two minutes | Next-country evidence refresh and stale generation-task recovery |
+| Every 15 minutes | Saved World Bank-derived continental and sector dataset refresh |
+| Every 30 minutes | Seasonal World Cup data refresh; the reader promotion remains disabled |
+| Every four hours | Fairly rotated country reporting |
+| Every six hours | Content optimization and live-event discovery on offset schedules |
+| Daily | Recurring-event rollover, sector reporting, daily digest attempt, and retention cleanup |
+| Weekly | Weekly digest attempt on Sunday; delivery still requires configured transactional email |
+
+Queue consumers handle content generation, article translation, and headline/content optimization separately from the cron invocation. Worker-run telemetry is retained in `agent_metrics` for seven days; reader engagement events are retained for 90 days.
+
 ### Optional ZeroClaw accelerator
 
 `zeroclaw/` contains an optional external runtime that can claim preparation tasks sooner than the Worker's internal stale-task recovery. It is not required for production operation. A deployment behaves correctly when ZeroClaw is absent or offline.
@@ -188,16 +246,23 @@ The external runtime is deployment-specific and requires an admin key plus its o
 
 ```text
 frontend/                 React reader and admin application
+frontend/functions/       Pages Functions for sitemap, RSS, podcast and article social metadata
 src/index.ts              Worker entry point, routing, cron and queue dispatch
 src/routes/               Public, member, admin and system API routes
 src/lib/                  Editorial, evidence, media and platform services
 src/workers/              Ingestion, preparation, optimization, reporting and backfills
+src/data/                 Bundled official-data snapshots and sector definitions
+src/durable-objects/      LiveCounter implementation
 migrations/               Ordered D1 schema and data migrations
 tests/unit/               Unit and contract tests
 tests/integration/        API and cross-layer regression tests
+tests/mocks/              Cloudflare binding and service doubles
 scripts/                  Account-neutral deployment tooling
+wrangler.toml             Default account-specific Worker configuration
+wrangler.alyssa.toml      Verified Alyssa-account Worker configuration
 wrangler.portable.toml.example
                           Cloudflare template without account-specific IDs
+.github/workflows/        CI and deployment workflows
 zeroclaw/                 Optional external task-claiming runtime
 ```
 
@@ -221,6 +286,8 @@ Apply migrations to the local D1 database:
 ```bash
 npm run db:migrate
 ```
+
+That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0064_world_bank_country_evidence.sql`.
 
 For local Worker secrets and overrides, create `.dev.vars` and do not commit it. A practical development configuration is:
 
@@ -255,12 +322,13 @@ Run the complete local release checks:
 ```bash
 npm run typecheck
 npm test
+npm run audit:portuguese
 npx tsc --noEmit -p frontend/tsconfig.app.json
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-The CI quality gate runs backend typechecking, all Vitest unit and integration tests, frontend typechecking, and the complete Vite production build on every push and pull request. Frontend linting is an additional local release check.
+The CI quality gate runs backend typechecking, all Vitest unit and integration tests, the maintained Portuguese-interface audit, frontend typechecking and linting, and the complete Vite production build on every push and pull request.
 
 ## Cloudflare deployment
 
@@ -298,6 +366,14 @@ Useful options include `--account-id`, `--site-url`, `--api-url`, `--pages-proje
 
 The script never deletes or replaces remote resources. If R2 is unavailable, setup provisions a KV media namespace unless `--require-r2` was requested.
 
+Three Worker configuration paths are intentionally distinct:
+
+- `wrangler.alyssa.toml` describes the verified Alyssa deployment, including KV-backed media and no active email binding.
+- `wrangler.toml` is another account-specific deployment profile with its own resource IDs, origins, R2 bucket, and optional Cloudflare Email binding.
+- `wrangler.portable.toml.example` and `scripts/cloudflare-portable.mjs` are the account-neutral path. Generated IDs, secrets, API origins, and Pages settings remain outside version control.
+
+The GitHub `deploy.yml` workflow is a separate default-profile deployment path: it uses `wrangler.toml` and its configured Worker/Pages projects, not the Alyssa or portable profiles. Its pre-deploy check is narrower than the complete `ci.yml` gate. Releasing the verified Alyssa target therefore requires the explicit Alyssa Worker config and a Pages deploy run from `frontend/` so Wrangler discovers the project-root `functions/` directory.
+
 ### Required secrets
 
 Portable setup creates strong local deployment values for:
@@ -308,24 +384,36 @@ Portable setup creates strong local deployment values for:
 
 They are stored in ignored `.cloudflare/secrets.env` and passed to Wrangler during deployment. Do not commit or print this file.
 
-Optional production secrets currently used by deployable integrations include:
+Optional production secrets and bindings currently used by deployable integrations include:
 
 ```bash
-npx wrangler secret put NEWS_API_KEY
-npx wrangler secret put ELEVENLABS_API_KEY
-npx wrangler secret put ELEVENLABS_VOICE_ID
-npx wrangler secret put EMAIL_FROM
-npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put NEWS_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put KOFI_TOKEN --config wrangler.alyssa.toml
+npx wrangler secret put ELEVENLABS_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put ELEVENLABS_VOICE_ID --config wrangler.alyssa.toml
+npx wrangler secret put EMAIL_FROM --config wrangler.alyssa.toml
+npx wrangler secret put RESEND_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put OPENAI_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put ANTHROPIC_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put GOOGLE_AI_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put OPENROUTER_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put MOONSHOT_CLIENT_ID --config wrangler.alyssa.toml
+npx wrangler secret put MOONSHOT_CLIENT_SECRET --config wrangler.alyssa.toml
 ```
 
-Transactional email requires both a verified sender/domain and a supported delivery binding or provider. Setting an API key without a verified `EMAIL_FROM` address is intentionally treated as unavailable.
+The explicit config is essential: omitting it targets the Worker named by the default `wrangler.toml`. Portable deployments instead use the ignored generated config and secrets file created by the setup script.
+
+`KOFI_TOKEN` verifies membership webhooks. External model credentials are optional operational/provider integrations; the information model used by the application remains the configured Workers AI path unless an explicitly supported operator workflow selects otherwise. Gemini and Moonshot also expose protected OAuth bootstrap routes, and provider records can be managed through the admin-gated agent-provider API.
+
+Transactional email requires `EMAIL_FROM` on a verified sender domain plus either the Cloudflare `EMAIL` binding or `RESEND_API_KEY`. The runtime tries Cloudflare Email Sending first, then Resend, and finally a legacy MailChannels request that normally cannot deliver without a paid setup. Deep health reports email as configured only for the first two supported paths. Setting an API key without a verified sender is intentionally treated as unavailable.
 
 ## Health and operations
 
 Primary operational endpoints:
 
 ```text
-GET /health
+GET /health                    minimal root reachability probe
+GET /api/v1/health             versioned status, timestamp and environment
 GET /health/live
 GET /health/ready
 GET /health/deep
@@ -360,9 +448,9 @@ POST /api/v1/analytics/events/batch
 GET  /api/v1/analytics/audience
 ```
 
-Event submission requires a valid reader session and is origin checked, rate limited, and schema validated. Audience reporting requires administrator authentication. Each event stores the connecting IP address and a one-way SHA-256 fingerprint of the normalized user-agent; the raw user-agent string is not stored in D1. Events and their identifiers are deleted after 90 days.
+Reader analytics submission requires an `X-Session-ID` header and is origin checked, rate limited, and schema validated; it does not infer that identifier from a member JWT. The curated personalization feed and other persisted reader-state contracts likewise require their documented session header. Audience reporting requires `ADMIN_API_KEY`. Each event stores the connecting IP address and a one-way SHA-256 fingerprint of the normalized user-agent; the raw user-agent string is not stored in D1. Events and their identifiers are deleted after 90 days.
 
-`/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, email delivery, semantic retrieval, content-processing circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent.
+`/health/deep` checks actual database content, cache access, rate limiting, media storage, published/audio/translation/report outputs, sector-assignment audit coverage, country and publisher diversity, source-acquisition yield, email delivery, semantic retrieval, content-processing circuit breakers, and Durable Objects. A reachable binding alone is not reported as healthy if the expected output is absent. Both `/health/*` and `/api/v1/health/*` are supported.
 
 Worker logs can be streamed with:
 
@@ -383,7 +471,7 @@ npm run tail
 
 ## Security notes
 
-- Admin endpoints require the admin API key or an admin-authorized token.
+- Admin endpoints require `ADMIN_API_KEY`, supplied through `X-Admin-Key` or as the bearer value. Reader and client JWTs never authorize the admin surface.
 - Client secrets and API keys are hashed at rest; newly provisioned raw keys are returned once.
 - State-changing browser requests are origin/CSRF checked.
 - Session-scoped preferences, bookmarks, and notifications require a valid session identifier.

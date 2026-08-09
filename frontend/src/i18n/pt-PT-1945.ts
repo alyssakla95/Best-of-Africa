@@ -2958,6 +2958,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
     'Mostra a cobertura nacional dos serviços básicos de água potável, relevante para o bem-estar e para as infra-estruturas operacionais.',
   'National access does not establish industrial supply, continuity, water quality or local network capacity.':
     'O acesso nacional não demonstra abastecimento industrial, continuidade, qualidade da água nem capacidade da rede local.',
+  'National access does not establish industrial water availability, continuity, quality or local network capacity.':
+    'O acesso nacional não demonstra disponibilidade de água industrial, continuidade, qualidade nem capacidade da rede local.',
   'Shows exports plus imports relative to output, providing context on cross-border exposure and input dependence.':
     'Mostra as exportações e importações em relação à produção, contextualizando a exposição transfronteiriça e a dependência de factores de produção.',
   'A high ratio does not establish route efficiency, margins, product sophistication or resilience.':
@@ -2965,6 +2967,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Places recorded external debt against national income as context for financing and foreign-exchange exposure.':
     'Compara a dívida externa registada com o rendimento nacional para contextualizar o financiamento e a exposição cambial.',
   'Maturity, currency, creditor, interest cost and public-private composition determine practical risk.':
+    'O prazo, a moeda, o credor, o custo dos juros e a composição pública ou privada determinam o risco prático.',
+  'Maturity, currency, creditor, interest cost and public/private composition determine the practical risk.':
     'O prazo, a moeda, o credor, o custo dos juros e a composição pública ou privada determinam o risco prático.',
   'Shows newly registered limited-liability firms relative to the working-age population.':
     'Mostra as novas sociedades de responsabilidade limitada registadas em relação à população em idade activa.',

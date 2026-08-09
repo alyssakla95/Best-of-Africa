@@ -60,9 +60,9 @@ for (const route of routes) {
   browserErrors = [];
   responseErrors = [];
   await command('Page.navigate', { url: `${baseUrl}${route}` });
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     await delay(250);
-    const ready = await command('Runtime.evaluate', { expression: "document.readyState === 'complete' && document.body?.innerText.length > 120", returnByValue: true });
+    const ready = await command('Runtime.evaluate', { expression: "document.readyState === 'complete' && document.body?.innerText.length > 120 && document.querySelectorAll('h1').length === 1", returnByValue: true });
     if (ready.result?.value) break;
   }
   await delay(350);

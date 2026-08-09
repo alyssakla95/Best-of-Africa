@@ -13,6 +13,19 @@ import { sourceEvidenceFailure } from '../lib/editorial-quality';
 import { coverageAdmissionFailure, sourceQualityProfile } from '../lib/source-quality';
 import { readerSummary, repairReaderText } from '../lib/reader-text';
 
+export function resolveEvidenceCountry(
+    identifiedCountry: string | null,
+    sourceType: string | null | undefined,
+    sourceCountry: string | null | undefined,
+): string | null {
+    if (identifiedCountry) return identifiedCountry;
+    // The World Bank connector applies an exact provider-side country filter.
+    // Preserve that first-party tag only when content classification is empty;
+    // ordinary publisher home countries remain provenance, not story evidence.
+    if (sourceType === 'worldbank-api' && sourceCountry) return sourceCountry;
+    return null;
+}
+
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Main Generation Function (Queue Consumer)
@@ -30,7 +43,8 @@ export async function generateArticleFromQueue(
     try {
         // Get ingested item
         const item = await env.DB.prepare(`
-      SELECT i.*, s.country_code as source_country, s.sector_id as source_sector, s.name as source_name
+      SELECT i.*, s.country_code as source_country, s.sector_id as source_sector,
+             s.name as source_name, s.type as source_type
       FROM ingested_items i
       LEFT JOIN sources s ON i.source_id = s.id
       WHERE i.id = ?
@@ -63,7 +77,12 @@ export async function generateArticleFromQueue(
 
         // Classify the story itself. A publisher's home country or default beat is
         // provenance, not evidence that every syndicated story concerns that market.
-        const countryCode = await identifyCountry(env, itemData.title || '', itemData.content || '');
+        const identifiedCountry = await identifyCountry(env, itemData.title || '', itemData.content || '');
+        const countryCode = resolveEvidenceCountry(
+            identifiedCountry,
+            itemData.source_type,
+            itemData.source_country,
+        );
         const sectorId = await identifySector(env, itemData.title || '', itemData.content || '');
         const publisherName = publisherNameForArticle(itemData);
         const quality = sourceQualityProfile(

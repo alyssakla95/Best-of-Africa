@@ -32,7 +32,6 @@ const looksPortuguese = (value: string) => {
 describe('coded Portuguese interface locale', () => {
     it('covers exact user-facing English copy throughout the frontend source', () => {
         const audit = spawnSync(process.execPath, [
-            '--experimental-strip-types',
             'scripts/audit-portuguese-interface.mjs',
         ], { cwd: process.cwd(), encoding: 'utf8' });
 

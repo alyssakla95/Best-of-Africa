@@ -360,6 +360,15 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
         return recoverPendingItems(env, 25);
     });
 
+    // Sector evidence is reader-facing market data, so its bounded audit runs
+    // before the slower editorial, media, ingestion and translation workloads.
+    // This ordering prevents the historical review queue from being starved
+    // when a minute invocation approaches its execution or subrequest budget.
+    await safe('sector-assignment-audit', async () => {
+        const { auditHistoricalSectorAssignments } = await import('./workers/generator');
+        return auditHistoricalSectorAssignments(env, 12);
+    });
+
     // Complete the publication lifecycle. Generation remains quarantined until
     // a separate source-grounded audit passes every existing editorial gate.
     // One item per tick keeps verification quality ahead of throughput.
@@ -457,15 +466,6 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     await safe('backfill-sectors', async () => {
         const { backfillSectors } = await import('./workers/generator');
         return backfillSectors(env, 8);
-    });
-
-    // Re-audit historical sector labels with recorded confidence. Until a
-    // legacy assignment clears this review it is excluded from sector-level
-    // evidence statistics, preventing politics or human-interest records from
-    // being presented as market-sector signals.
-    await safe('sector-assignment-audit', async () => {
-        const { auditHistoricalSectorAssignments } = await import('./workers/generator');
-        return auditHistoricalSectorAssignments(env, 12);
     });
 
     // 2. Full optimization is intentionally bounded to every six hours. It

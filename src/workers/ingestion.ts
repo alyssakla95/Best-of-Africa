@@ -124,6 +124,98 @@ export function isAfricanContent(title: string, content = ''): boolean {
     return false;
 }
 
+interface WorldBankContentResult {
+    title?: string;
+    publishUrl?: string;
+    contentType?: string;
+    contentDate?: string;
+    s7ThumbnailPath?: string;
+    damThumbnailPath?: string;
+}
+
+const WORLD_BANK_CONTENT_API = 'https://webapi.worldbank.org/aemsite/everything/search';
+const WORLD_BANK_COUNTRY_NAMES: Record<string, string> = {
+    CI: "Cote d'Ivoire",
+    CD: 'Congo, Democratic Republic of',
+    CG: 'Congo, Republic of',
+    SO: 'Federal Republic of Somalia',
+    ST: 'Sao Tome and Principe',
+};
+
+export function worldBankCountryName(countryCode: string, countryName: string): string {
+    return WORLD_BANK_COUNTRY_NAMES[countryCode.toUpperCase()] || countryName;
+}
+
+/**
+ * Read recent, first-party country evidence from the World Bank's own content
+ * index. Country filtering is performed by the provider, not inferred from a
+ * generic Africa listing, so smaller markets receive an equal acquisition path.
+ */
+export async function fetchWorldBankOfficialContent(
+    countryCode: string,
+    countryName: string,
+    now = new Date(),
+): Promise<RSSItem[]> {
+    try {
+        const providerCountry = worldBankCountryName(countryCode, countryName).replace(/'/g, "''");
+        const body = {
+            search: '*',
+            filter: `languageCode eq 'en' and contentType ne 'dnr' and countries/any(c: c eq '${providerCountry}')`,
+            count: true,
+            top: 30,
+            skip: 0,
+            orderby: 'contentDate desc',
+            select: 'title,publishUrl,contentType,contentDate,s7ThumbnailPath,damThumbnailPath',
+        };
+        const response = await fetch(WORLD_BANK_CONTENT_API, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'BestOfAfrica/1.0 (African Market Intelligence Platform)',
+            },
+            body: JSON.stringify(body),
+        });
+        if (!response.ok) return [];
+
+        const payload = await response.json() as {
+            value?: WorldBankContentResult[];
+            results?: WorldBankContentResult[];
+        };
+        const earliest = now.getTime() - 120 * 24 * 60 * 60 * 1000;
+        const permittedTypes = /^(?:press release|feature story|results|publication|brief|blog)$/i;
+        return (payload.value || payload.results || [])
+            .filter(result => {
+                const timestamp = Date.parse(result.contentDate || '');
+                return Boolean(result.title && result.publishUrl)
+                    && Number.isFinite(timestamp)
+                    && timestamp <= now.getTime()
+                    && timestamp >= earliest
+                    && permittedTypes.test(result.contentType || '');
+            })
+            .map(result => ({
+                title: decodeBasicEntities(result.title!.replace(/<[^>]*>/g, '').trim()),
+                link: new URL(result.publishUrl!, 'https://www.worldbank.org').toString(),
+                description: '',
+                pubDate: new Date(result.contentDate!).toISOString(),
+                imageUrl: normalizeEditorialImageUrl(
+                    result.s7ThumbnailPath || result.damThumbnailPath || null,
+                    result.publishUrl!,
+                ),
+                imageCredit: 'World Bank Group',
+                publisherName: 'World Bank Group',
+                publisherUrl: 'https://www.worldbank.org/',
+            }));
+    } catch (error) {
+        console.error(`Failed to fetch World Bank evidence for ${countryName}:`, error);
+        return [];
+    }
+}
+
+export function unseenCandidates<T extends { url: string }>(items: T[], existingUrls: Set<string>): T[] {
+    return items.filter(item => !existingUrls.has(item.url));
+}
+
 const COUNTRY_DISCOVERY_ALIASES: Record<string, string[]> = {
     'algeria': ['algerie', 'argelia'],
     'benin': ['benim'],
@@ -629,18 +721,27 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     // "Too many subrequests" when all ~82 sources were fetched at once).
     const SOURCES_PER_RUN = 6;
     const sourcesResult = await env.DB.prepare(`
-    SELECT id, name, type, url, country_code, sector_id
+    SELECT sources.id, sources.name, sources.type, sources.url, sources.country_code,
+           sources.sector_id, countries.name AS country_name
     FROM sources
-    WHERE is_active = 1
-      AND (last_fetched_at IS NULL OR last_fetched_at <= datetime('now', '-' || COALESCE(fetch_interval_minutes, 60) || ' minutes'))
-      AND id = (
+    LEFT JOIN countries ON countries.code = sources.country_code
+    LEFT JOIN source_acquisition_yield acq ON acq.source_id = sources.id
+    WHERE sources.is_active = 1
+      AND (sources.last_fetched_at IS NULL OR sources.last_fetched_at <= datetime('now', '-' || COALESCE(sources.fetch_interval_minutes, 60) || ' minutes'))
+      AND (
+        acq.source_id IS NULL
+        OR acq.consecutive_zero_qualified < 12
+        OR acq.last_fetched_at <= datetime('now', '-1 day')
+      )
+      AND sources.id = (
         SELECT s2.id FROM sources s2
         WHERE s2.is_active = 1 AND s2.url = sources.url
         ORDER BY s2.created_at ASC, s2.id ASC LIMIT 1
       )
     ORDER BY
       CASE
-        WHEN name IN (
+        WHEN sources.type = 'worldbank-api' THEN 0
+        WHEN sources.name IN (
           'UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization',
           'African Development Bank Group', 'African Development Bank News', 'World Bank Africa News',
           'International Monetary Fund News', 'UN Trade and Development News', 'International Finance Corporation Africa',
@@ -648,13 +749,13 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
           'Economic Community of West African States', 'Southern African Development Community',
           'East African Community', 'Common Market for Eastern and Southern Africa'
         ) THEN 0
-        WHEN name IN ('BBC Africa', 'Associated Press Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
+        WHEN sources.name IN ('BBC Africa', 'Associated Press Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
                       'France 24 Africa', 'Deutsche Welle Africa', 'Al Jazeera', 'The Africa Report',
                       'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
-        WHEN name LIKE 'AllAfrica%' THEN 3
+        WHEN sources.name LIKE 'AllAfrica%' THEN 3
         ELSE 2
       END,
-      last_fetched_at ASC
+      sources.last_fetched_at ASC
     LIMIT ?
   `).bind(SOURCES_PER_RUN).all();
 
@@ -663,7 +764,7 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
     // Per-invocation budgets (shared across fixed-source + discovery tasks) to
     // cap total fetches/DB writes and stay within Worker limits.
-    const MAX_ITEMS_PER_SOURCE = 6;
+    const MAX_ITEMS_PER_SOURCE = 30;
     const MAX_NEW_ITEMS_PER_FIXED_SOURCE = 1;
     let scrapeBudget = 8;   // full-content scrapes (each is an extra fetch)
     let fixedItemBudget = 12;
@@ -762,6 +863,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         items = listingItems.map(item => ({
                             title: item.title, url: item.link, content: item.description, publishedAt: item.pubDate, imageUrl: item.imageUrl, imageCredit: item.imageCredit, publisherName: item.publisherName, publisherUrl: item.publisherUrl,
                         }));
+                    } else if (s.type === 'worldbank-api' && s.country_code && s.country_name) {
+                        const officialItems = await fetchWorldBankOfficialContent(s.country_code, s.country_name);
+                        items = officialItems.map(item => ({
+                            title: item.title, url: item.link, content: item.description, publishedAt: item.pubDate, imageUrl: item.imageUrl, imageCredit: item.imageCredit, publisherName: item.publisherName, publisherUrl: item.publisherUrl,
+                        }));
                     } else if (s.type === 'newsapi' && env.NEWS_API_KEY) {
                         const newsItems = await fetchNewsAPI(env.NEWS_API_KEY, s.url);
                         items = newsItems.map(item => ({
@@ -772,7 +878,7 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                     itemsFound = items.length;
                     const qualifiedItems = rankCandidatesForCoverage(
                         items.filter(item =>
-                            isAfricanContent(item.title, item.content)
+                            (s.type === 'worldbank-api' || isAfricanContent(item.title, item.content))
                             && isMarketEvidence(item.title, item.content)
                         ),
                         fixedCoverage.results || [],
@@ -782,16 +888,20 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                     // Filter the complete payload before applying the database
                     // budget so relevant evidence later in a broad feed is not
                     // silently excluded by feed order.
+                    const candidates = qualifiedItems.slice(0, MAX_ITEMS_PER_SOURCE);
+                    const existingUrls = new Set<string>();
+                    if (candidates.length) {
+                        const placeholders = candidates.map(() => '?').join(',');
+                        const existing = await env.DB.prepare(
+                            `SELECT external_id FROM ingested_items WHERE external_id IN (${placeholders})`,
+                        ).bind(...candidates.map(item => item.url)).all<{ external_id: string }>();
+                        for (const row of existing.results || []) existingUrls.add(row.external_id);
+                    }
+                    duplicatesFound = existingUrls.size;
+
                     let acceptedFromSource = 0;
-                    for (const item of qualifiedItems.slice(0, MAX_ITEMS_PER_SOURCE)) {
+                    for (const item of unseenCandidates(candidates, existingUrls)) {
                         if (fixedItemBudget <= 0 || acceptedFromSource >= MAX_NEW_ITEMS_PER_FIXED_SOURCE) break;
-                        // URL-level dedup is intentionally global: duplicate source
-                        // rows must not turn one wire record into several articles.
-                        const existing = await env.DB.prepare(`SELECT id FROM ingested_items WHERE external_id = ? LIMIT 1`).bind(item.url).first();
-                        if (existing) {
-                            duplicatesFound++;
-                            continue;
-                        }
 
                         // Strict Africa relevance gate (applies even to country-coded
                         // sources — a regional outlet can still run off-topic wire stories).

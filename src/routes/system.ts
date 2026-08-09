@@ -406,7 +406,7 @@ router.get('/health/deep', async (c) => {
                    y.last_productive_at, y.last_error, y.total_queued
             FROM sources s
             LEFT JOIN source_acquisition_yield y ON y.source_id = s.id
-            WHERE s.is_active = 1 AND s.type IN ('rss', 'html', 'newsapi')
+            WHERE s.is_active = 1 AND s.type IN ('rss', 'html', 'newsapi', 'worldbank-api')
         `).all<Record<string, string | number | null>>();
         const acquisitionRows = acquisition.results || [];
         const activeSources = acquisitionRows.length;

@@ -30,6 +30,7 @@ describe('GET /dashboards/continental/overview', () => {
         const prepare = vi.fn((sql: string) => ({
             all: vi.fn().mockResolvedValue({
                 results: sql.includes('FROM articles a') ? [briefing]
+                    : sql.includes('FROM sources s') ? [{ id: 'reuters', name: 'Reuters', type: 'rss', url: 'https://reuters.com/africa', country_code: null, last_fetched_at: '2026-08-09 10:00:00', last_productive_at: '2026-08-09 10:00:00', total_queued: 1 }]
                     : sql.includes('FROM countries c') ? [{ country_code: 'KE', country_name: 'Kenya', region: 'East', records_30d: 1, latest_record_at: briefing.published_at }]
                     : [{ sector_id: 'finance', sector_name: 'Finance & Investment', records_30d: 1, countries_30d: 1, latest_record_at: briefing.published_at }],
                 success: true,
@@ -44,7 +45,7 @@ describe('GET /dashboards/continental/overview', () => {
         const body = await response.json() as Record<string, any>;
 
         expect(response.status).toBe(200);
-        expect(prepare).toHaveBeenCalledTimes(3);
+        expect(prepare).toHaveBeenCalledTimes(4);
         expect(body.indicators).toHaveLength(27);
         expect(body.indicators).toEqual(expect.arrayContaining([
             expect.objectContaining({ indicator_code: 'EG.ELC.ACCS.ZS', category: 'Infrastructure and digital access', countries_reported: 54 }),
@@ -58,6 +59,7 @@ describe('GET /dashboards/continental/overview', () => {
         expect(body.official_data_refresh).toMatchObject({ state: 'current' });
         expect(body.narrated_briefings).toEqual([briefing]);
         expect(body.briefing_scope).toMatchObject({ countries_considered: 1, sectors_considered: 1, countries_with_records: 1, sectors_with_records: 1 });
+        expect(body.source_network).toMatchObject({ active_direct_sources: 1, productive_direct_sources_30d: 1 });
         expect(body.rankings.largest_economies).toHaveLength(8);
         expect(body.methodology).toContain('latest verified observation');
         expect(JSON.stringify(body)).not.toMatch(/total_articles|highlights|underreported|view_count|engagement/);

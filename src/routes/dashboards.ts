@@ -12,6 +12,7 @@ import { getSectorPerformanceCache } from '../lib/sector-performance';
 import { continentalEconomyCacheIsFresh, getContinentalEconomyCache, getContinentalEconomyRefreshStatus, refreshContinentalEconomy } from '../lib/continental-economy';
 import { normalisePortuguesePortugal1945, portugueseCountryName, portugueseSectorName } from '../lib/portuguese';
 import { diversifyCoverageRows } from '../lib/source-quality';
+import { getSourceNetworkSnapshot } from '../lib/source-network';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -170,7 +171,7 @@ router.get('/continental/overview', async (c) => {
         : '';
     const titleColumn = reqLang === 'pt' ? 'pt.title' : 'a.title';
     const summaryColumn = reqLang === 'pt' ? 'pt.summary' : 'a.summary';
-    const [continentalEconomy, officialDataRefresh, sectorPerformance, narratedBriefingsResult, countryCoverageResult, sectorCoverageResult] = await Promise.all([
+    const [continentalEconomy, officialDataRefresh, sectorPerformance, narratedBriefingsResult, countryCoverageResult, sectorCoverageResult, sourceNetwork] = await Promise.all([
         getContinentalEconomyCache(c.env),
         getContinentalEconomyRefreshStatus(c.env),
         getSectorPerformanceCache(c.env),
@@ -218,6 +219,7 @@ router.get('/continental/overview', async (c) => {
             GROUP BY s.id, s.name
             ORDER BY s.name
         `).all(),
+        getSourceNetworkSnapshot(c.env),
     ]);
 
     const countryCoverage = (countryCoverageResult.results || []).map((country: Record<string, any>) => reqLang === 'pt' ? {
@@ -258,6 +260,7 @@ router.get('/continental/overview', async (c) => {
                 ? 'A síntese verifica explicitamente os 54 países africanos e todos os sectores económicos configurados. Um valor zero identifica ausência de registos publicados na janela de 30 dias; não é substituído por uma inferência.'
                 : 'The briefing explicitly checks all 54 African countries and every configured economic sector. A zero identifies no published record in the 30-day window and is not replaced with an inference.',
         },
+        source_network: sourceNetwork,
     });
 });
 

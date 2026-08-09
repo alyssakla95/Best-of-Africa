@@ -416,6 +416,10 @@ export const api = {
             countries: { country_code: string; country_name: string; region: string; records_30d: number; latest_record_at: string | null }[];
             sectors: { sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }[];
         };
+        source_network: {
+            active_direct_sources: number; productive_direct_sources_30d: number; active_primary_or_global_sources: number; productive_primary_or_global_sources_30d: number;
+            official_country_lanes: number; official_country_lanes_productive_30d: number; countries_with_official_lanes: number; latest_productive_at: string; methodology: string;
+        };
     }>(`/dashboards/continental/overview?contract=economy-v1&lang=${getReaderLanguage()}`, 0),
 
     // Search
@@ -655,6 +659,10 @@ export const api = {
             primary_or_global_share_pct: number;
             leading_sources: { source_name: string; quality_tier: number; records_30d: number; countries_30d: number; latest_record_at: string | null }[];
             methodology: string;
+        };
+        source_network: {
+            active_direct_sources: number; productive_direct_sources_30d: number; active_primary_or_global_sources: number; productive_primary_or_global_sources_30d: number;
+            official_country_lanes: number; official_country_lanes_productive_30d: number; countries_with_official_lanes: number; latest_productive_at: string; methodology: string;
         };
         countries_considered: number;
         sectors_considered: number;

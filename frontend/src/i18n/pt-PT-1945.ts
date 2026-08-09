@@ -72,6 +72,17 @@ export function applyPortuguese1945Orthography(value: string): string {
  * to explicit translation keys.
  */
 export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
+  'Direct acquisition health': 'Estado da aquisiÃ§Ã£o directa',
+  'Direct sources productive': 'Fontes directas produtivas',
+  'Official country acquisition': 'AquisiÃ§Ã£o nacional oficial',
+  'Official country lanes': 'Canais nacionais oficiais',
+  'Country lanes productive': 'Canais nacionais produtivos',
+  'Primary/global productive': 'Fontes primÃ¡rias ou globais produtivas',
+  'countries with a direct provider lane': 'paÃ­ses com um canal directo do fornecedor',
+  'supplied qualifying evidence in 30 days': 'forneceram evidÃªncia elegÃ­vel em 30 dias',
+  'authoritative source lanes': 'canais de fontes de referÃªncia',
+  'measured output, not catalogue size': 'produÃ§Ã£o medida, nÃ£o dimensÃ£o do catÃ¡logo',
+  'last 30 days': 'Ãºltimos 30 dias',
   'Loading the complete evidence ledger': 'A carregar o registo completo de evidência',
   'Evidence-ledger request interrupted': 'Pedido do registo de evidência interrompido',
   'The official performance record is available, but the publishing ledger did not load.': 'O registo oficial de desempenho está disponível, mas não foi possível carregar o registo de publicações.',

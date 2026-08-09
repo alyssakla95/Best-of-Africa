@@ -15,6 +15,7 @@ import {
     refreshSectorPerformance,
 } from '../lib/sector-performance';
 import { diversifyCoverageRows } from '../lib/source-quality';
+import { getSourceNetworkSnapshot } from '../lib/source-network';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -766,7 +767,7 @@ router.get('/leading-sector', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/coverage-pulse', async (c) => {
         const reqLang = c.req.query('lang')?.toLowerCase();
-        const [totals, topSector, countries, sectors, sourceRows, thinnest] = await Promise.all([
+        const [totals, topSector, countries, sectors, sourceRows, thinnest, sourceNetwork] = await Promise.all([
             c.env.DB.prepare(`
                 SELECT COUNT(*) AS stories, COUNT(DISTINCT country_code) AS countries
                 FROM articles
@@ -821,6 +822,7 @@ router.get('/coverage-pulse', async (c) => {
                     AND a.published_at > datetime('now', '-7 days')
                 GROUP BY c.region ORDER BY n ASC LIMIT 1
             `).first<{ region: string; n: number }>(),
+            getSourceNetworkSnapshot(c.env),
         ]);
 
         const sourceLedger = sourceRows.results || [];
@@ -884,6 +886,7 @@ router.get('/coverage-pulse', async (c) => {
                 leading_sources: sourceLedger.slice(0, 12),
                 methodology: 'Publisher counts use attributed published records in the rolling 30-day window. Primary/global share includes quality-tier-four institutions and globally authoritative newsrooms; it measures evidence provenance, not truth by itself.',
             },
+            source_network: sourceNetwork,
             thinnest_region: thinnest ? { region: thinnest.region, stories: thinnest.n } : { region: 'Zero configured regions', stories: 0 },
             updated_at: new Date().toISOString(),
         };

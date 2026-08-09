@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isCountryEvidenceStale, refreshCountryEvidence, worldBankTradeFallback, type CountryEvidenceSnapshot } from '../../src/lib/country-evidence';
 import { aggregateTradeTotal, getTradeBalance } from '../../src/lib/trade-data';
 import { publisherNameForArticle, publisherNameForStoredArticle } from '../../src/lib/source-attribution';
-import { parseHTMLListing, parseRSS, rankCandidatesForCoverage } from '../../src/workers/ingestion';
+import { fetchWorldBankOfficialContent, parseHTMLListing, parseRSS, rankCandidatesForCoverage, unseenCandidates, worldBankCountryName } from '../../src/workers/ingestion';
 import { createMockEnv } from '../mocks/env';
 import { getCountryEconomicProfile } from '../../src/lib/economics';
 
@@ -229,6 +229,57 @@ describe('country evidence integrity', () => {
         });
         expect(items.map(item => item.link)).toContain('https://publisher.example/news/ghana-financing-456');
         expect(items.map(item => item.link)).toContain('https://publisher.example/pressroom/2026/rwanda-investment-789');
+    });
+
+    it('reads recent country evidence from the World Bank official content API', async () => {
+        const now = new Date('2026-08-09T12:00:00.000Z');
+        const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
+            value: [
+                {
+                    title: 'Uganda expands private-sector investment programme',
+                    publishUrl: 'https://www.worldbank.org/en/news/press-release/2026/08/08/uganda-investment',
+                    contentType: 'Press Release',
+                    contentDate: '2026-08-08T10:00:00Z',
+                    s7ThumbnailPath: 'https://worldbank.scene7.com/example.jpg',
+                },
+                {
+                    title: 'Future event must not enter current evidence',
+                    publishUrl: '/future-event',
+                    contentType: 'Event',
+                    contentDate: '2026-08-12T10:00:00Z',
+                },
+                {
+                    title: 'Old publication outside the evidence window',
+                    publishUrl: '/old-publication',
+                    contentType: 'Publication',
+                    contentDate: '2025-01-01T10:00:00Z',
+                },
+            ],
+        }), { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const items = await fetchWorldBankOfficialContent('UG', 'Uganda', now);
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: 'Uganda expands private-sector investment programme',
+            publisherName: 'World Bank Group',
+            pubDate: '2026-08-08T10:00:00.000Z',
+        });
+        expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).filter)
+            .toContain("countries/any(c: c eq 'Uganda')");
+    });
+
+    it('uses provider country aliases and reaches fresh items beyond duplicate feed leaders', () => {
+        expect(worldBankCountryName('CI', "Côte d'Ivoire")).toBe("Cote d'Ivoire");
+        expect(worldBankCountryName('CD', 'Democratic Republic of the Congo')).toBe('Congo, Democratic Republic of');
+        expect(worldBankCountryName('EG', 'Egypt')).toBe('Egypt');
+        expect(worldBankCountryName('SO', 'Somalia')).toBe('Federal Republic of Somalia');
+        expect(unseenCandidates(
+            Array.from({ length: 10 }, (_, index) => ({ url: `https://example.com/${index}` })),
+            new Set(Array.from({ length: 6 }, (_, index) => `https://example.com/${index}`)),
+        ).map(item => item.url)).toEqual([
+            'https://example.com/6', 'https://example.com/7', 'https://example.com/8', 'https://example.com/9',
+        ]);
     });
 
     it('ranks qualifying candidates toward the least-covered named country', () => {

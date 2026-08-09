@@ -28,7 +28,7 @@ The initial commercial proposition is deliberately narrow:
 
 The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. A separate [structured application](https://alyssa-boa-web.pages.dev/enterprise/apply) records the applicant, sector, one to three candidate countries, decision question, deadline, current research process, and measurable success condition. Submissions enter a protected operator inbox with qualification status and private review notes; the form prohibits confidential or sensitive information. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
 
-BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. Fixed pilot scope and fees are proposed after discovery.
+BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. The Enterprise page publishes fixed entry pricing — a US$750 focused brief, a US$1,800 comparative entry pilot, and a US$300 per month monitoring extension — together with scope, delivery, payment terms, and a credibility-stage disclosure.
 
 ### Evidence boundary
 
@@ -49,34 +49,34 @@ The product records first-party evidence needed to evaluate this pathway: monthl
 
 The reader product remains in pre-audience-validation state. No subscriber conversion, churn, willingness-to-pay, acquisition-cost, or consumer-revenue claim is made without observed external evidence.
 
+Reader membership is live at US$4, US$9, and US$19 per month with Ko-fi monthly billing. Every tier includes complete reader access; the higher tiers are voluntary support rather than additional entitlements.
+
 ## Live deployment
 
 | Surface | URL |
 | --- | --- |
 | Reader application | [alyssa-boa-web.pages.dev](https://alyssa-boa-web.pages.dev) |
 | API Worker | [alyssa-boa-api.alyssavanklassen.workers.dev](https://alyssa-boa-api.alyssavanklassen.workers.dev) |
-| Deep health | [API `/health/deep`](https://alyssa-boa-api.alyssavanklassen.workers.dev/health/deep) |
+| Deep health | [API `/api/v1/health/deep`](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/health/deep) |
 | API documentation | [Swagger UI](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/docs) |
 
 These URLs describe the currently verified Alyssa Cloudflare deployment. The repository also supports account-neutral deployment under a different resource prefix and Cloudflare account.
 
 ### Verified state
 
-Last checked on 26 July 2026:
+Last checked on 9 August 2026:
 
-- the frontend and API were reachable;
+- the frontend and API were reachable, along with the reader, enterprise, membership, countries, trust, and pilot-application routes;
 - the structured pilot application was reachable and its protected operator inbox was reading the migrated production table;
 - D1, content processing, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
-- the database contained 305 article records;
-- the current worker-output inventory reported 17 published articles, 17 audio files, and 102 quality-approved translations across six non-English languages;
-- the seven-day coverage pulse contained 17 stories across 4 countries;
-- the continental overview returned all 5 regions and 6 narrated briefings;
+- the database contained 831 article records;
+- the current worker-output inventory reported 361 published articles, 360 audio files, and 2,146 quality-approved translations across six non-English languages, plus 82 market reports;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 226 passing tests.
+- the complete test suite contained 311 passing tests.
 
-The verified Alyssa-account release was repository commit `7c82495` and Worker version `c3ec3adf-d366-4db4-811c-d9bfc0161710`.
+The verified Alyssa-account release was repository commit `16f1e64` and Worker version `2374595b-8c51-4f91-a18d-f8b32a70ca92`.
 
-The deep-health response is currently `degraded`, rather than `healthy`, because this Cloudflare account does not yet have a verified transactional email sender. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
+The deep-health response is currently `degraded`, rather than `healthy`, because of two checks: `coverage_diversity` reports that the rolling evidence window has not yet met the all-country, publisher, and global-source quality standard, and `email_delivery` reports that no verified transactional email provider and sender are configured. The endpoint returns HTTP 503 while any check is degraded by design. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 
 ## What is implemented
 
@@ -379,6 +379,7 @@ npm run tail
 - Live coverage counts change as the autonomous pipeline publishes, translates, and refreshes records.
 - Consumer retention, acquisition, conversion, churn, and revenue are not treated as proven until the new first-party measurement record contains sufficient observed activity.
 - External sources and processing services can rate-limit or fail; the scheduler isolates failures and retries bounded queue work, but it cannot guarantee third-party availability.
+- Public AI-assisted endpoints enforce per-IP rate limits, and the interface translation endpoint is throttled against bulk automated use.
 
 ## Security notes
 

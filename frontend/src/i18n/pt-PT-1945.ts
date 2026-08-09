@@ -1303,6 +1303,7 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Search saved items...': 'Pesquisar elementos guardados...',
   'Search saved items': 'Pesquisar elementos guardados',
   'Source image unavailable': 'Imagem da fonte indisponível',
+  'Editorial generation status check failed': 'A verificação do serviço editorial falhou',
   'Subject to monitor': 'Assunto a acompanhar',
   'Assunto a acompanhar': 'Assunto a acompanhar',
   'Organise evidence, monitor priority markets and carry research into the next decision.':

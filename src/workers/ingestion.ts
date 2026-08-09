@@ -54,6 +54,19 @@ const AFRICA_KEYWORDS = [
     // final o). Regular ones (nigerian, kenyan, ghanaian…) need no entry.
     'moroccan', 'ivorian', 'somali', 'mozambican', 'burkinabe', 'comorian',
     'seychellois', 'malagasy', 'mauritian', 'swazi',
+    // French and Portuguese names used by publishers serving markets that are
+    // routinely under-represented in English-language discovery.
+    'algerie', 'argelia', 'benim', 'cap-vert', 'cameroun', 'camaroes',
+    'republique centrafricaine', 'republica centro-africana', 'tchad', 'chade',
+    'comores', 'costa do marfim', 'republique democratique du congo',
+    'republica democratica do congo', 'republique du congo', 'republica do congo',
+    'djibuti', 'egypte', 'egipto', 'guinee equatoriale', 'guine equatorial',
+    'erythree', 'eritreia', 'ethiopie', 'etiopia', 'gabao', 'gambie', 'guinee',
+    'guine', 'quenia', 'lesoto', 'libye', 'libia', 'malaui', 'mauritanie',
+    'maurice', 'mauricia', 'maroc', 'marrocos', 'mocambique', 'namibie',
+    'ruanda', 'sao tome e principe', 'seicheles', 'serra leoa', 'somalie',
+    'afrique du sud', 'africa do sul', 'soudan du sud', 'sudao do sul',
+    'soudan', 'sudao', 'tanzanie', 'tunisie', 'ouganda', 'zambie',
     // African subnational regions/provinces & more cities (further reduce false-negatives)
     'tshwane', 'niassa', 'kwazulu', 'mpumalanga', 'western cape', 'eastern cape', 'free state',
     'oromia', 'tigray', 'amhara', 'zanzibar', 'kaduna', 'enugu', 'ogun', 'rivers state',
@@ -87,11 +100,11 @@ export function isAfricanContent(title: string, content = ''): boolean {
     // Word-boundary on the leading edge (so "mali" doesn't match "normalize"),
     // but allow trailing letters so adjectives/demonyms still match
     // ("nigeria"→"nigerian", "morocco"→"moroccan", "benin"→"beninese").
-    const titleL = title.toLowerCase();
-    const bodyL = content.toLowerCase();
+    const titleL = normalizedDiscoveryText(title);
+    const bodyL = normalizedDiscoveryText(content);
 
-    const titleHits = AFRICA_KEYWORDS.filter(kw => kwRegex(kw).test(titleL)).length;
-    const foreignTitle = FOREIGN_PRIMARY.some(kw => kwRegex(kw).test(titleL));
+    const titleHits = AFRICA_KEYWORDS.filter(kw => kwRegex(normalizedDiscoveryText(kw)).test(titleL)).length;
+    const foreignTitle = FOREIGN_PRIMARY.some(kw => kwRegex(normalizedDiscoveryText(kw)).test(titleL));
 
     // Headline names Africa and isn't centred elsewhere → in.
     if (titleHits >= 1 && !foreignTitle) return true;
@@ -99,7 +112,7 @@ export function isAfricanContent(title: string, content = ''): boolean {
     // (kills the Modi-Seychelles / Tamil-Nadu class of leak).
     if (titleHits >= 2) return true;
 
-    const bodyHits = AFRICA_KEYWORDS.filter(kw => kwRegex(kw).test(bodyL)).length;
+    const bodyHits = AFRICA_KEYWORDS.filter(kw => kwRegex(normalizedDiscoveryText(kw)).test(bodyL)).length;
     // No African headline: allow only clearly African bodies with no foreign
     // headline focus (two distinct keywords, e.g. two countries or country+city).
     if (!foreignTitle) return bodyHits >= 2;
@@ -112,13 +125,48 @@ export function isAfricanContent(title: string, content = ''): boolean {
 }
 
 const COUNTRY_DISCOVERY_ALIASES: Record<string, string[]> = {
-    'cabo verde': ['cape verde'],
-    "cote d'ivoire": ['ivory coast'],
-    'democratic republic of congo': ['democratic republic of the congo', 'dr congo', 'drc', 'congo-kinshasa'],
+    'algeria': ['algerie', 'argelia'],
+    'benin': ['benim'],
+    'cabo verde': ['cape verde', 'cap-vert'],
+    'cameroon': ['cameroun', 'camaroes'],
+    'central african republic': ['republique centrafricaine', 'republica centro-africana'],
+    'chad': ['tchad', 'chade'],
+    'comoros': ['comores'],
+    "cote d'ivoire": ['cote d’ivoire', 'ivory coast', 'costa do marfim'],
+    'democratic republic of congo': ['democratic republic of the congo', 'republique democratique du congo', 'republica democratica do congo', 'dr congo', 'rd congo', 'rdc', 'drc', 'congo-kinshasa'],
     'democratic republic of the congo': ['democratic republic of congo', 'dr congo', 'drc', 'congo-kinshasa'],
-    'republic of the congo': ['republic of congo', 'congo-brazzaville'],
+    'djibouti': ['djibuti'],
+    'egypt': ['egypte', 'egipto'],
+    'equatorial guinea': ['guinee equatoriale', 'guine equatorial'],
+    'eritrea': ['erythree', 'eritreia'],
     'eswatini': ['swaziland'],
-    'sao tome and principe': ['sao tome'],
+    'ethiopia': ['ethiopie', 'etiopia'],
+    'gabon': ['gabao'],
+    'gambia': ['gambie'],
+    'guinea': ['guinee', 'guine'],
+    'guinea-bissau': ['guinee-bissau', 'guine-bissau'],
+    'kenya': ['quenia'],
+    'lesotho': ['lesoto'],
+    'libya': ['libye', 'libia'],
+    'malawi': ['malaui'],
+    'mauritania': ['mauritanie'],
+    'mauritius': ['maurice', 'mauricia'],
+    'morocco': ['maroc', 'marrocos'],
+    'mozambique': ['mocambique'],
+    'namibia': ['namibie'],
+    'republic of the congo': ['republic of congo', 'republique du congo', 'republica do congo', 'congo-brazzaville'],
+    'rwanda': ['ruanda'],
+    'sao tome and principe': ['sao tome', 'sao tome e principe'],
+    'seychelles': ['seicheles'],
+    'sierra leone': ['serra leoa'],
+    'somalia': ['somalie'],
+    'south africa': ['afrique du sud', 'africa do sul'],
+    'south sudan': ['soudan du sud', 'sudao do sul'],
+    'sudan': ['soudan', 'sudao'],
+    'tanzania': ['tanzanie'],
+    'tunisia': ['tunisie'],
+    'uganda': ['ouganda'],
+    'zambia': ['zambie'],
 };
 
 const normalizedDiscoveryText = (value: string) => value
@@ -152,6 +200,17 @@ const STRONG_MARKET_EVIDENCE = [
     /\bdebts?\b/, /\btax(?:es|ation)?\b/, /\bregulat(?:ion|ions|ory)\b/, /\bprocurement\b/,
     /\bemploy(?:ment|er|ers)\b/, /\bjobs?\b/, /\blogistics\b/, /\brevenues?\b/,
     /\bprofits?\b/, /\bearnings\b/, /\boutput\b/, /\bproductivity\b/,
+    // French and Portuguese market vocabulary. The source network is
+    // multilingual; rejecting non-English evidence here made coverage of
+    // Francophone and Lusophone markets structurally impossible.
+    /\beconomi(?:e|que|ques|a|as|co|ca|cos|cas)\b/, /\bentreprises?\b/, /\bnegocios?\b/,
+    /\bexporta(?:cao|coes|tion|tions)\b/, /\bimporta(?:cao|coes|tion|tions)\b/,
+    /\binvesti(?:ment|ments|mento|mentos|ssement|ssements)\b/, /\bmarches?\b/, /\bmercados?\b/,
+    /\bfinanc(?:e|es|eiro|eira|eiros|eiras|amento|amentos)\b/, /\bbanques?\b/, /\bbancos?\b/,
+    /\bindustri(?:e|el|elle|els|elles|a|al|ais)\b/, /\bmineracao\b/, /\bagricultura\b/,
+    /\btechnologie\b/, /\btecnologia\b/, /\btelecomunicacoes\b/, /\bproducao\b/,
+    /\bemprego\b/, /\bemplois?\b/, /\binflacao\b/, /\bdivida\b/,
+    /\bimpostos?\b/, /\bregulacao\b/, /\breglementation\b/, /\blogistique\b/, /\blogistica\b/,
 ];
 
 const CONTEXTUAL_MARKET_EVIDENCE = [
@@ -173,6 +232,42 @@ export function isMarketEvidence(title: string, content: string): boolean {
     const haystack = normalizedDiscoveryText(`${title} ${content}`);
     if (NON_MARKET_DOMINANT_CONTEXT.test(haystack) && !CORE_ECONOMIC_SIGNAL.test(haystack)) return false;
     return [...STRONG_MARKET_EVIDENCE, ...CONTEXTUAL_MARKET_EVIDENCE].some(pattern => pattern.test(haystack));
+}
+
+const FRENCH_DISCOVERY_COUNTRIES = new Set([
+    'DZ', 'BJ', 'BF', 'BI', 'CM', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'GQ',
+    'GA', 'GN', 'MG', 'ML', 'MR', 'MU', 'MA', 'NE', 'RW', 'SN', 'SC', 'TG', 'TN',
+]);
+const PORTUGUESE_DISCOVERY_COUNTRIES = new Set(['AO', 'CV', 'GW', 'MZ', 'ST']);
+
+export function discoveryLocale(countryCode?: string): { hl: string; gl: string; ceid: string } {
+    if (countryCode && PORTUGUESE_DISCOVERY_COUNTRIES.has(countryCode)) {
+        return { hl: 'pt-PT', gl: 'PT', ceid: 'PT:pt-150' };
+    }
+    if (countryCode && FRENCH_DISCOVERY_COUNTRIES.has(countryCode)) {
+        return { hl: 'fr', gl: 'FR', ceid: 'FR:fr' };
+    }
+    return { hl: 'en', gl: 'GB', ceid: 'GB:en' };
+}
+
+const FRENCH_DISCOVERY_DOMAINS = new Set([
+    'rfi.fr', 'france24.com', 'jeuneafrique.com', 'africanews.com',
+    'afdb.org', 'worldbank.org', 'imf.org', 'uneca.org', 'au.int', 'unctad.org',
+]);
+const PORTUGUESE_DISCOVERY_DOMAINS = new Set([
+    'lusa.pt', 'rtp.pt', 'afdb.org', 'worldbank.org', 'imf.org', 'uneca.org',
+    'au.int', 'unctad.org', 'african.business',
+]);
+
+export function discoverySourcesForCountry<T extends { domain: string }>(sources: T[], countryCode?: string): T[] {
+    const preferred = countryCode && PORTUGUESE_DISCOVERY_COUNTRIES.has(countryCode)
+        ? PORTUGUESE_DISCOVERY_DOMAINS
+        : countryCode && FRENCH_DISCOVERY_COUNTRIES.has(countryCode)
+            ? FRENCH_DISCOVERY_DOMAINS
+            : null;
+    if (!preferred) return sources;
+    const matched = sources.filter(source => preferred.has(source.domain));
+    return matched.length ? matched : sources;
 }
 
 export async function parseRSS(url: string): Promise<RSSItem[]> {
@@ -835,11 +930,12 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                     // ignores the quoted country surprisingly often. The domain
                     // rotates on every attempt, so each market moves through
                     // global newsrooms, primary institutions and market sources.
-                    const domain = countryPool[
-                        (minute + Number(country.attempt_count || 0) + index * 7) % countryPool.length
+                    const localizedCountryPool = discoverySourcesForCountry(countryPool, country.code);
+                    const domain = localizedCountryPool[
+                        (minute + Number(country.attempt_count || 0) + index * 7) % localizedCountryPool.length
                     ].domain;
                     return {
-                        query: `site:${domain} (${discoveryCountryExpression(country.name)}) (economy OR business OR trade OR investment OR infrastructure OR economie OR commerce OR investissement OR economia OR comercio OR investimento) when:45d`,
+                        query: `site:${domain} (${discoveryCountryExpression(country.name)}) (economy OR business OR trade OR investment OR infrastructure OR economie OR commerce OR marche OR investissement OR economia OR negocios OR comercio OR investimento) when:45d`,
                         targetCountryCode: country.code,
                         targetCountryName: country.name,
                     };
@@ -854,7 +950,8 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
             await Promise.all(queries.map(async ({ query, targetCountryCode, targetCountryName }) => {
                 try {
-                    const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+                    const locale = discoveryLocale(targetCountryCode);
+                    const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${locale.hl}&gl=${locale.gl}&ceid=${locale.ceid}`;
                     const items = await parseRSS(googleNewsUrl);
 
                     let acceptedFromQuery = 0;

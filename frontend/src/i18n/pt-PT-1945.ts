@@ -2942,6 +2942,113 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Underlying authority:': 'Entidade de origem:',
   'Source institution': 'Instituição de origem',
   'WDI series record': 'Registo da série WDI',
+  // Dynamic official-evidence metadata. These values arrive from the API and
+  // therefore must be part of the coded locale rather than a worker-generated
+  // page translation.
+  'Basic water access': 'Acesso básico à água',
+  'Trade intensity': 'Intensidade comercial',
+  'Formal business entry': 'Entrada formal de empresas',
+  'Median trade intensity': 'Intensidade comercial mediana',
+  'Median formal business-entry density': 'Densidade mediana de entrada formal de empresas',
+  'Median internet use': 'Utilização mediana da Internet',
+  'Median electricity access': 'Acesso mediano à electricidade',
+  'Median access to basic drinking water': 'Acesso mediano a água potável básica',
+  'Median access to basic sanitation': 'Acesso mediano a saneamento básico',
+  'Shows national coverage of basic drinking-water services, relevant to welfare and operating infrastructure.':
+    'Mostra a cobertura nacional dos serviços básicos de água potável, relevante para o bem-estar e para as infra-estruturas operacionais.',
+  'National access does not establish industrial supply, continuity, water quality or local network capacity.':
+    'O acesso nacional não demonstra abastecimento industrial, continuidade, qualidade da água nem capacidade da rede local.',
+  'Shows exports plus imports relative to output, providing context on cross-border exposure and input dependence.':
+    'Mostra as exportações e importações em relação à produção, contextualizando a exposição transfronteiriça e a dependência de factores de produção.',
+  'A high ratio does not establish route efficiency, margins, product sophistication or resilience.':
+    'Um rácio elevado não demonstra a eficiência das rotas, as margens, a sofisticação dos produtos nem a resiliência.',
+  'Places recorded external debt against national income as context for financing and foreign-exchange exposure.':
+    'Compara a dívida externa registada com o rendimento nacional para contextualizar o financiamento e a exposição cambial.',
+  'Maturity, currency, creditor, interest cost and public-private composition determine practical risk.':
+    'O prazo, a moeda, o credor, o custo dos juros e a composição pública ou privada determinam o risco prático.',
+  'Shows newly registered limited-liability firms relative to the working-age population.':
+    'Mostra as novas sociedades de responsabilidade limitada registadas em relação à população em idade activa.',
+  'Registration does not prove survival, scale, credit access, competition or a reduction in informality.':
+    'O registo não prova sobrevivência, escala, acesso ao crédito, concorrência nem redução da informalidade.',
+  'Provides a broad population-health and living-conditions outcome alongside health-system inputs.':
+    'Apresenta um resultado amplo de saúde da população e condições de vida, juntamente com os recursos do sistema de saúde.',
+  'Shows how much of the population is concentrated in urban areas where infrastructure, customers and services may cluster.':
+    'Mostra a proporção da população concentrada em zonas urbanas onde se podem agrupar infra-estruturas, clientes e serviços.',
+  'National definitions of urban areas differ, and urbanisation is not a direct measure of income or infrastructure quality.':
+    'As definições nacionais de zona urbana diferem, e a urbanização não mede directamente o rendimento nem a qualidade das infra-estruturas.',
+  'Shows the population share using the internet, an important route-to-market and information-access condition.':
+    'Mostra a proporção da população que utiliza a Internet, uma condição importante de acesso ao mercado e à informação.',
+  'The middle share of national populations living in urban areas.':
+    'A proporção mediana das populações nacionais que vive em zonas urbanas.',
+  'Urban classification differs by country and is not a direct measure of income, density or addressable demand.':
+    'A classificação urbana difere entre países e não mede directamente o rendimento, a densidade nem a procura acessível.',
+  'The middle labour-force participation rate across reporting economies.':
+    'A taxa mediana de participação na força de trabalho entre as economias declarantes.',
+  'The middle modelled unemployment reading across reporting African economies.':
+    'A leitura mediana modelada do desemprego entre as economias africanas declarantes.',
+  'Definitions and informality matter; a low rate can coexist with underemployment and vulnerable work.':
+    'As definições e a informalidade são relevantes; uma taxa baixa pode coexistir com subemprego e trabalho vulnerável.',
+  'The middle bank-credit-to-private-sector ratio among reporting countries.':
+    'O rácio mediano do crédito bancário ao sector privado entre os países declarantes.',
+  'Credit depth does not establish access for a particular firm, borrower quality, pricing or non-bank finance.':
+    'A profundidade do crédito não demonstra acesso para uma empresa específica, qualidade dos mutuários, preço nem financiamento não bancário.',
+  'Sum of latest reported reserves including gold across countries with observations.':
+    'Soma das reservas comunicadas mais recentemente, incluindo ouro, nos países com observações.',
+  'A cross-country sum is not a shared continental buffer; adequacy must be assessed against each country’s imports, debt and exchange-rate regime.':
+    'Uma soma entre países não constitui uma reserva continental comum; a suficiência deve ser avaliada face às importações, à dívida e ao regime cambial de cada país.',
+  'Sum of latest reported personal remittance receipts across reporting countries.':
+    'Soma das remessas pessoais recebidas mais recentemente nos países declarantes.',
+  'Channels, household distribution, informality and exchange-rate conversion differ; the total is not business revenue.':
+    'Os canais, a distribuição entre agregados familiares, a informalidade e a conversão cambial diferem; o total não é receita empresarial.',
+  'The middle external-debt-to-income ratio across reporting economies.':
+    'O rácio mediano da dívida externa face ao rendimento entre as economias declarantes.',
+  'The middle exports-plus-imports share of GDP across reporting economies.':
+    'A proporção mediana das exportações e importações no PIB entre as economias declarantes.',
+  'Trade intensity is not the ease, cost or profitability of a route and can be structurally high in small economies.':
+    'A intensidade comercial não mede a facilidade, o custo nem a rentabilidade de uma rota e pode ser estruturalmente elevada em economias pequenas.',
+  'The middle manufacturing value-added share across reporting economies.':
+    'A proporção mediana do valor acrescentado da indústria transformadora entre as economias declarantes.',
+  'This aggregate does not reveal subsector capability, capacity use, local content, productivity or margins.':
+    'Este agregado não revela a capacidade dos subsectores, a utilização da capacidade, o conteúdo local, a produtividade nem as margens.',
+  'The middle rate of new limited-liability registrations among reporting economies.':
+    'A taxa mediana de novos registos de sociedades de responsabilidade limitada entre as economias declarantes.',
+  'Registration is not survival, scale, informality reduction or proof that entry procedures are easy.':
+    'O registo não significa sobrevivência, escala ou redução da informalidade, nem prova que os procedimentos de entrada sejam simples.',
+  'The middle share of people using the internet across reporting African economies.':
+    'A proporção mediana de pessoas que utilizam a Internet entre as economias africanas declarantes.',
+  'Usage does not establish connection quality, affordability, device access or commercial digital readiness.':
+    'A utilização não demonstra qualidade da ligação, comportabilidade, acesso a dispositivos nem preparação digital comercial.',
+  'The middle fixed-broadband subscription rate across countries with a reported observation.':
+    'A taxa mediana de assinaturas de banda larga fixa nos países com observação comunicada.',
+  'Subscriptions are not unique users; business-grade speed, resilience and cost require operator-level evidence.':
+    'As assinaturas não correspondem a utilizadores únicos; a velocidade, resiliência e custo empresariais exigem dados dos operadores.',
+  'The middle population-access rate across all African countries in scope.':
+    'A taxa mediana de acesso da população em todos os países africanos abrangidos.',
+  'Access does not measure reliability, available capacity, tariff, outage frequency or connection quality.':
+    'O acesso não mede a fiabilidade, a capacidade disponível, a tarifa, a frequência das interrupções nem a qualidade da ligação.',
+  'The middle life-expectancy-at-birth observation across all countries in scope.':
+    'A observação mediana da esperança de vida à nascença em todos os países abrangidos.',
+  'This broad outcome is not a direct measure of workforce health, health-system capacity or a specific operating risk.':
+    'Este resultado amplo não mede directamente a saúde da força de trabalho, a capacidade do sistema de saúde nem um risco operacional específico.',
+  'The middle population coverage of at least basic drinking-water services.':
+    'A cobertura populacional mediana de, pelo menos, serviços básicos de água potável.',
+  'The middle population coverage of at least basic sanitation services.':
+    'A cobertura populacional mediana de, pelo menos, serviços básicos de saneamento.',
+  'National coverage can conceal large urban, rural and subnational gaps and does not establish service reliability.':
+    'A cobertura nacional pode ocultar grandes diferenças urbanas, rurais e subnacionais e não demonstra a fiabilidade do serviço.',
+  'Source breadth': 'Amplitude das fontes',
+  'Who supplies the rolling evidence window': 'Quem fornece a janela documental móvel',
+  'Publisher breadth and source quality are shown separately from story volume. A broad source list reduces concentration risk but does not replace checking the linked evidence.':
+    'A amplitude dos editores e a qualidade das fontes são apresentadas separadamente do volume de histórias. Uma lista ampla de fontes reduz o risco de concentração, mas não substitui a verificação dos dados ligados.',
+  'Publishers · 30 days': 'Editores · 30 dias',
+  'Primary/global share': 'Proporção primária/global',
+  'Leading attributed sources': 'Principais fontes atribuídas',
+  'Primary or global': 'Primária ou global',
+  'Established specialist': 'Especialista estabelecida',
+  'Verified national': 'Nacional verificada',
+  'Other attributed source': 'Outra fonte atribuída',
+  'Publisher counts use attributed published records in the rolling 30-day window. Primary/global share includes quality-tier-four institutions and globally authoritative newsrooms; it measures evidence provenance, not truth by itself.':
+    'A contagem de editores utiliza registos publicados e atribuídos na janela móvel de 30 dias. A proporção primária/global inclui instituições de nível quatro e redacções de autoridade mundial; mede a proveniência dos dados, não a sua veracidade isoladamente.',
 };
 
 const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {
@@ -2983,6 +3090,18 @@ const NORMALISED_PORTUGUESE_INTERFACE_PHRASES = new Map<string, string>([
 
 const translatePortugueseDynamicInterfaceText = (value: string): string | undefined => {
   let match: RegExpMatchArray | null;
+  if ((match = value.match(/^(.+) recorded across (\d+) countries\.$/i))) {
+    return `${match[1]} registados em ${match[2]} países.`;
+  }
+  if ((match = value.match(/^(.+)% median real growth and (.+)% median inflation\.$/i))) {
+    return `Crescimento real mediano de ${match[1]}% e inflação mediana de ${match[2]}%.`;
+  }
+  if ((match = value.match(/^(.+)% of GDP median fixed investment across (\d+) reporting countries\.$/i))) {
+    return `Investimento fixo mediano de ${match[1]}% do PIB em ${match[2]} países declarantes.`;
+  }
+  if ((match = value.match(/^(.+)% of GDP median current-account balance\.$/i))) {
+    return `Saldo mediano da conta corrente de ${match[1]}% do PIB.`;
+  }
   if ((match = value.match(/^Audit complete: (\d+) records checked and (\d+) refresh tasks created\.$/i))) {
     return `Auditoria concluída: ${match[1]} registos verificados e ${match[2]} tarefas de actualização criadas.`;
   }

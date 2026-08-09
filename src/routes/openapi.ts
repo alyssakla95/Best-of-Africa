@@ -50,7 +50,7 @@ const openApiSpec = {
             get: {
                 summary: 'Get the verified seven-day BOA coverage pulse',
                 description: 'Reporting activity metrics; not market-performance, return or sovereign-risk indicators.',
-                responses: { 200: { description: 'Weekly story volume, country coverage, most-reported sector, regional gap and timestamp' } }
+                responses: { 200: { description: 'Weekly story volume, complete country and sector coverage ledgers, rolling publisher breadth, source-quality mix, regional gap and timestamp' } }
             }
         },
         '/market-intel/performance': {

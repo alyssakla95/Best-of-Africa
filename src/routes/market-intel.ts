@@ -766,7 +766,7 @@ router.get('/leading-sector', async (c) => {
 // ───────────────────────────────────────────────────────────────────────────────
 router.get('/coverage-pulse', async (c) => {
         const reqLang = c.req.query('lang')?.toLowerCase();
-        const [totals, topSector, countries, sectors, thinnest] = await Promise.all([
+        const [totals, topSector, countries, sectors, sourceRows, thinnest] = await Promise.all([
             c.env.DB.prepare(`
                 SELECT COUNT(*) AS stories, COUNT(DISTINCT country_code) AS countries
                 FROM articles
@@ -801,6 +801,18 @@ router.get('/coverage-pulse', async (c) => {
                 ORDER BY records_30d DESC, s.name
             `).all<{ sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }>(),
             c.env.DB.prepare(`
+                SELECT COALESCE(NULLIF(source_title, ''), 'Unattributed source') AS source_name,
+                       COALESCE(source_quality_tier, 0) AS quality_tier,
+                       COUNT(*) AS records_30d,
+                       COUNT(DISTINCT country_code) AS countries_30d,
+                       MAX(published_at) AS latest_record_at
+                FROM articles
+                WHERE status = 'published' AND published_at >= datetime('now', '-30 days')
+                GROUP BY LOWER(COALESCE(NULLIF(source_title, ''), 'Unattributed source')),
+                         COALESCE(source_quality_tier, 0)
+                ORDER BY records_30d DESC, source_name ASC
+            `).all<{ source_name: string; quality_tier: number; records_30d: number; countries_30d: number; latest_record_at: string | null }>(),
+            c.env.DB.prepare(`
                 SELECT c.region, COUNT(a.id) AS n
                 FROM countries c
                 LEFT JOIN articles a ON a.country_code = c.code AND a.status = 'published'
@@ -809,6 +821,11 @@ router.get('/coverage-pulse', async (c) => {
             `).first<{ region: string; n: number }>(),
         ]);
 
+        const sourceLedger = sourceRows.results || [];
+        const sourceRecordTotal = sourceLedger.reduce((sum, source) => sum + Number(source.records_30d || 0), 0);
+        const primaryOrGlobalRecords = sourceLedger
+            .filter(source => Number(source.quality_tier) === 4)
+            .reduce((sum, source) => sum + Number(source.records_30d || 0), 0);
         const data = {
             stories_7d: totals?.stories || 0,
             countries_7d: totals?.countries || 0,
@@ -825,6 +842,16 @@ router.get('/coverage-pulse', async (c) => {
             } : sector),
             countries_considered: (countries.results || []).length,
             sectors_considered: (sectors.results || []).length,
+            source_coverage: {
+                publishers_30d: sourceLedger.length,
+                records_30d: sourceRecordTotal,
+                primary_or_global_records_30d: primaryOrGlobalRecords,
+                primary_or_global_share_pct: sourceRecordTotal
+                    ? Number(((primaryOrGlobalRecords / sourceRecordTotal) * 100).toFixed(1))
+                    : 0,
+                leading_sources: sourceLedger.slice(0, 12),
+                methodology: 'Publisher counts use attributed published records in the rolling 30-day window. Primary/global share includes quality-tier-four institutions and globally authoritative newsrooms; it measures evidence provenance, not truth by itself.',
+            },
             thinnest_region: thinnest ? { region: thinnest.region, stories: thinnest.n } : { region: 'Zero configured regions', stories: 0 },
             updated_at: new Date().toISOString(),
         };

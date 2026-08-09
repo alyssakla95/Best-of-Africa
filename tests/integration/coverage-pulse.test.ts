@@ -138,6 +138,10 @@ describe('GET /coverage-pulse', () => {
             { results: [
                 { sector_id: 'finance', sector_name: 'Finance & Investment', records_30d: 14, countries_30d: 7, latest_record_at: '2026-08-08' },
             ] },
+            { results: [
+                { source_name: 'Reuters', quality_tier: 4, records_30d: 12, countries_30d: 9, latest_record_at: '2026-08-08' },
+                { source_name: 'African Business', quality_tier: 3, records_30d: 8, countries_30d: 5, latest_record_at: '2026-08-07' },
+            ] },
             { first: { region: 'Central', n: 1 } },
         ]);
         const env = createMockEnv({ DB: db });
@@ -152,6 +156,12 @@ describe('GET /coverage-pulse', () => {
             top_sector: { name: 'Finance', stories: 7 },
             countries_considered: 2,
             sectors_considered: 1,
+            source_coverage: {
+                publishers_30d: 2,
+                records_30d: 20,
+                primary_or_global_records_30d: 12,
+                primary_or_global_share_pct: 60,
+            },
             thinnest_region: { region: 'Central', stories: 1 },
         });
         expect(body.countries[1]).toEqual({
@@ -166,12 +176,15 @@ describe('GET /coverage-pulse', () => {
         expect(queries[2]).not.toContain('HAVING');
         expect(queries[2]).toContain('ORDER BY this_week DESC, (this_week - last_week) DESC, c.name ASC');
         expect(queries[3]).toContain("WHERE s.id <> 'general'");
+        expect(queries[4]).toContain('source_quality_tier');
+        expect(queries[4]).toContain("datetime('now', '-30 days')");
     });
 
     it('returns a factual zero-coverage shape without null placeholders', async () => {
         const { db } = createCoverageDb([
             { first: null },
             { first: null },
+            { results: [] },
             { results: [] },
             { results: [] },
             { first: null },
@@ -190,6 +203,13 @@ describe('GET /coverage-pulse', () => {
             sectors: [],
             countries_considered: 0,
             sectors_considered: 0,
+            source_coverage: {
+                publishers_30d: 0,
+                records_30d: 0,
+                primary_or_global_records_30d: 0,
+                primary_or_global_share_pct: 0,
+                leading_sources: [],
+            },
             thinnest_region: { region: 'Zero configured regions', stories: 0 },
         });
         expect(JSON.stringify(body)).not.toContain(':null');

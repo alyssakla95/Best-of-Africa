@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect, vi } from 'vitest';
-import { discoveryCountryExpression, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, parseHTMLListing, selectDiscoveryTargets } from '../../src/workers/ingestion';
+import { discoveryCountryExpression, discoveryLocale, discoverySourcesForCountry, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, parseHTMLListing, selectDiscoveryTargets } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -23,6 +23,11 @@ describe('isAfricanContent', () => {
         });
         it('accepts the accented Côte d’Ivoire spelling', () => {
             expect(isAfricanContent("Côte d'Ivoire cocoa harvest beats forecast", '')).toBe(true);
+        });
+        it('accepts French and Portuguese African country names', () => {
+            expect(isAfricanContent('Le Cameroun publie ses données commerciales', '')).toBe(true);
+            expect(isAfricanContent('Moçambique aprova novo investimento industrial', '')).toBe(true);
+            expect(isAfricanContent('La Côte d’Ivoire augmente ses exportations', '')).toBe(true);
         });
         it('accepts Gqeberha (added after a false-negative during cleanup)', () => {
             expect(isAfricanContent('Gqeberha port expansion approved', '')).toBe(true);
@@ -110,6 +115,8 @@ describe('mentionsTargetCountry', () => {
     it('supports official and common country-name variants', () => {
         expect(mentionsTargetCountry('Ivory Coast cocoa exports rise', '', "Côte d'Ivoire")).toBe(true);
         expect(mentionsTargetCountry('DRC revises its mining code', '', 'Democratic Republic of Congo')).toBe(true);
+        expect(mentionsTargetCountry('Moçambique aprova novo investimento industrial', '', 'Mozambique')).toBe(true);
+        expect(mentionsTargetCountry('Le Cameroun publie ses données commerciales', '', 'Cameroon')).toBe(true);
     });
 });
 
@@ -117,6 +124,21 @@ describe('underserved-country discovery', () => {
     it('builds alias-aware single-country search expressions', () => {
         expect(discoveryCountryExpression("C\u00f4te d'Ivoire")).toContain('ivory coast');
         expect(discoveryCountryExpression('Cabo Verde')).toContain('cape verde');
+        expect(discoveryCountryExpression('Mozambique')).toContain('mocambique');
+        expect(discoveryCountryExpression('Central African Republic')).toContain('republique centrafricaine');
+    });
+
+    it('selects a publication language used by the target market', () => {
+        expect(discoveryLocale('MZ')).toEqual({ hl: 'pt-PT', gl: 'PT', ceid: 'PT:pt-150' });
+        expect(discoveryLocale('CI')).toEqual({ hl: 'fr', gl: 'FR', ceid: 'FR:fr' });
+        expect(discoveryLocale('KE')).toEqual({ hl: 'en', gl: 'GB', ceid: 'GB:en' });
+    });
+
+    it('prioritises authoritative sources that publish in the target language', () => {
+        const sources = [{ domain: 'reuters.com' }, { domain: 'rfi.fr' }, { domain: 'lusa.pt' }, { domain: 'afdb.org' }];
+        expect(discoverySourcesForCountry(sources, 'CI').map(item => item.domain)).toEqual(['rfi.fr', 'afdb.org']);
+        expect(discoverySourcesForCountry(sources, 'MZ').map(item => item.domain)).toEqual(['lusa.pt', 'afdb.org']);
+        expect(discoverySourcesForCountry(sources, 'KE')).toEqual(sources);
     });
 
     it('selects two least-covered, least-recently-attempted markets per region', () => {
@@ -152,6 +174,8 @@ describe('isMarketEvidence', () => {
         expect(isMarketEvidence('Regional trade corridor opens', 'Exports will move through a new logistics route.')).toBe(true);
         expect(isMarketEvidence('Solar sector secures financing', 'The energy project attracted institutional investors.')).toBe(true);
         expect(isMarketEvidence('Central bank changes monetary policy', 'Inflation remains above target.')).toBe(true);
+        expect(isMarketEvidence("La Côte d'Ivoire attire de nouveaux investissements industriels", '')).toBe(true);
+        expect(isMarketEvidence('Moçambique aumenta exportações e investimento', '')).toBe(true);
     });
 });
 

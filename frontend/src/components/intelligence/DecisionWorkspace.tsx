@@ -5,7 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatReaderDateTime } from '../../i18n/locale';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
-import { api, type SectorMarketPerformance } from '../../services/api';
+import { api } from '../../services/api';
 
 type DecisionWorkspaceProps = { context: 'continental' | 'market' };
 
@@ -35,7 +35,7 @@ export function DecisionWorkspace({ context }: DecisionWorkspaceProps) {
   const [params, setParams] = useSearchParams();
   const countriesQuery = useQuery({ queryKey: ['decision-countries'], queryFn: api.getCountries, staleTime: 60 * 60 * 1000 });
   const performanceQuery = useQuery({ queryKey: ['decision-sector-performance'], queryFn: () => api.getSectorPerformance('investor'), staleTime: 0, refetchOnWindowFocus: true });
-  const countries = countriesQuery.data?.data || [];
+  const countries = useMemo(() => countriesQuery.data?.data || [], [countriesQuery.data?.data]);
   const selectedCountry = params.get('country') || '';
   const selectedSector = params.get('sector') || 'agriculture';
 
@@ -81,7 +81,7 @@ export function DecisionWorkspace({ context }: DecisionWorkspaceProps) {
   const imf = dossier?.dossier.macroeconomics.imf_current || {};
   const trade = dossier?.dossier.trade;
 
-  const decisionRows = useMemo(() => {
+  const decisionRows = (() => {
     if (!dossier || !sector) return [];
     const country = dossier.country;
     return [
@@ -92,7 +92,7 @@ export function DecisionWorkspace({ context }: DecisionWorkspaceProps) {
       ['Competition and pricing', 'Source-led verification', `${displayedRecords.length} recent country${sectorRecords.length ? '-sector' : ''} records plus ${officialEvidence.length} official provider records from ${sourceCount} distinct attributed sources.`, 'Identify current competitors, substitutes, price points, margins, procurement channels and customer switching costs from primary filings and fieldwork.'],
       ['Regulation and market entry', 'Official verification route', `${dossier.dossier.official_resources.length} official portals are linked for registration, investment, visa or tourism checks.`, 'Confirm the current legal instrument, licence, ownership, tax, repatriation, standards, data and local-partner requirements with the responsible authority.'],
     ];
-  }, [dossier, sector, macroIndicators.length, trade, displayedRecords.length, sectorRecords.length, sourceCount, officialEvidence.length]);
+  })();
 
   const updateSelection = (key: 'country' | 'sector', value: string) => setParams(current => {
     const next = new URLSearchParams(current);

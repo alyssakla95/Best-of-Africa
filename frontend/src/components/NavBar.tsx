@@ -131,17 +131,18 @@ export const NavBar: React.FC = () => {
                 <nav aria-label="Primary navigation" className="relative z-0 ml-5 hidden flex-1 items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-[0.11em] text-navy/70 lg:flex xl:ml-10">
                     {[
                         { path: '/intelligence', label: t('nav.intelligence_short', 'Intelligence'), priority: true },
-                        { path: '/dashboards/overview', label: 'Dashboard', priority: true },
+                        { path: '/dashboards/overview', label: t('nav.dashboard', 'Dashboard'), priority: true },
                         { path: '/countries', label: t('nav.countries', 'Countries') },
                         { path: '/feed', label: t('nav.briefing_short', 'Briefing') },
                         { path: '/posts', label: t('nav.stories', 'Stories') },
-                        { path: '/enterprise', label: 'Enterprise', priority: true },
+                        { path: '/enterprise', label: t('nav.enterprise', 'Enterprise'), priority: true },
                     ].map((item) => {
                         const isActive = isPathActive(item.path);
                         return (
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                aria-current={isActive ? 'page' : undefined}
                                 className={cn("relative z-10 whitespace-nowrap rounded-md px-3 py-2.5 transition-colors xl:px-4", item.priority && !isActive && "text-navy", isActive ? "bg-navy text-white" : "hover:bg-navy/5 hover:text-navy")}
                             >
                                 {item.label}
@@ -166,7 +167,7 @@ export const NavBar: React.FC = () => {
                             <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-navy/50 hover:text-accent hover:bg-accent/10 transition-colors" asChild>
                                 <Link to="/settings">
                                     <GearIcon className="h-5 w-5" />
-                                    <span className="sr-only">Settings</span>
+                                <span className="sr-only">{t('nav.settings', 'Settings')}</span>
                                 </Link>
                             </Button>
                         )}
@@ -174,7 +175,7 @@ export const NavBar: React.FC = () => {
                             <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-navy/50 hover:text-accent hover:bg-accent/10 transition-colors" asChild>
                                 <Link to="/admin">
                                     <LockClosedIcon className="h-5 w-5" />
-                                    <span className="sr-only">Admin</span>
+                                    <span className="sr-only">{t('nav.admin', 'Admin')}</span>
                                 </Link>
                             </Button>
                         )}
@@ -191,14 +192,14 @@ export const NavBar: React.FC = () => {
                         <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full text-muted-foreground" asChild>
                             <Link to="/search">
                                 <MagnifyingGlassIcon className="h-5 w-5" />
-                                <span className="sr-only">Search</span>
+                                <span className="sr-only">{t('nav.search', 'Search')}</span>
                             </Link>
                         </Button>
                         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full ml-1">
                                     <HamburgerMenuIcon className="h-6 w-6" />
-                                    <span className="sr-only">Toggle menu</span>
+                                    <span className="sr-only">{t('nav.open_menu', 'Open complete menu')}</span>
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-full max-w-none bg-white border-l border-primary/20 p-0 flex flex-col sm:w-[24rem]">

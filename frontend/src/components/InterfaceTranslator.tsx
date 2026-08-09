@@ -1,24 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { request } from '../services/api';
 import { TRANSLATIONS } from '../i18n/dict';
 import {
   applyPortuguese1945Orthography,
   PORTUGUESE_INTERFACE_PHRASES,
   translatePortugueseInterfaceText,
 } from '../i18n/pt-PT-1945';
-import { readPersistentCache, writePersistentCache } from '../lib/persistentQueryCache';
-
-type TranslationResponse = { translations: string[] };
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const cache = new Map<string, string>();
 const SKIP = 'script,style,code,pre,textarea,[contenteditable="true"],[data-no-translate]';
 const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'aria-label', 'title', 'alt'];
-const MAX_BATCH_ITEMS = 24;
-const MAX_BATCH_CHARS = 12000;
-const PERSISTENT_TRANSLATION_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 const ENGLISH_TEXT = /\b(?:the|and|for|with|from|your|this|that|what|how|which|use|source|market|country|countries|read|view|loading|available|official|report|story|stories|member|search|save|open|evidence|performance|page|access|submit|register|settings|privacy|terms|contact|business|investment|trade|updated|current|failed|error|next|previous|learn|explore|support|apply|select|required|optional|prepared|change|higher|lower|growth|coverage|account|service|definition|value|unit|comparison|timing|boundary|section|observation|projection|freshness|review|reporting)\b/i;
 const containsEnglishText = (value: string) => ENGLISH_TEXT.test(value.replace(/BOA-Story/g, ''));
 const PORTUGUESE_OUTPUTS = new Set([
@@ -32,15 +25,6 @@ const isPortugueseText = (value: string) => {
   return words.length >= 2 && /[ãõçáéíóúâêôà]|\b(?:actual|actividade|cobertura|dados|país|países|projecto|sector|utilize)\b/i.test(value);
 };
 
-const translationCacheKey = (language: string, text: string) => {
-  let hash = 2166136261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `ui-translation:${language}:${text.length}:${(hash >>> 0).toString(36)}`;
-};
-
 export function InterfaceTranslator() {
     const { language } = useLanguage();
     const location = useLocation();
@@ -50,7 +34,8 @@ export function InterfaceTranslator() {
     let cancelled = false;
     let timer = 0;
 
-    // Resolve maintained interface strings locally; dynamic copy uses the publication translation service.
+    // Resolve interface strings exclusively from maintained, reviewable source
+    // catalogues. Reader-facing application chrome is never generated at run time.
     for (const [key, english] of Object.entries(TRANSLATIONS.en || {})) {
       const translated = TRANSLATIONS[language]?.[key];
       if (translated) cache.set(`${language}:${english}`, translated);
@@ -84,7 +69,6 @@ export function InterfaceTranslator() {
     // every mutation, so for English this effect does nothing at all.
     if (language === 'en') {
       document.documentElement.dataset.translationState = 'source';
-      setStatus('source');
       return () => { delete document.documentElement.dataset.translationState; };
     }
 
@@ -137,21 +121,7 @@ export function InterfaceTranslator() {
       return items;
     };
 
-    const batchesFor = (values: string[]) => {
-      const batches: string[][] = [];
-      let batch: string[] = [];
-      let characters = 0;
-      for (const value of values) {
-        if (batch.length && (batch.length >= MAX_BATCH_ITEMS || characters + value.length > MAX_BATCH_CHARS)) {
-          batches.push(batch); batch = []; characters = 0;
-        }
-        batch.push(value); characters += value.length;
-      }
-      if (batch.length) batches.push(batch);
-      return batches;
-    };
-
-    const translate = async () => {
+    const translate = () => {
       if (cancelled) return;
       document.documentElement.dataset.translationState = 'translating';
       setStatus('translating');
@@ -164,36 +134,8 @@ export function InterfaceTranslator() {
           if (translated) cache.set(`pt:${text}`, translated);
         }
       }
-      await Promise.all(unique.map(async text => {
-        const key = `${language}:${text}`;
-        if (cache.has(key)) return;
-        // Never revive a previously generated Portuguese phrase from browser
-        // storage. This locale resolves exclusively from committed catalogues.
-        if (language === 'pt') return;
-        const persisted = await readPersistentCache<string>(translationCacheKey(language, text), PERSISTENT_TRANSLATION_AGE_MS);
-        if (persisted) cache.set(key, persisted);
-      }));
-      for (const batch of batchesFor(unique)) {
-        if (cancelled) break;
-        const missing = batch.filter(text => !cache.has(`${language}:${text}`));
-        // Portuguese is a source-owned locale. Missing phrases remain visible
-        // to the coverage audit and are never sent to the generated-copy API.
-        if (missing.length && language !== 'pt') {
-          try {
-            const result = await request<TranslationResponse>('/translate/interface', {
-              method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
-              body: JSON.stringify({ language, texts: missing }),
-            });
-            missing.forEach((text, index) => {
-              const translated = result.translations[index];
-              if (translated) {
-                cache.set(`${language}:${text}`, translated);
-                void writePersistentCache(translationCacheKey(language, text), translated);
-              }
-            });
-          } catch { /* The visible partial state below tells the reader English remains. */ }
-        }
-        if (!cancelled) items.filter(item => batch.includes(item.value)).forEach(item => item.apply(cache.get(`${language}:${item.value}`) || item.value));
+      if (!cancelled) {
+        items.forEach(item => item.apply(cache.get(`${language}:${item.value}`) || item.value));
       }
       if (!cancelled) {
         const incomplete = items.some(item => {

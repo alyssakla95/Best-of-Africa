@@ -642,6 +642,12 @@ export const api = {
         top_sector: { name: string; stories: number };
         countries: { country_code: string; country_name: string; this_week: number; last_week: number }[];
         sectors: { sector_id: string; sector_name: string; records_30d: number; countries_30d: number; latest_record_at: string | null }[];
+        concentration: {
+            uncovered_countries_7d: number;
+            leading_country_7d: { country_code: string; country_name: string; records_7d: number; share_pct: number };
+            leading_source_share_pct: number;
+            top_four_source_share_pct: number;
+        };
         source_coverage: {
             publishers_30d: number;
             records_30d: number;

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { LanguageCode } from '../types';
 import { SUPPORTED_LANGUAGES as CONTENT_LANGUAGES } from '../types';
 import { TRANSLATIONS } from '../i18n/dict';
-import { applyPortuguese1945Orthography } from '../i18n/pt-PT-1945';
+import { applyPortuguese1945Orthography } from '../i18n/portuguese-orthography';
 import { useQueryClient } from '@tanstack/react-query';
 // Article and interface language are one reader preference. Selecting a locale
 // changes the application chrome and is also passed to article queries so the

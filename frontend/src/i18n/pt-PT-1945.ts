@@ -72,6 +72,16 @@ export function applyPortuguese1945Orthography(value: string): string {
  * to explicit translation keys.
  */
 export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
+  'Source breadth and concentration': 'Amplitude e concentração das fontes',
+  'Publisher breadth, authority and concentration are shown separately from story volume. The concentration readings make an imbalanced evidence window visible instead of allowing a long source list to conceal it.': 'A diversidade, a autoridade e a concentração dos editores são apresentadas separadamente do volume de publicações. As medidas de concentração tornam visível um conjunto de evidência desequilibrado, em vez de permitirem que uma lista extensa de fontes o oculte.',
+  'Leading source share': 'Peso da principal fonte',
+  'of 30-day records': 'dos registos de 30 dias',
+  'Countries without a story': 'Países sem publicações',
+  'this week': 'esta semana',
+  'Most-covered country:': 'País com maior cobertura:',
+  '% of the seven-day ledger. The four leading sources account for': '% do registo de sete dias. As quatro principais fontes representam',
+  '% of the 30-day ledger.': '% do registo de 30 dias.',
+  'Skip to main content': 'Saltar para o conteúdo principal',
   'US$': 'US$',
   'US$4': 'US$4',
   '% annual change': '% de variação anual',

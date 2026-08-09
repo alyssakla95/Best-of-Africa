@@ -826,6 +826,12 @@ router.get('/coverage-pulse', async (c) => {
         const primaryOrGlobalRecords = sourceLedger
             .filter(source => Number(source.quality_tier) === 4)
             .reduce((sum, source) => sum + Number(source.records_30d || 0), 0);
+        const countryLedger = countries.results || [];
+        const leadingCountry = countryLedger[0];
+        const leadingSourceRecords = Number(sourceLedger[0]?.records_30d || 0);
+        const topFourSourceRecords = sourceLedger
+            .slice(0, 4)
+            .reduce((sum, source) => sum + Number(source.records_30d || 0), 0);
         const data = {
             stories_7d: totals?.stories || 0,
             countries_7d: totals?.countries || 0,
@@ -842,6 +848,30 @@ router.get('/coverage-pulse', async (c) => {
             } : sector),
             countries_considered: (countries.results || []).length,
             sectors_considered: (sectors.results || []).length,
+            concentration: {
+                uncovered_countries_7d: countryLedger.filter(country => Number(country.this_week || 0) === 0).length,
+                leading_country_7d: leadingCountry ? {
+                    country_code: leadingCountry.country_code,
+                    country_name: reqLang === 'pt'
+                        ? (portugueseCountryName(leadingCountry.country_code, leadingCountry.country_name) || leadingCountry.country_name)
+                        : leadingCountry.country_name,
+                    records_7d: Number(leadingCountry.this_week || 0),
+                    share_pct: Number(totals?.stories || 0)
+                        ? Number(((Number(leadingCountry.this_week || 0) / Number(totals?.stories || 1)) * 100).toFixed(1))
+                        : 0,
+                } : {
+                    country_code: 'none',
+                    country_name: reqLang === 'pt' ? 'Sem registos nacionais publicados' : 'No published country records',
+                    records_7d: 0,
+                    share_pct: 0,
+                },
+                leading_source_share_pct: sourceRecordTotal
+                    ? Number(((leadingSourceRecords / sourceRecordTotal) * 100).toFixed(1))
+                    : 0,
+                top_four_source_share_pct: sourceRecordTotal
+                    ? Number(((topFourSourceRecords / sourceRecordTotal) * 100).toFixed(1))
+                    : 0,
+            },
             source_coverage: {
                 publishers_30d: sourceLedger.length,
                 records_30d: sourceRecordTotal,

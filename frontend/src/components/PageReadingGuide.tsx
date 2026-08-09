@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { BookOpen, ChevronDown, CircleHelp, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { translatePortugueseInterfaceText } from '../i18n/pt-PT-1945';
+import { usePortugueseCatalogue } from '../i18n/usePortugueseCatalogue';
 
 type Guide = {
   label: string;
@@ -182,6 +182,7 @@ const analyticalPrimer = (subject: string) => {
 
 export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: string }) {
   const { language } = useLanguage();
+  const translatePortugueseInterfaceText = usePortugueseCatalogue(language === 'pt');
   const text = (value: string) => language === 'pt' ? (translatePortugueseInterfaceText(value) || value) : value;
   const subjectLabel = language === 'pt'
     ? subject.includes('sector') ? 'este guia sectorial' : subject.includes('continental') ? 'este panorama continental' : 'este painel'

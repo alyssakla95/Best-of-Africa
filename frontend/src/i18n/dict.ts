@@ -6,7 +6,7 @@
 // Add a key here, then reference it in a component via t('key', 'English fallback').
 
 import { PAGE_TRANSLATIONS } from './pages';
-import { applyPortuguese1945Orthography } from './pt-PT-1945';
+import { applyPortuguese1945Orthography } from './portuguese-orthography';
 
 export type UIDict = Record<string, string>;
 

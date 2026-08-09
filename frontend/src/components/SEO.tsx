@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { translatePortugueseInterfaceText } from '../i18n/pt-PT-1945';
+import { usePortugueseCatalogue } from '../i18n/usePortugueseCatalogue';
 
 interface SEOProps {
     title: string;
@@ -20,6 +20,7 @@ export const SEO: React.FC<SEOProps> = ({
     author = 'Mailles Cortes | BOA-Story'
 }) => {
     const { language } = useLanguage();
+    const translatePortugueseInterfaceText = usePortugueseCatalogue(language === 'pt');
     const localise = (value?: string) => {
         if (!value || language !== 'pt') return value || '';
         return translatePortugueseInterfaceText(value) || value;

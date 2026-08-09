@@ -428,6 +428,26 @@ body {
     background-color: #FFFFFF;
   }
 
+  /* Publisher CDNs can expire or reject a cached hotlink. Keep the article
+     usable and clearly source-led instead of leaving a large empty media box
+     with a misleading photo credit. */
+  [data-editorial-image-failed='true']::after {
+    content: 'Source-linked reporting';
+    position: absolute;
+    inset: 1rem 1rem auto 1rem;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  [data-editorial-image-failed='true'] [data-photo-credit] {
+    display: none !important;
+  }
+
   /* `!important` is required here: the build-time CSS minifier merges every
      `background-color: #FFFFFF` rule — including Tailwind state-variant
      utilities — into shared :is() selectors it re-emits AFTER this block.

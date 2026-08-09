@@ -162,6 +162,12 @@ describe('GET /coverage-pulse', () => {
                 primary_or_global_records_30d: 12,
                 primary_or_global_share_pct: 60,
             },
+            concentration: {
+                uncovered_countries_7d: 1,
+                leading_country_7d: { country_code: 'KE', country_name: 'Kenya', records_7d: 8, share_pct: 44.4 },
+                leading_source_share_pct: 60,
+                top_four_source_share_pct: 100,
+            },
             thinnest_region: { region: 'Central', stories: 1 },
         });
         expect(body.countries[1]).toEqual({
@@ -209,6 +215,12 @@ describe('GET /coverage-pulse', () => {
                 primary_or_global_records_30d: 0,
                 primary_or_global_share_pct: 0,
                 leading_sources: [],
+            },
+            concentration: {
+                uncovered_countries_7d: 0,
+                leading_country_7d: { country_code: 'none', country_name: 'No published country records', records_7d: 0, share_pct: 0 },
+                leading_source_share_pct: 0,
+                top_four_source_share_pct: 0,
             },
             thinnest_region: { region: 'Zero configured regions', stories: 0 },
         });

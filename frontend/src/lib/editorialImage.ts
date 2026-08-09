@@ -34,4 +34,10 @@ export function sourcedEditorialImage(item: ImageProvenance): string | null {
 
 export function hideFailedEditorialImage(image: HTMLImageElement): void {
   image.hidden = true;
+  const frame = image.parentElement;
+  if (!frame) return;
+  frame.dataset.editorialImageFailed = 'true';
+  frame.querySelectorAll<HTMLElement>('[data-photo-credit]').forEach(credit => {
+    credit.hidden = true;
+  });
 }

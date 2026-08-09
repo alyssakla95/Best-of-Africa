@@ -3,12 +3,26 @@ import { useLocation } from 'react-router-dom';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
 import { Breadcrumbs } from './Breadcrumbs';
-import { InterfaceTranslator } from './InterfaceTranslator';
 import { MEMBER_PREVIEW_MODE } from '../config/flags';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { MobileNavigationDock } from './MobileNavigationDock';
 import { PageReadingGuide } from './PageReadingGuide';
 import { api } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
+
+const InterfaceTranslator = React.lazy(() => import('./InterfaceTranslator').then(module => ({
+    default: module.InterfaceTranslator,
+})));
+
+function LocalizedInterfaceTranslator() {
+    const { language } = useLanguage();
+    if (language === 'en') return null;
+    return (
+        <React.Suspense fallback={null}>
+            <InterfaceTranslator />
+        </React.Suspense>
+    );
+}
 
 
 
@@ -29,7 +43,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     return (
         <div className="flex min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-background text-foreground overflow-x-clip">
-            <InterfaceTranslator />
+            <a
+                href="#main-content"
+                className="fixed left-4 top-3 z-[100] -translate-y-24 rounded-md bg-navy px-4 py-3 text-sm font-bold text-white shadow-xl transition-transform focus:translate-y-0"
+            >
+                Skip to main content
+            </a>
+            <LocalizedInterfaceTranslator />
             <div className="flex-1 flex flex-col min-h-screen min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
                 <NavBar />
                 {MEMBER_PREVIEW_MODE && (
@@ -40,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 )}
                 <Breadcrumbs />
                 <PageReadingGuide />
-                <main className="route-canvas flex-1 transition-colors duration-200">
+                <main id="main-content" tabIndex={-1} className="route-canvas flex-1 transition-colors duration-200">
                     {children}
                 </main>
                 <Footer />

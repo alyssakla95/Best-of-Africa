@@ -83,19 +83,24 @@ async function fetchIndicator(
     countryCode: string,
     indicatorCode: string
 ): Promise<{ value: number | null; year: number } | null> {
-    try {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
         // MRNEV means "most recent non-empty value". MRV can return the latest
         // calendar row even when its value is null, hiding a valid older release.
         const url = `${WORLD_BANK_API}/country/${countryCode}/indicator/${indicatorCode}?format=json&per_page=1&mrnev=1`;
         const response = await fetchWithTimeout(url);
 
-        if (!response.ok) return null;
+        if (!response.ok) continue;
 
-        const data = await response.json() as any[];
+        const body = await response.text();
+        // The provider occasionally returns an XML error envelope with HTTP
+        // 200. Treat it as a retryable transport failure, never as no data.
+        if (!body.trimStart().startsWith('[')) continue;
+        const data = JSON.parse(body) as any[];
 
         // World Bank API returns [metadata, data]
         if (!data || data.length < 2 || !data[1] || data[1].length === 0) {
-            return null;
+            continue;
         }
 
         const record = data[1][0];
@@ -103,10 +108,11 @@ async function fetchIndicator(
             value: record.value,
             year: parseInt(record.date),
         };
-    } catch (error) {
-        console.error(`Failed to fetch indicator ${indicatorCode} for ${countryCode}:`, error);
-        return null;
+      } catch (error) {
+        if (attempt === 2) console.error(`Failed to fetch indicator ${indicatorCode} for ${countryCode}:`, error);
+      }
     }
+    return null;
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

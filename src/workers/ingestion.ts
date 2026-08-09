@@ -890,14 +890,16 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                 console.warn('[ingestion] Using the built-in discovery catalogue fallback.', error);
             }
 
-            // Take the least-covered, least-recently-attempted country from every
-            // region. Persisting attempts prevents a hard-to-source market from
-            // permanently monopolising a regional slot while retaining a strict
-            // all-country coverage objective.
+            // Take exactly one least-covered, least-recently-attempted country
+            // from every region. The discovery budget is eight records: five
+            // regional country reservations plus one sector and two global
+            // authority searches. Selecting two countries per region created
+            // ten concurrent searches and allowed fast, easy markets to consume
+            // the shared budget before harder regions returned.
             const minute = Math.floor(Date.now() / 60000);
             const targetCountries = selectDiscoveryTargets(
                 (underservedQuery.results || []) as unknown as DiscoveryCountry[],
-                2,
+                1,
             );
             await Promise.all(targetCountries.map(country => env.DB.prepare(`
                 INSERT INTO coverage_discovery_state (country_code, last_attempted_at, attempt_count)

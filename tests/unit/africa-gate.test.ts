@@ -151,6 +151,7 @@ describe('underserved-country discovery', () => {
             { code: 'GA', name: 'Gabon', region: 'Central', article_count: 1, last_attempted_at: null, attempt_count: 0 },
         ];
         expect(selectDiscoveryTargets(countries).map(country => country.code)).toEqual(['AO', 'GA', 'BJ', 'GM']);
+        expect(selectDiscoveryTargets(countries, 1).map(country => country.code)).toEqual(['AO', 'BJ']);
     });
 });
 

@@ -64,17 +64,17 @@ These URLs describe the currently verified Alyssa Cloudflare deployment. The rep
 
 ### Verified state
 
-Last checked on 9 August 2026:
+Production snapshot captured at 13:13 UTC on 9 August 2026:
 
 - the frontend and API were reachable, along with the reader, enterprise, membership, countries, trust, and pilot-application routes;
 - the structured pilot application was reachable and its protected operator inbox was reading the migrated production table;
 - D1, content processing, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
 - the database contained 831 article records;
-- the current worker-output inventory reported 361 published articles, 360 audio files, and 2,146 quality-approved translations across six non-English languages, plus 82 market reports;
+- the worker-output inventory reported 372 published articles, 372 audio files, and 2,231 quality-approved translations across six non-English languages, plus 84 market reports;
 - the production bundle was served with immutable asset caching;
 - the complete test suite contained 311 passing tests.
 
-The verified Alyssa-account release was repository commit `16f1e64` and Worker version `2374595b-8c51-4f91-a18d-f8b32a70ca92`.
+The verified Alyssa-account runtime was Pages deployment [`ef889c40`](https://ef889c40.alyssa-boa-web.pages.dev), whose deployment metadata identifies source revision `16f1e64`, together with Worker version `2374595b-8c51-4f91-a18d-f8b32a70ca92`.
 
 The deep-health response is currently `degraded`, rather than `healthy`, because of two checks: `coverage_diversity` reports that the rolling evidence window has not yet met the all-country, publisher, and global-source quality standard, and `email_delivery` reports that no verified transactional email provider and sender are configured. The endpoint returns HTTP 503 while any check is degraded by design. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
 

@@ -71,4 +71,9 @@ describe('country resource integrity', () => {
         expect(migration).toContain('verified_at TEXT NOT NULL');
         expect(migration).toContain("status IN ('verified', 'withdrawn', 'review_due')");
     });
+
+    it('versions the country-list cache when the public safety projection changes', () => {
+        const cache = readFileSync('src/lib/cache.ts', 'utf8');
+        expect(cache).toContain("COUNTRIES_LIST: 'countries:list:v2-verified-resources'");
+    });
 });

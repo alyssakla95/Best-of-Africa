@@ -131,7 +131,10 @@ export async function invalidateCachePrefix(env: Env, prefix: string): Promise<v
 
 export const CACHE_KEYS = {
     // Existing keys
-    COUNTRIES_LIST: 'countries:list',
+    // Versioned because the public country projection now excludes unverified
+    // legacy portals and synthetic scores. Reusing v1 would serve the unsafe
+    // shape from KV for up to the full static-cache lifetime after deployment.
+    COUNTRIES_LIST: 'countries:list:v2-verified-resources',
     SECTORS_LIST: 'sectors:list',
     ARTICLES_FEATURED: 'articles:featured',
     ARTICLES_LATEST: 'articles:latest',

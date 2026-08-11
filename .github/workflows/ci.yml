@@ -15,12 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # jsdom 30 and its locked undici runtime require Node APIs that are
+          # unavailable on Node 20. Keep CI aligned with the production build
+          # runtime so the React test pool can start reliably.
+          node-version: '24'
 
       - name: Install backend dependencies
         run: npm ci

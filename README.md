@@ -145,15 +145,15 @@ The last live audit was performed at 00:39 UTC on 11 August 2026:
 - the specialist marketplace was enabled and healthy, its D1 schema was ready, and its public API returned successfully; founding waivers make Stripe optional at this stage;
 - the Founding Specialist Network currently contained zero profiles and zero active waivers, so the 20–50 profile target is an operating plan rather than a claimed cohort;
 - D1, content processing, KV media storage, Vectorize, Durable Objects, sector assignment, and autonomous worker outputs were healthy;
-- the database contained 856 article records at the time of inspection;
-- the worker-output inventory reported 372 published articles, 372 audio files, and 2,231 quality-approved translations across six non-English languages, plus 84 market reports;
+- the database contained 857 article records at the time of inspection;
+- the worker-output inventory reported 389 published articles, 389 audio files, and 2,334 quality-approved translations across six non-English languages, plus 97 market reports;
 - the production bundle was served with immutable asset caching;
 - the complete local quality gate passed at the time of inspection; the current CI run is the authoritative test result for a committed revision;
 - ten priority reader, Enterprise, and specialist routes passed both mobile and desktop browser audits.
 
-The verified Alyssa-account runtime is Pages deployment [`f1954a22`](https://f1954a22.alyssa-boa-web.pages.dev) together with Worker version `1ade3452-dccc-4d8a-b6c4-de5898e8a7bd`. These are direct deployments from the current working tree; the Pages project has no Git connection, and deployment metadata is not evidence that every deployed change has been committed.
+The verified Alyssa-account runtime is Pages deployment [`cf00f2c0`](https://cf00f2c0.alyssa-boa-web.pages.dev) together with Worker version `c31d6156-e942-4a33-8bff-18313608184e`, built from Git revision `fa53905`. The Pages project has no Git connection, so deployment identity and the committed revision are recorded together explicitly.
 
-At that audit, deep health was `degraded` and returned HTTP 503 because three checks had not met their production standard: `coverage_diversity`, `source_acquisition`, and `email_delivery`. The 30-day evidence window covered 43 of 54 countries; its top country and publisher each represented roughly 41% of the window, and primary/global evidence represented 16.5%, below the 50% health threshold. The current working tree retains hard admission caps for new publications and corrects acquisition health to count one canonical source per URL, matching ingestion behaviour. Those safeguards improve the forward cohort but do not rewrite historical reporting. Stripe configuration is marketplace metadata rather than a health requirement while listing access is waived.
+At that audit, deep health was `degraded` and returned HTTP 503 because three checks had not met their production standard: `coverage_diversity`, `source_acquisition`, and `email_delivery`. The 30-day evidence window covered 43 of 54 countries; its top country and publisher each represented roughly 41% of the window, and primary/global evidence represented 16.7%, below the 50% health threshold. The current release retains hard admission caps for new publications and corrects acquisition health to count one canonical source per URL, matching ingestion behaviour. Those safeguards improve the forward cohort but do not rewrite historical reporting. Stripe configuration is marketplace metadata rather than a health requirement while listing access is waived.
 
 The live status endpoints remain authoritative:
 

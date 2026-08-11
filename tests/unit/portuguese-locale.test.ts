@@ -248,11 +248,13 @@ describe('coded Portuguese interface locale', () => {
             ...readdirSync('frontend/src/pages', { recursive: true })
                 .map(entry => String(entry).replaceAll('\\', '/'))
                 .filter(entry => entry.endsWith('.tsx'))
+                .filter(entry => !entry.endsWith('.test.tsx'))
                 .filter(entry => !entry.endsWith('AdminPage.tsx'))
                 .map(entry => `frontend/src/pages/${entry}`),
             ...readdirSync('frontend/src/components', { recursive: true })
                 .map(entry => String(entry).replaceAll('\\', '/'))
                 .filter(entry => entry.endsWith('.tsx'))
+                .filter(entry => !entry.endsWith('.test.tsx'))
                 .filter(entry => !entry.startsWith('admin/'))
                 .map(entry => `frontend/src/components/${entry}`),
             ...readdirSync('frontend/src/constants', { recursive: true })

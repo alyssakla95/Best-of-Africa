@@ -28,3 +28,4 @@ export { geminiOAuthRouter } from './gemini-oauth';
 export { membersRouter } from './members';
 export { seoRouter } from './seo';
 export { translationRouter } from './translation';
+export { specialistsRouter } from './specialists';

@@ -81,6 +81,13 @@ export interface Env {
     // Ko-fi webhook verification token (set via `wrangler secret put KOFI_TOKEN`)
     KOFI_TOKEN?: string;
 
+    // Specialist marketplace listing subscription. Keep keys and webhook
+    // signing secret in Cloudflare secrets; the Price ID is server-controlled.
+    STRIPE_SECRET_KEY?: string;
+    STRIPE_WEBHOOK_SECRET?: string;
+    STRIPE_SPECIALIST_PRICE_ID?: string;
+    MARKETPLACE_ENABLED?: string;
+
     // ElevenLabs TTS API Key
     ELEVENLABS_API_KEY?: string;
     // ElevenLabs voice ID — defaults to Rachel (21m00Tcm4TlvDq8ikWAM) if unset

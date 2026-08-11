@@ -9,6 +9,7 @@ import { getCached, getCachedValue, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import { callConfiguredAI } from '../lib/ai';
 import { isCountryEvidenceStale, readCountryEvidence, refreshCountryEvidence } from '../lib/country-evidence';
 import { diversifyCoverageRows } from '../lib/source-quality';
+import { authoritativeCountryResources, mergeOfficialResources, type CountryOfficialResource } from '../lib/country-resources';
 
 const router = new Hono<{ Bindings: Env }>();
 
@@ -122,14 +123,34 @@ export function processCountries(countries: Country[]) {
         return Array.isArray(val) ? val : [];
     };
 
-    return countries.map(country => ({
-        ...country,
-        languages: parseJsonField(country.languages),
-        investment_highlights: parseJsonField(country.investment_highlights),
-        tourism_highlights: parseJsonField(country.tourism_highlights),
-        diplomacy_score: country.diplomacy_score ?? 0.5,
-        image_strength_score: country.image_strength_score ?? 0.5,
-    }));
+    return countries.map(country => {
+        const record = { ...country } as Record<string, unknown> & Pick<Country, 'code' | 'name' | 'region'>;
+
+        // These legacy columns were populated before evidence-bearing resource
+        // verification existed. Do not expose an unchecked URL or a synthetic
+        // narrative/score as an official country fact.
+        for (const field of [
+            'visa_portal_url', 'business_portal_url', 'tourism_portal_url',
+            'investment_agency_url', 'history_baobab_content',
+            'diplomacy_score', 'image_strength_score', 'narrative_priority',
+        ]) delete record[field];
+        for (const [key, value] of Object.entries(record)) {
+            if (value === null) delete record[key];
+        }
+
+        return {
+            ...record,
+            languages: parseJsonField(country.languages),
+            investment_highlights: parseJsonField(country.investment_highlights),
+            tourism_highlights: parseJsonField(country.tourism_highlights),
+            official_resources: authoritativeCountryResources(country.code, country.name),
+            data_quality: {
+                authoritative_country_profile: true,
+                legacy_portals_exposed: false,
+                metric_basis: 'Official observations retain their provider year and are not converted into country scores.',
+            },
+        };
+    });
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -442,7 +463,7 @@ router.get('/:code/dossier', async (c) => {
     const country = await c.env.DB.prepare('SELECT * FROM countries WHERE code = ?').bind(code).first<Record<string, any>>();
     if (!country) return c.json({ error: 'not_found', message: 'Country not found' }, 404);
 
-    let [externalEvidence, events, sectors, evidence] = await Promise.all([
+    let [externalEvidence, events, sectors, evidence, verifiedResources] = await Promise.all([
         readCountryEvidence(c.env, code),
         c.env.DB.prepare(`SELECT id, title, category, date_start, date_end, location, registration_url AS source_url
             FROM events WHERE country_code = ? AND date_start >= date('now') ORDER BY date_start ASC LIMIT 12`).bind(code).all(),
@@ -458,6 +479,11 @@ router.get('/:code/dossier', async (c) => {
             LEFT JOIN sectors s ON s.id = a.sector_id
             WHERE a.country_code=? AND a.status='published' AND a.source_url IS NOT NULL
             ORDER BY a.published_at DESC LIMIT 40`).bind(code).all(),
+        c.env.DB.prepare(`SELECT label AS name, url, verified_at, verification_source_url
+            FROM country_official_resources
+            WHERE country_code = ? AND status = 'verified' AND verified_at IS NOT NULL
+            ORDER BY resource_type ASC, label ASC`).bind(code).all<CountryOfficialResource>()
+            .catch(() => ({ results: [] })),
     ]);
 
     if (!externalEvidence) {
@@ -494,10 +520,13 @@ router.get('/:code/dossier', async (c) => {
         }, 503);
     }
 
-    const portals = [
-        ['Business portal', country.business_portal_url], ['Visa portal', country.visa_portal_url],
-        ['Tourism portal', country.tourism_portal_url], ['Investment agency', country.investment_agency_url],
-    ].filter((entry) => entry[1]).map(([name, url]) => ({ name, url, source_type: 'official portal' }));
+    const officialResources = mergeOfficialResources(
+        authoritativeCountryResources(code, String(country.name)),
+        (verifiedResources.results || []).map(resource => ({
+            ...resource,
+            source_type: 'verified official portal' as const,
+        })),
+    );
 
     c.header('Cache-Control', 'no-store, max-age=0');
     return c.json({
@@ -510,7 +539,7 @@ router.get('/:code/dossier', async (c) => {
             sector_evidence: sectors.results || [],
             upcoming_events: events.results || [],
             recent_source_record: evidence.results || [],
-            official_resources: portals,
+            official_resources: officialResources,
             freshness: externalEvidence.freshness,
         },
         provenance: {

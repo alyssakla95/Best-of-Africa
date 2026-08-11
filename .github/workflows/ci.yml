@@ -23,11 +23,13 @@ jobs:
           node-version: '20'
 
       - name: Install backend dependencies
-        run: npm install
+        run: npm ci
 
+      # Root Vitest includes focused React component tests under frontend/src,
+      # so frontend dependencies must exist before the combined suite starts.
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
 
       - name: Backend typecheck
         run: npx tsc --noEmit
@@ -37,6 +39,7 @@ jobs:
 
       - name: Maintained Portuguese interface audit
         run: npm run audit:portuguese
+
       - name: Frontend typecheck
         working-directory: frontend
         run: npx tsc --noEmit -p tsconfig.app.json

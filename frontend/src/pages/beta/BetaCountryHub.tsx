@@ -118,7 +118,7 @@ export const BetaCountryHub = () => {
         queryKey: ['country-dossier', upperCode],
         queryFn: () => api.getCountryDossier(upperCode),
         staleTime: 24 * 60 * 60 * 1000,
-        enabled: !!upperCode && isMember },
+        enabled: !!upperCode },
     ] });
 
   const country = countryQuery.data?.country;
@@ -431,31 +431,21 @@ export const BetaCountryHub = () => {
           </section>
         )}
 
-        {(country?.business_portal_url || country?.visa_portal_url || country?.tourism_portal_url) && (
+        {dossier?.official_resources?.length ? (
           <section>
             <div className="flex items-center gap-3 mb-6">
               <ExternalLink size={18} className="text-accent" />
               <h2 className="font-serif text-2xl text-primary">{t('hub.official_resources', 'Official Resources')}</h2>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {country.business_portal_url && (
-                <a href={country.business_portal_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-background border border-primary/10 hover:border-accent/40 px-4 py-2.5 rounded-xl text-sm font-medium text-primary transition-colors">
-                  <ExternalLink size={13} className="text-accent" /> {t('hub.business_portal', 'Business Portal')}
+            <p className="mb-4 max-w-3xl text-sm leading-6 text-muted-foreground">{language === 'pt' ? 'Perfis de dados primários e portais cuja proveniência foi registada. As ligações antigas sem verificação editorial não são apresentadas.' : 'Primary-data profiles and portals with recorded provenance. Legacy links without editorial verification are not shown.'}</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {dossier.official_resources.map(resource => (
+                <a key={`${resource.name}-${resource.url}`} href={resource.url} target="_blank" rel="noopener noreferrer"
+                  className="min-w-0 rounded-xl border border-border bg-card p-4 text-sm font-medium text-primary transition-colors hover:border-navy/30">
+                  <span className="flex items-start gap-2"><ExternalLink size={13} className="mt-1 shrink-0 text-accent" /><span>{localText(resource.name)}</span></span>
+                  <span className="mt-2 block text-xs font-normal text-muted-foreground">{language === 'pt' ? 'Fonte primária verificada' : resource.source_type}</span>
                 </a>
-              )}
-              {country.visa_portal_url && (
-                <a href={country.visa_portal_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-background border border-primary/10 hover:border-accent/40 px-4 py-2.5 rounded-xl text-sm font-medium text-primary transition-colors">
-                  <ExternalLink size={13} className="text-accent" /> {t('hub.visa_portal', 'Visa Portal')}
-                </a>
-              )}
-              {country.tourism_portal_url && (
-                <a href={country.tourism_portal_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-background border border-primary/10 hover:border-accent/40 px-4 py-2.5 rounded-xl text-sm font-medium text-primary transition-colors">
-                  <ExternalLink size={13} className="text-accent" /> {t('hub.tourism_portal', 'Tourism Portal')}
-                </a>
-              )}
+              ))}
               {isMember && (
                 <Link to={`/countries/${upperCode}/narratives`}
                   className="inline-flex items-center gap-2 bg-background/5 border border-primary/10 hover:border-accent/40 hover:bg-background px-4 py-2.5 rounded-xl text-sm font-bold text-primary transition-colors">
@@ -464,7 +454,7 @@ export const BetaCountryHub = () => {
               )}
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* ── Stories from this country ──────────────────────────────────────── */}
         <motion.section initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>

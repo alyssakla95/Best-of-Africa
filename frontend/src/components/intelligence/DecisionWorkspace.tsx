@@ -145,6 +145,11 @@ export function DecisionWorkspace({ context }: DecisionWorkspaceProps) {
       </div>
     </header>
 
+    <aside className="flex flex-col gap-4 rounded-2xl border border-navy/15 bg-navy/[.035] p-5 md:flex-row md:items-center md:justify-between">
+      <div><p className="text-xs font-bold uppercase tracking-[.12em] text-navy/60">Primary verification</p><h3 className="mt-2 font-serif text-2xl text-navy">Need a screened specialist to test this market case?</h3><p className="mt-2 text-sm text-muted-foreground">Qualified Enterprise accounts can submit a bounded request. Other organizations can apply for Enterprise access.</p></div>
+      <div className="flex shrink-0 flex-wrap gap-2"><Link to={`/specialists/requests/new?country=${encodeURIComponent(country.name)}&sector=${encodeURIComponent(sector.sector_name)}&expertise=${encodeURIComponent(`Market verification, ${sector.sector_name}`)}`} className="rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white">Request a specialist</Link><Link to="/enterprise/access" className="rounded-lg border border-navy px-5 py-3 text-sm font-bold text-navy">Enterprise sign in</Link></div>
+    </aside>
+
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {[
         [Landmark,'Country',country.name,`${text(country.region)} Africa · ${country.capital || country.name}`],

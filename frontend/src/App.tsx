@@ -73,6 +73,16 @@ const EnterprisePage = lazyWithRetry(() => import('./pages/EnterprisePage').then
 const EnterprisePilotPage = lazyWithRetry(() => import('./pages/EnterprisePilotPage').then(m => ({ default: m.EnterprisePilotPage })));
 const TrustCenterPage = lazyWithRetry(() => import('./pages/TrustCenterPage').then(m => ({ default: m.TrustCenterPage })));
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const SpecialistsDirectoryPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistsDirectoryPage })));
+const SpecialistInterestPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistInterestPage })));
+const SpecialistProfilePage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistProfilePage })));
+const SpecialistJoinPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistJoinPage })));
+const SpecialistDashboardPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistDashboardPage })));
+const SpecialistRequestsPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistRequestsPage })));
+const SpecialistRequestNewPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistRequestNewPage })));
+const SpecialistRequestPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistRequestPage })));
+const EnterpriseAccessPage = lazyWithRetry(() => import('./pages/MarketplaceAccessPages').then(m => ({ default: m.EnterpriseAccessPage })));
+const SpecialistSignInPage = lazyWithRetry(() => import('./pages/MarketplaceAccessPages').then(m => ({ default: m.SpecialistSignInPage })));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MissionProvider } from './context/MissionContext';
@@ -85,6 +95,7 @@ import { AudioProvider } from './context/AudioContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ContentPrefetcher } from './components/ContentPrefetcher';
+import { MarketplaceAccessGate } from './components/MarketplaceAccessGate';
 
 // ── Deferred chrome ─────────────────────────────────────────────────────────
 // None of these are needed for first paint, and together (cmdk, sonner, audio
@@ -178,11 +189,21 @@ const AnimatedRoutes = () => {
           <Route path="/request-consultation"   element={<PageTransition><BetaConcierge /></PageTransition>} />
           <Route path="/enterprise"             element={<PageTransition><EnterprisePage /></PageTransition>} />
           <Route path="/enterprise/apply"       element={<PageTransition><EnterprisePilotPage /></PageTransition>} />
+          <Route path="/enterprise/access"      element={<PageTransition><EnterpriseAccessPage /></PageTransition>} />
           <Route path="/trust"                  element={<PageTransition><TrustCenterPage /></PageTransition>} />
           <Route path="/travel"                 element={<PageTransition><BetaTravel /></PageTransition>} />
           <Route path="/search"                 element={<PageTransition><BetaSearch /></PageTransition>} />
           <Route path="/feed"                   element={<PageTransition><BetaFeed /></PageTransition>} />
           <Route path="/world-cup"              element={<PageTransition><BetaWorldCup /></PageTransition>} />
+          <Route path="/specialists" element={<PageTransition><SpecialistsDirectoryPage /></PageTransition>} />
+          <Route path="/specialists/interest" element={<PageTransition><SpecialistInterestPage /></PageTransition>} />
+          <Route path="/specialists/join/:token" element={<PageTransition><SpecialistJoinPage /></PageTransition>} />
+          <Route path="/specialists/sign-in" element={<PageTransition><SpecialistSignInPage /></PageTransition>} />
+          <Route path="/specialists/dashboard" element={<PageTransition><MarketplaceAccessGate kind="specialist"><SpecialistDashboardPage /></MarketplaceAccessGate></PageTransition>} />
+          <Route path="/specialists/requests" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><SpecialistRequestsPage /></MarketplaceAccessGate></PageTransition>} />
+          <Route path="/specialists/requests/new" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><SpecialistRequestNewPage /></MarketplaceAccessGate></PageTransition>} />
+          <Route path="/specialists/requests/:id" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><SpecialistRequestPage /></MarketplaceAccessGate></PageTransition>} />
+          <Route path="/specialists/:slug" element={<PageTransition><SpecialistProfilePage /></PageTransition>} />
 
           {/* ── Utility pages ─────────────────────────────────────────── */}
           <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />

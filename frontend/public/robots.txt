@@ -3,5 +3,10 @@ Allow: /
 Disallow: /admin
 Disallow: /settings
 Disallow: /member-access
+Disallow: /enterprise/access
+Disallow: /specialists/join/
+Disallow: /specialists/sign-in
+Disallow: /specialists/dashboard
+Disallow: /specialists/requests/
 
 Sitemap: https://alyssa-boa-web.pages.dev/sitemap.xml

@@ -123,12 +123,17 @@ PUBLIC_SITE_URL = "https://best-of-africa.pages.dev"
 # Comma-separated extra CORS origins beyond bestofafrica.com (e.g. staging domain).
 # For local frontend dev add "http://localhost:5173" to .dev.vars instead.
 ADDITIONAL_ORIGINS = "https://best-of-africa.pages.dev"
+# Enable only after migration, Stripe test-mode verification, and operator rollout.
+MARKETPLACE_ENABLED = "false"
 
 # ── Secrets — set via wrangler CLI before deploying ───────────────────────────
 # wrangler secret put JWT_SECRET       # openssl rand -hex 32
 # wrangler secret put ADMIN_API_KEY    # random admin key for /admin endpoints
 # wrangler secret put NEWS_API_KEY     # newsapi.org key
 # wrangler secret put DEV_SECRET       # protects /dev/* endpoints in prod
+# wrangler secret put STRIPE_SECRET_KEY
+# wrangler secret put STRIPE_WEBHOOK_SECRET
+# wrangler secret put STRIPE_SPECIALIST_PRICE_ID
 #
 # Optional AI Provider secrets (platform falls back to Workers AI if unset).
 # These can also be configured at runtime via POST /api/v1/agent/providers.

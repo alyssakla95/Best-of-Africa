@@ -52,6 +52,8 @@ describe('Health Check Endpoints', () => {
             expect(checkNames).toContain('kv_cache');
             expect(checkNames).toContain('rate_limit');
             expect(checkNames).toContain('sector_assignment_audit');
+            expect(checkNames).toContain('coverage_diversity');
+            expect(checkNames).toContain('source_acquisition');
             expect(checkNames).toContain('vectorize');
             expect(checkNames).toContain('editorial_generation');
             expect(checkNames).toContain('durable_objects');
@@ -62,6 +64,23 @@ describe('Health Check Endpoints', () => {
                 expect(check.status).toMatch(/^(healthy|degraded|unhealthy)$/);
                 expect(check.responseTimeMs).toBeDefined();
             }
+        });
+
+        it('measures one canonical source per URL in acquisition health', async () => {
+            const sql: string[] = [];
+            const statement = {
+                bind: () => statement,
+                first: async () => ({ count: 1 }),
+                all: async () => ({ results: [], success: true }),
+                run: async () => ({ success: true, meta: {} }),
+            };
+            const inspectionEnv = createMockEnv({
+                DB: { prepare: (query: string) => { sql.push(query); return statement; } } as unknown as D1Database,
+            });
+            await app.fetch(new Request('http://localhost/health/deep'), inspectionEnv);
+            const acquisitionQuery = sql.find(query => query.includes('source_acquisition_yield')) || '';
+            expect(acquisitionQuery).toContain('canonical.url = s.url');
+            expect(acquisitionQuery).toContain('ORDER BY canonical.created_at ASC, canonical.id ASC LIMIT 1');
         });
 
         it('should return unhealthy status when database fails', async () => {

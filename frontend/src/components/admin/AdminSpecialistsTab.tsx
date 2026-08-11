@@ -1,0 +1,234 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/services/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import type { AdminSpecialistApplication, SpecialistVerificationLevel } from '@/services/api';
+
+const formatList = (value: string | string[]) => {
+  if (Array.isArray(value)) return value.join(', ');
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.join(', ') : value;
+  } catch {
+    return value;
+  }
+};
+
+type StandingDraft = {
+  verification_level: SpecialistVerificationLevel;
+  verification_summary: string;
+  founding_cohort: boolean;
+  listing_fee_waived: boolean;
+  listing_fee_waived_until: string;
+};
+
+const standingFrom = (application: AdminSpecialistApplication): StandingDraft => ({
+  verification_level: application.verification_level || 'boa_specialist',
+  verification_summary: application.verification_summary || '',
+  founding_cohort: Boolean(application.founding_cohort),
+  listing_fee_waived: Boolean(application.listing_fee_waived),
+  listing_fee_waived_until: application.listing_fee_waived_until?.slice(0, 10) || '',
+});
+
+export function AdminSpecialistsTab() {
+  const [email, setEmail] = useState('');
+  const [inviteUrl, setInviteUrl] = useState('');
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [enterpriseClientId, setEnterpriseClientId] = useState('');
+  const [busyAction, setBusyAction] = useState('');
+  const [standingDrafts, setStandingDrafts] = useState<Record<string, StandingDraft>>({});
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-specialists'],
+    queryFn: api.getAdminSpecialists,
+  });
+
+  const issueInvite = async (targetEmail = email, interestId?: string) => {
+    setBusyAction(interestId ? `${interestId}:invite` : 'direct-invite');
+    try {
+      const response = await api.issueSpecialistInvite(targetEmail, 7, interestId);
+      setInviteUrl(response.invitation_url);
+      if (!interestId) setEmail('');
+      toast.success(response.emailed ? 'Invitation issued and emailed' : 'Invitation issued; copy the URL');
+      await refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not issue invitation');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const reviewInterest = async (id: string, status: 'reviewing' | 'closed') => {
+    setBusyAction(`${id}:${status}`);
+    try {
+      await api.reviewSpecialistInterest(id, status, notes[id]);
+      toast.success(status === 'reviewing' ? 'Interest marked for review' : 'Interest record closed');
+      await refetch();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Interest record could not be updated');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const updateEnterpriseAccess = async (clientId: string, status: 'enabled' | 'suspended' | 'revoked') => {
+    setBusyAction(`${clientId}:${status}`);
+    try {
+      await api.grantMarketplaceAccess(clientId.trim(), status);
+      toast.success(`Enterprise marketplace access ${status}`);
+      if (clientId === enterpriseClientId) setEnterpriseClientId('');
+      await refetch();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Access could not be updated');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const review = async (id: string, status: 'screening' | 'needs_information' | 'approved' | 'rejected') => {
+    try {
+      const result = await api.reviewSpecialistApplication(id, status, notes[id]);
+      if (result.approval_url) {
+        await navigator.clipboard.writeText(result.approval_url).catch(() => undefined);
+        toast.success('Approved; dashboard URL copied');
+      } else toast.success(`Application marked ${status}`);
+      await refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Review failed');
+    }
+  };
+
+  const updateStanding = async (application: AdminSpecialistApplication) => {
+    if (!application.profile_id) return;
+    const draft = standingDrafts[application.id] || standingFrom(application);
+    setBusyAction(`${application.id}:standing`);
+    try {
+      await api.updateSpecialistStanding(application.profile_id, {
+        verification_level: draft.verification_level,
+        verification_summary: draft.verification_summary || null,
+        founding_cohort: draft.founding_cohort,
+        listing_fee_waived: draft.listing_fee_waived,
+        listing_fee_waived_until: draft.listing_fee_waived_until || null,
+      });
+      toast.success('Specialist standing and listing access updated');
+      await refetch();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Specialist standing could not be updated');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  return <div className="space-y-8">
+    <Card>
+      <CardHeader><CardTitle>Demand-led recruitment signals</CardTitle></CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">These counts come from active Enterprise requests. Recruit against repeated country, sector, language, and service needs before expanding unrelated supply.</p>
+        <div className="mt-4 flex flex-wrap gap-2">{data?.demand_signals.map(signal => <Badge key={`${signal.dimension}:${signal.value}`} variant="outline">{signal.dimension}: {signal.value} · {signal.request_count}</Badge>)}</div>
+        {!isLoading && data?.demand_signals.length === 0 && <p className="mt-4 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No active Enterprise request signals yet. Keep recruitment selective.</p>}
+      </CardContent>
+    </Card>
+
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Specialist interest registry</h2><p className="mt-1 text-sm text-muted-foreground">Review demand-aligned expertise before issuing a single-use application invitation.</p></div><Badge variant="outline">{data?.interest.filter(item => item.status === 'new').length || 0} new</Badge></div>
+      <div className="mt-4 grid gap-4">
+        {data?.interest.map(interest => <Card key={interest.id}><CardContent className="pt-6">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{interest.contact_name}</h3><p className="text-sm text-muted-foreground">{interest.work_email} · {interest.organization || 'Independent'}{interest.role_title ? ` · ${interest.role_title}` : ''}</p></div><Badge variant={interest.status === 'new' ? 'default' : 'outline'}>{interest.status}</Badge></div>
+          <p className="mt-4">{interest.interest_summary}</p>
+          <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2"><div><dt className="font-semibold">Countries</dt><dd>{formatList(interest.countries)}</dd></div><div><dt className="font-semibold">Sectors</dt><dd>{formatList(interest.sectors)}</dd></div><div><dt className="font-semibold">Services</dt><dd>{formatList(interest.service_categories)}</dd></div><div><dt className="font-semibold">Languages</dt><dd>{formatList(interest.languages)}</dd></div></dl>
+          {['new', 'reviewing'].includes(interest.status) && <><div className="mt-4"><Label htmlFor={`interest-notes-${interest.id}`}>Private qualification notes</Label><Textarea id={`interest-notes-${interest.id}`} value={notes[interest.id] ?? interest.qualification_notes ?? ''} onChange={event => setNotes(current => ({ ...current, [interest.id]: event.target.value }))} /></div>
+            <div className="mt-4 flex flex-wrap gap-2">{interest.status === 'new' && <Button variant="outline" disabled={Boolean(busyAction)} onClick={() => void reviewInterest(interest.id, 'reviewing')}>Review for demand fit</Button>}<Button disabled={Boolean(busyAction)} onClick={() => void issueInvite(interest.work_email, interest.id)}>Issue invitation</Button><Button variant="destructive" disabled={Boolean(busyAction)} onClick={() => void reviewInterest(interest.id, 'closed')}>Close</Button></div></>}
+        </CardContent></Card>)}
+        {!isLoading && data?.interest.length === 0 && <p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No specialists have registered interest yet.</p>}
+      </div>
+    </section>
+
+    <Card>
+      <CardHeader><CardTitle>Issue specialist invitation</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div><Label htmlFor="specialist-email">Work email</Label><Input id="specialist-email" type="email" value={email} onChange={event => setEmail(event.target.value)} /></div>
+        <Button onClick={() => void issueInvite()} disabled={!email || Boolean(busyAction)}>Issue single-use invitation</Button>
+        {inviteUrl && <div className="rounded-lg bg-muted p-4">
+          <Label htmlFor="specialist-invite-url">Copy this URL now</Label>
+          <div className="mt-2 flex gap-2"><Input id="specialist-invite-url" readOnly value={inviteUrl} /><Button variant="outline" onClick={() => void navigator.clipboard.writeText(inviteUrl)}>Copy</Button></div>
+        </div>}
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader><CardTitle>Enterprise marketplace access</CardTitle></CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-sm text-muted-foreground">Grant access only after confirming the client is an active Enterprise account. Suspension takes effect on the next verified request.</p>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div><Label htmlFor="enterprise-client-id">Enterprise client ID</Label><Input id="enterprise-client-id" value={enterpriseClientId} onChange={event => setEnterpriseClientId(event.target.value)} placeholder="Client UUID" /></div>
+          <Button disabled={!enterpriseClientId.trim() || Boolean(busyAction)} onClick={() => void updateEnterpriseAccess(enterpriseClientId, 'enabled')}>Grant access</Button>
+        </div>
+        <div className="grid gap-3">
+          {data?.enterprise_access.map(access => <div key={access.client_id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4">
+            <div><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{access.organization || access.name}</p><Badge variant={access.status === 'enabled' ? 'default' : 'outline'}>{access.status}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{access.email} · {access.client_id}</p></div>
+            <div className="flex gap-2">{access.status !== 'enabled' && <Button size="sm" disabled={Boolean(busyAction)} onClick={() => void updateEnterpriseAccess(access.client_id, 'enabled')}>Enable</Button>}{access.status === 'enabled' && <Button size="sm" variant="outline" disabled={Boolean(busyAction)} onClick={() => void updateEnterpriseAccess(access.client_id, 'suspended')}>Suspend</Button>}<Button size="sm" variant="destructive" disabled={Boolean(busyAction) || access.status === 'revoked'} onClick={() => void updateEnterpriseAccess(access.client_id, 'revoked')}>Revoke</Button></div>
+          </div>)}
+          {!isLoading && data?.enterprise_access.length === 0 && <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No Enterprise organizations have marketplace access.</p>}
+        </div>
+      </CardContent>
+    </Card>
+
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Applications and network standing</h2><p className="mt-1 text-sm text-muted-foreground">Founding membership is capped at 50. Verification reflects reviewed evidence, never payment.</p></div><Badge variant="outline">{data?.applications.filter(item => Boolean(item.founding_cohort)).length || 0} / 50 founding</Badge></div>
+      {isLoading && <p className="mt-4">Loading…</p>}
+      {error && <p role="alert" className="mt-4 text-sm text-destructive">{error instanceof Error ? error.message : 'Marketplace administration could not load.'}</p>}
+      <div className="mt-4 grid gap-4">
+        {data?.applications.map(application => {
+          const id = application.id;
+          const standing = standingDrafts[id] || standingFrom(application);
+          const setStanding = (change: Partial<StandingDraft>) => setStandingDrafts(current => ({
+            ...current,
+            [id]: { ...standing, ...change },
+          }));
+          return <Card key={id}><CardContent className="pt-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h3 className="font-bold">{application.contact_name}</h3><p className="text-sm text-muted-foreground">{application.work_email} · {application.organization || 'Independent'}</p></div>
+              <Badge>{application.status}</Badge>
+            </div>
+            <p className="mt-4">{application.headline}</p>
+            <p className="mt-3 text-sm"><strong>Credentials:</strong> {application.credential_summary}</p>
+            <p className="mt-3 text-sm"><strong>Conflicts:</strong> {application.conflicts_declaration}</p>
+            <div className="mt-4"><Label htmlFor={`notes-${id}`}>Private screening notes</Label><Textarea id={`notes-${id}`} value={notes[id] || ''} onChange={event => setNotes(current => ({ ...current, [id]: event.target.value }))} /></div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => void review(id, 'screening')}>Start screening</Button>
+              <Button variant="outline" onClick={() => void review(id, 'needs_information')}>Request information</Button>
+              <Button onClick={() => void review(id, 'approved')}>Approve</Button>
+              <Button variant="destructive" onClick={() => void review(id, 'rejected')}>Reject</Button>
+            </div>
+            {application.profile_id && <div className="mt-6 rounded-2xl border bg-muted/20 p-5">
+              <h4 className="font-bold">Verification and listing access</h4>
+              <p className="mt-2 text-sm text-muted-foreground">Document the public basis for elevated standing. Founding specialists automatically receive a listing-fee waiver.</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <Label>Verification level<select className="mt-1 h-10 w-full rounded-md border bg-background px-3" value={standing.verification_level} onChange={event => setStanding({ verification_level: event.target.value as SpecialistVerificationLevel })}><option value="boa_specialist">BOA Specialist</option><option value="verified">Verified Specialist</option><option value="senior_featured">Senior / Featured Specialist</option></select></Label>
+                <Label>Waiver end date (optional)<Input className="mt-1" type="date" value={standing.listing_fee_waived_until} onChange={event => setStanding({ listing_fee_waived_until: event.target.value })} /></Label>
+                <Label className="md:col-span-2">Public verification evidence summary<Textarea className="mt-1" value={standing.verification_summary} onChange={event => setStanding({ verification_summary: event.target.value })} placeholder="Documented experience, references, credentials, and relevant BOA delivery evidence reviewed." /></Label>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-5 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={standing.founding_cohort} onChange={event => setStanding({ founding_cohort: event.target.checked, listing_fee_waived: event.target.checked || standing.listing_fee_waived })} />Founding Specialist Network</label><label className="flex items-center gap-2"><input type="checkbox" checked={standing.listing_fee_waived || standing.founding_cohort} disabled={standing.founding_cohort} onChange={event => setStanding({ listing_fee_waived: event.target.checked })} />Waive listing fee</label></div>
+              <Button className="mt-4" disabled={Boolean(busyAction)} onClick={() => void updateStanding(application)}>Save standing</Button>
+            </div>}
+          </CardContent></Card>;
+        })}
+      </div>
+    </section>
+
+    <section>
+      <h2 className="font-serif text-2xl font-bold">Enterprise requests</h2>
+      <div className="mt-4 grid gap-4">{data?.requests.map(request => <Card key={request.id}><CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6"><div><h3 className="font-bold">{request.title}</h3><p className="text-sm text-muted-foreground">{request.requester_organization || request.requester_name} · {request.status}</p></div><Button onClick={async () => { const result = await api.rankSpecialistMatches(request.id); toast.success(`${result.matches.length} candidate matches ranked`); }}>Rank matches</Button></CardContent></Card>)}</div>
+    </section>
+
+    <section>
+      <h2 className="font-serif text-2xl font-bold">Suggested matches</h2>
+      <div className="mt-4 grid gap-4">{data?.matches.filter(match => match.status === 'suggested').map(match => <Card key={match.id}><CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6"><div><h3 className="font-bold">{match.display_name} → {match.request_title}</h3><p className="text-sm text-muted-foreground">Score {match.match_score} · {Array.isArray(match.match_reasons) ? match.match_reasons.join(', ') : match.match_reasons}</p></div><div className="flex gap-2"><Button onClick={async () => { await api.confirmSpecialistMatch(match.id, true); toast.success('Match confirmed'); await refetch(); }}>Confirm</Button><Button variant="outline" onClick={async () => { await api.confirmSpecialistMatch(match.id, false); toast.success('Match declined'); await refetch(); }}>Decline</Button></div></CardContent></Card>)}</div>
+    </section>
+  </div>;
+}

@@ -279,6 +279,278 @@ export interface AudienceMetrics {
     definitions: Record<string, string>;
 }
 
+export interface SpecialistProfile {
+    id: string;
+    slug: string;
+    display_name: string;
+    organization: string | null;
+    headline: string;
+    biography: string;
+    countries: string[];
+    sectors: string[];
+    service_categories: string[];
+    languages: string[];
+    credential_summary: string;
+    credential_links: string[];
+    indicative_pricing: string | null;
+    availability: string | null;
+    verification_level: SpecialistVerificationLevel;
+    verification_summary: string | null;
+    founding_cohort: boolean;
+    listed_at: string;
+}
+
+export interface SpecialistApplicationInput {
+    token: string;
+    password: string;
+    contact_name: string;
+    entity_type: 'individual' | 'organization';
+    organization?: string;
+    role_title?: string;
+    headline: string;
+    biography: string;
+    countries: string[];
+    sectors: string[];
+    service_categories: string[];
+    languages: string[];
+    credential_summary: string;
+    credential_links: string[];
+    indicative_pricing?: string;
+    availability?: string;
+    conflicts_declaration: string;
+    no_sensitive_data_confirmed: true;
+}
+
+export interface SpecialistInterestInput {
+    contact_name: string;
+    work_email: string;
+    entity_type: 'individual' | 'organization';
+    organization?: string;
+    role_title?: string;
+    countries: string[];
+    sectors: string[];
+    service_categories: string[];
+    languages: string[];
+    interest_summary: string;
+    no_sensitive_data_confirmed: true;
+}
+
+export interface SpecialistRequestInput {
+    title: string;
+    decision_question: string;
+    countries: string[];
+    sector: string;
+    required_expertise: string[];
+    preferred_languages: string[];
+    decision_deadline?: string;
+    context_summary?: string;
+    no_sensitive_data_confirmed: true;
+}
+
+export type ClientTier = 'free' | 'basic' | 'premium' | 'enterprise' | 'specialist';
+export type ClientType = 'specialist' | 'enterprise' | 'government' | 'investor' | 'partner' | 'media' | 'other' | string;
+export type MarketplaceAccessStatus = 'enabled' | 'suspended' | 'revoked' | 'not_granted';
+
+export interface AuthUser {
+    id: string;
+    name: string;
+    email: string;
+    organization: string | null;
+    tier: ClientTier;
+    type: ClientType;
+    marketplace_access_status: MarketplaceAccessStatus;
+}
+
+export interface PasswordLoginResponse {
+    token: string;
+    tier: ClientTier;
+    access_level: string;
+    expires_at: string;
+    client: { id: string; name: string; organization: string | null };
+}
+
+export interface AuthMeResponse {
+    authenticated: true;
+    client: AuthUser;
+}
+
+export type SpecialistApplicationStatus = 'submitted' | 'screening' | 'needs_information' | 'approved' | 'rejected';
+export type SpecialistSubscriptionStatus = 'checkout_open' | 'active' | 'past_due' | 'incomplete' | 'canceled' | 'unpaid' | 'paused';
+export type SpecialistMatchStatus = 'suggested' | 'invited' | 'declined' | 'proposal_submitted';
+export type SpecialistRequestStatus = 'submitted' | 'matching' | 'proposals_ready' | 'closed';
+export type SpecialistProposalStatus = 'submitted' | 'accepted' | 'declined' | 'withdrawn';
+export type SpecialistVerificationLevel = 'boa_specialist' | 'verified' | 'senior_featured';
+
+export interface SpecialistApplication {
+    id: string;
+    contact_name: string;
+    work_email: string;
+    organization: string | null;
+    role_title: string | null;
+    headline: string;
+    biography: string;
+    countries: string[];
+    sectors: string[];
+    service_categories: string[];
+    languages: string[];
+    credential_summary: string;
+    credential_links: string[];
+    indicative_pricing: string | null;
+    availability: string | null;
+    status: SpecialistApplicationStatus;
+    screened_at: string | null;
+    updated_at: string;
+}
+
+export interface SpecialistSubscription {
+    status: SpecialistSubscriptionStatus;
+    current_period_end: string | null;
+    cancel_at_period_end: number | boolean;
+    updated_at: string;
+}
+
+export interface SpecialistMatch {
+    id: string;
+    request_id: string;
+    status: SpecialistMatchStatus;
+    title: string;
+    decision_question: string;
+    countries: string | string[];
+    sector: string;
+    required_expertise: string | string[];
+    preferred_languages: string | string[];
+    decision_deadline: string | null;
+    context_summary: string | null;
+    match_score: number;
+    match_reasons: string | string[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SpecialistDashboard {
+    application: SpecialistApplication;
+    profile: SpecialistProfile | null;
+    listing_access: {
+        fee_waived: boolean;
+        fee_waived_until: string | null;
+    } | null;
+    subscription: SpecialistSubscription | null;
+    matches: SpecialistMatch[];
+}
+
+export interface SpecialistRequestSummary {
+    id: string;
+    title: string;
+    sector: string;
+    countries: string | string[];
+    decision_deadline: string | null;
+    status: SpecialistRequestStatus;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SpecialistRequest extends SpecialistRequestSummary {
+    requester_client_id: string;
+    decision_question: string;
+    countries: string[];
+    required_expertise: string[];
+    preferred_languages: string[];
+    context_summary: string | null;
+}
+
+export interface SpecialistProposal {
+    id: string;
+    scope_summary: string;
+    assumptions: string | null;
+    timeline: string;
+    indicative_fee: string;
+    status: SpecialistProposalStatus;
+    created_at: string;
+    display_name: string;
+    organization: string | null;
+    slug: string;
+}
+
+export interface AdminSpecialistApplication extends SpecialistApplication {
+    work_email: string;
+    conflicts_declaration: string;
+    screening_notes?: string | null;
+    subscription_status?: SpecialistSubscriptionStatus | null;
+    profile_id?: string | null;
+    slug?: string | null;
+    verification_level?: SpecialistVerificationLevel | null;
+    verification_summary?: string | null;
+    founding_cohort?: number | boolean | null;
+    listing_fee_waived?: number | boolean | null;
+    listing_fee_waived_until?: string | null;
+}
+
+export interface AdminDemandSignal {
+    dimension: 'country' | 'sector' | 'language' | 'service';
+    value: string;
+    request_count: number;
+}
+
+export interface AdminSpecialistInvite {
+    id: string;
+    email: string;
+    status: 'issued' | 'redeemed' | 'revoked' | 'expired';
+    expires_at: string;
+    redeemed_at: string | null;
+    application_id: string | null;
+    created_at: string;
+}
+
+export interface AdminSpecialistInterest extends Omit<
+    SpecialistInterestInput,
+    'no_sensitive_data_confirmed' | 'countries' | 'sectors' | 'service_categories' | 'languages'
+> {
+    id: string;
+    countries: string | string[];
+    sectors: string | string[];
+    service_categories: string | string[];
+    languages: string | string[];
+    status: 'new' | 'reviewing' | 'invited' | 'closed';
+    invite_id: string | null;
+    qualification_notes: string | null;
+    retention_until: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminEnterpriseAccess {
+    client_id: string;
+    status: MarketplaceAccessStatus;
+    name: string;
+    email: string;
+    organization: string | null;
+    granted_at: string;
+    updated_at: string;
+}
+
+export interface AdminMarketplaceRequest extends SpecialistRequest {
+    requester_name: string;
+    requester_organization: string | null;
+}
+
+export interface AdminSpecialistMatch {
+    id: string;
+    request_id: string;
+    specialist_client_id: string;
+    status: SpecialistMatchStatus;
+    match_score: number;
+    match_reasons: string | string[];
+    request_title: string;
+    display_name: string;
+    organization: string | null;
+}
+
+export interface RankedSpecialistMatch {
+    clientId: string;
+    score: number;
+    reasons: string[];
+}
+
 export type SavedBookmark = ArticleListItem & {
     id: string;
     article_id: string;
@@ -615,6 +887,11 @@ export const api = {
         // login through this helper 400 with "Email and OTP required".
         body: JSON.stringify({ email, otp: code })
     }),
+    passwordLogin: (email: string, password: string) => request<PasswordLoginResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ client_id: email, secret: password }),
+    }),
+    getCurrentUser: () => request<AuthMeResponse>('/auth/me'),
 
     // Analytics
     getSectorPerformance: (lens?: 'investor' | 'government' | 'explorer') => readerRequest<{
@@ -781,7 +1058,7 @@ export const api = {
             sector_evidence: { id: string; name: string; article_count: number; latest_evidence_at: string }[];
             upcoming_events: { id: string; title: string; category: string; date_start: string; location: string; source_url?: string }[];
             recent_source_record: { title: string; slug: string; summary: string; source_url: string; source_name: string; source_quality_tier: number | null; sector_id: string | null; sector_name: string | null; published_at: string; reviewed_at: string | null }[];
-            official_resources: { name: string; url: string; source_type: string }[];
+            official_resources: { name: string; url: string; source_type: 'official country dataset' | 'verified official portal'; verified_at?: string; verification_source_url?: string }[];
             freshness: { provider: string; source_url: string; checked_at: string; observation_period: string; state: 'current_snapshot' | 'last_verified_snapshot' | 'checked_no_series' }[];
         };
         provenance: { sources: { name: string; section: string; url: string | null }[]; generated_at: string; retrieved_at: string; methodology: string };
@@ -891,4 +1168,114 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data)
     }),
+
+    // Specialist Marketplace
+    submitSpecialistInterest: (data: SpecialistInterestInput) =>
+        request<{ success: true; status: 'registered'; message: string }>('/services/specialist-interest', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    getSpecialists: (filters: Record<string, string> = {}) =>
+        request<{ data: SpecialistProfile[] }>(`/specialists?${new URLSearchParams(filters)}`),
+    getSpecialist: (slug: string) =>
+        request<{ data: SpecialistProfile }>(`/specialists/${encodeURIComponent(slug)}`),
+    redeemSpecialistInvite: (data: SpecialistApplicationInput) =>
+        request<{ success: true; application_id: string; token: string }>('/specialists/join', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    getSpecialistDashboard: () => request<SpecialistDashboard>('/specialists/dashboard'),
+    updateSpecialistProfile: (data: Omit<
+        SpecialistProfile,
+        'id' | 'slug' | 'listed_at' | 'verification_level' | 'verification_summary' | 'founding_cohort'
+    >) =>
+        request<{ success: true }>('/specialists/dashboard/profile', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+    startSpecialistCheckout: () => request<{ url: string }>('/specialists/billing/checkout', { method: 'POST' }),
+    openSpecialistPortal: () => request<{ url: string }>('/specialists/billing/portal', { method: 'POST' }),
+    createSpecialistRequest: (data: SpecialistRequestInput) =>
+        request<{ id: string; status: string }>('/specialists/requests', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    getSpecialistRequests: () => request<{ data: SpecialistRequestSummary[] }>('/specialists/requests'),
+    getSpecialistRequest: (id: string) =>
+        request<{ request: SpecialistRequest; proposals: SpecialistProposal[] }>(`/specialists/requests/${id}`),
+    submitSpecialistProposal: (matchId: string, data: {
+        scope_summary: string; assumptions?: string; timeline: string; indicative_fee: string;
+    }) => request<{ id: string; status: string }>(`/specialists/matches/${matchId}/proposals`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    }),
+    updateSpecialistProposal: (id: string, status: 'accepted' | 'declined' | 'withdrawn') =>
+        request<{ success: true }>(`/specialists/proposals/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status }),
+        }),
+    getAdminSpecialists: () => request<{
+        interest: AdminSpecialistInterest[];
+        applications: AdminSpecialistApplication[];
+        invites: AdminSpecialistInvite[];
+        enterprise_access: AdminEnterpriseAccess[];
+        requests: AdminMarketplaceRequest[];
+        matches: AdminSpecialistMatch[];
+        demand_signals: AdminDemandSignal[];
+    }>('/admin/specialists'),
+    issueSpecialistInvite: (email: string, expiresInDays = 7, interestId?: string) =>
+        request<{ id: string; invitation_url: string; emailed: boolean }>('/admin/specialists/invites', {
+            method: 'POST',
+            body: JSON.stringify({ email, expires_in_days: expiresInDays, interest_id: interestId }),
+        }),
+    reviewSpecialistInterest: (
+        id: string,
+        status: 'reviewing' | 'closed',
+        qualificationNotes?: string,
+    ) => request<{ success: true; id: string; status: string }>(`/admin/specialists/interest/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, qualification_notes: qualificationNotes }),
+    }),
+    revokeSpecialistInvite: (id: string) =>
+        request<{ success: true }>(`/admin/specialists/invites/${id}`, { method: 'DELETE' }),
+    reviewSpecialistApplication: (
+        id: string,
+        status: 'screening' | 'needs_information' | 'approved' | 'rejected',
+        privateNotes?: string,
+    ) => request<{ success: true; status: string; approval_url: string | null }>(
+        `/admin/specialists/applications/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ status, private_notes: privateNotes }) },
+    ),
+    updateSpecialistStanding: (
+        profileId: string,
+        data: {
+            verification_level: SpecialistVerificationLevel;
+            verification_summary?: string | null;
+            founding_cohort: boolean;
+            listing_fee_waived: boolean;
+            listing_fee_waived_until?: string | null;
+        },
+    ) => request<{
+        success: true;
+        verification_level: SpecialistVerificationLevel;
+        founding_cohort: boolean;
+        listing_fee_waived: boolean;
+    }>(`/admin/specialists/profiles/${profileId}/standing`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    }),
+    grantMarketplaceAccess: (clientId: string, status: 'enabled' | 'suspended' | 'revoked') =>
+        request<{ success: true; status: string }>(`/admin/specialists/enterprise-access/${clientId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status }),
+        }),
+    rankSpecialistMatches: (requestId: string) =>
+        request<{ matches: RankedSpecialistMatch[] }>(`/admin/specialists/requests/${requestId}/match`, {
+            method: 'POST',
+        }),
+    confirmSpecialistMatch: (matchId: string, confirmed: boolean) =>
+        request<{ success: true; status: string }>(`/admin/specialists/matches/${matchId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ confirmed }),
+        }),
 };

@@ -16,7 +16,8 @@ import {
     servicesRouter, marketIntelRouter, personalizationRouter, authRouter,
     eventsRouter, campaignsRouter, configRouter, devRouter,
     bookmarksRouter, systemRouter, openapiRouter, agentWebhooksRouter, auditRouter, selfImproveRouter, notificationsRouter,
-    newsletterRouter, agentProvidersRouter, membersRouter, seoRouter, moonshotOAuthRouter, geminiOAuthRouter, translationRouter
+    newsletterRouter, agentProvidersRouter, membersRouter, seoRouter, moonshotOAuthRouter, geminiOAuthRouter, translationRouter,
+    specialistsRouter
 } from './routes';
 import worldCupRouter from './routes/worldcup';
 import { MODELS } from './lib/ai';
@@ -60,10 +61,14 @@ app.use('*', cors({
         const allowed = new Set(BASE_ALLOWED_ORIGINS);
         if (c.env.PUBLIC_SITE_URL) allowed.add(c.env.PUBLIC_SITE_URL.replace(/\/$/, ''));
         if (extra) extra.split(',').map((o: string) => o.trim()).filter(Boolean).forEach((o: string) => allowed.add(o));
+        const workerHost = new URL(c.req.url).hostname;
+        if (workerHost === 'localhost' || workerHost === '127.0.0.1') {
+            allowed.add(origin);
+        }
         if (allowed.has(origin)) return origin;
         return null;
     },
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-ID', 'X-Requested-With', 'X-Admin-Key'],
     exposeHeaders: ['X-Total-Count', 'X-Rate-Limit-Remaining', 'X-Request-ID'],
     maxAge: 86400,
@@ -86,6 +91,9 @@ app.use('*', async (c, next) => {
     if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
         return next();
     }
+    if (method === 'POST' && c.req.path === '/api/v1/specialists/stripe/webhook') {
+        return next();
+    }
 
     const origin = c.req.header('Origin');
     const referer = c.req.header('Referer');
@@ -96,6 +104,10 @@ app.use('*', async (c, next) => {
     if (c.env.ADDITIONAL_ORIGINS) {
         c.env.ADDITIONAL_ORIGINS.split(',').map(value => value.trim()).filter(Boolean)
             .forEach(value => ALLOWED_ORIGINS.add(value));
+    }
+    const workerHost = new URL(c.req.url).hostname;
+    if ((workerHost === 'localhost' || workerHost === '127.0.0.1') && origin) {
+        ALLOWED_ORIGINS.add(origin);
     }
 
     if (origin && ALLOWED_ORIGINS.has(origin)) {
@@ -245,6 +257,7 @@ api.route('/agent/providers', agentProvidersRouter);
 api.route('/agent/moonshot/oauth', moonshotOAuthRouter);
 api.route('/agent/gemini/oauth', geminiOAuthRouter);
 api.route('/members', membersRouter);
+api.route('/specialists', specialistsRouter);
 api.route('/translate', translationRouter);
 api.route('/dev', devRouter);
 api.route('/bookmarks', bookmarksRouter);
@@ -399,6 +412,65 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
 
     // 1. Ingestion: every minute
     await safe('ingestion', () => runIngestion(env));
+
+    // Marketplace retention is bounded and runs hourly, including when the
+    // public directory flag is off because the interest registry is a separate
+    // pre-rollout acquisition path.
+    if (minutes === 5) {
+        await safe('marketplace-retention', async () => {
+            const [interestAudit, interest, abandoned, expired, orphanedAccounts] = await env.DB.batch([
+                env.DB.prepare(`
+                    DELETE FROM marketplace_audit_events
+                    WHERE entity_type = 'specialist_interest'
+                      AND entity_id IN (
+                          SELECT id FROM specialist_interest_registrations
+                          WHERE retention_until < datetime('now')
+                      )
+                `),
+                env.DB.prepare(`
+                    DELETE FROM specialist_interest_registrations
+                    WHERE retention_until < datetime('now')
+                `),
+                env.DB.prepare(`
+                    DELETE FROM specialist_applications
+                    WHERE status IN ('draft', 'rejected', 'withdrawn')
+                      AND retention_until IS NOT NULL
+                      AND retention_until < datetime('now')
+                      AND NOT EXISTS (
+                          SELECT 1 FROM specialist_profiles p
+                          WHERE p.application_id = specialist_applications.id
+                      )
+                `),
+                env.DB.prepare(`
+                    DELETE FROM specialist_invites
+                    WHERE status IN ('issued', 'revoked', 'expired')
+                      AND expires_at < datetime('now', '-30 days')
+                      AND NOT EXISTS (
+                          SELECT 1 FROM specialist_applications a
+                          WHERE a.invite_id = specialist_invites.id
+                      )
+                `),
+                env.DB.prepare(`
+                    DELETE FROM clients
+                    WHERE type = 'specialist'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM specialist_applications a WHERE a.client_id = clients.id
+                      )
+                      AND NOT EXISTS (
+                          SELECT 1 FROM specialist_profiles p WHERE p.client_id = clients.id
+                      )
+                      AND NOT EXISTS (
+                          SELECT 1 FROM specialist_subscriptions s WHERE s.client_id = clients.id
+                      )
+                `),
+            ]);
+            return Number(interestAudit.meta.changes || 0)
+                + Number(interest.meta.changes || 0)
+                + Number(expired.meta.changes || 0)
+                + Number(abandoned.meta.changes || 0)
+                + Number(orphanedAccounts.meta.changes || 0);
+        });
+    }
 
     // Keep official country evidence pre-saved. One country every two minutes
     // refreshes the continent in under two hours without putting provider

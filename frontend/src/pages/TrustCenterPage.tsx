@@ -11,6 +11,9 @@ const implementedControls = [
   'Translation, audio, reporting and publication outputs are checked through deep health, not binding reachability alone.',
   'Scheduled jobs are isolated so one service failure does not terminate unrelated maintenance work.',
   'Deployment secrets and account-specific Cloudflare bindings are excluded from source control.',
+  'Specialist applications remain invitation-only; the public interest registry creates no account and public profile data is separated from private screening records.',
+  'Specialist standing is based on reviewed experience, references, credentials and relevant delivery evidence; payment cannot purchase a verification level.',
+  'Stripe webhook signatures and event identifiers protect subscription updates against forgery and replay.',
 ];
 
 const disclosures = [
@@ -57,10 +60,11 @@ const disclosures = [
 ];
 
 const dataMap = [
-  ['Cloudflare D1', 'Articles, sources, country records, preferences, account records, audit history and operational metadata.'],
+  ['Cloudflare D1', 'Articles, sources, country records, preferences, account records, specialist interest registrations, audit history and operational metadata.'],
   ['Cloudflare KV', 'Cache and session-related values; it also stores media when R2 is unavailable in the selected account.'],
   ['Cloudflare Vectorize', 'Embeddings used for semantic retrieval.'],
   ['Analytics Engine', 'Operational and usage events used to observe platform behavior.'],
+  ['Stripe', 'Specialist listing checkout, subscription status and customer billing portal. BOA-Story stores only limited billing identifiers and status.'],
   ['Specialist processing services', 'The minimum supplied evidence required for translation, classification, speech or retrieval tasks.'],
 ] as const;
 
@@ -194,6 +198,10 @@ export const TrustCenterPage = () => (
               <li>Publishing, translation and optimization queues have bounded retries.</li>
               <li>R2 is preferred for media; the current Alyssa deployment reports healthy KV media fallback.</li>
               <li>The current deployment reports degraded email delivery because no verified sender is configured.</li>
+              <li>The public interest registry supports controlled specialist discovery; applications still require a single-use administrator invitation and screening.</li>
+              <li>The Founding Specialist Network is capped at 50 profiles, receives waived listing access, and expands in response to active Enterprise demand signals.</li>
+              <li>BOA Specialist, Verified Specialist, and Senior / Featured Specialist standing is evidence-based and independent of billing.</li>
+              <li>Marketplace screening is not an endorsement. Client engagement payments, payouts, chat, milestones, reviews, refunds and disputes are not platform features.</li>
             </ul>
           </article>
           <article className="rounded-3xl border border-navy bg-navy p-7 text-white md:p-9">

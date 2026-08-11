@@ -1,6 +1,12 @@
 # BOA-Story
 
-BOA-Story is a deployed African reporting and market-intelligence platform for readers and organizations worldwide. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, events, search, personalization, member services, and a structured enterprise-pilot workflow in one responsive application.
+BOA-Story is a deployed African reporting, research, and market-intelligence platform for readers, Enterprise decision teams, and screened specialists. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, search, personalization, member services, a structured Enterprise pilot, and an invite-only specialist marketplace in one responsive application.
+
+The product is organized around three explicit journeys:
+
+- **Readers** start with the Africa Briefing and current reporting, then move into stories, country records, search, and research.
+- **Enterprise clients** explore evidence, apply or sign in, submit bounded specialist requests, and track matching and proposals in a private workspace.
+- **Specialists** may first register public interest; selected candidates receive an invitation, complete screening, enter a deliberately small founding cohort with waived listing access, and respond to administrator-confirmed opportunities.
 
 The platform is not a live trading terminal and does not treat reporting volume, sentiment, or synthetic scores as economic performance. Market and country views distinguish:
 
@@ -13,7 +19,7 @@ The platform is not a live trading terminal and does not treat reporting volume,
 
 The current product state is:
 
-> **Production-deployed intelligence platform with a measurable design-partner pilot workflow**
+> **Production-deployed editorial and intelligence platform with Enterprise pilot and specialist-marketplace workflows**
 
 The initial commercial proposition is deliberately narrow:
 
@@ -26,9 +32,64 @@ The initial commercial proposition is deliberately narrow:
 | Economic hypothesis | Reduce time spent reconciling fragmented public evidence and make unresolved risks visible before specialist diligence or capital commitment |
 | Validation approach | Each pilot records the existing research baseline, delivery cycle, evidence traceability and unresolved diligence work |
 
-The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. A separate [structured application](https://alyssa-boa-web.pages.dev/enterprise/apply) records the applicant, sector, one to three candidate countries, decision question, deadline, current research process, and measurable success condition. Submissions enter a protected operator inbox with qualification status and private review notes; the form prohibits confidential or sensitive information. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
+The [Enterprise pilot](https://alyssa-boa-web.pages.dev/enterprise) defines the workflow and success measures. A separate [structured application](https://alyssa-boa-web.pages.dev/enterprise/apply) records the applicant, sector, one to three candidate countries, decision question, deadline, current research process, and measurable success condition. Submissions enter a protected operator inbox with qualification status and private review notes; the form prohibits confidential or sensitive information. Provisioned clients use [Enterprise access](https://alyssa-boa-web.pages.dev/enterprise/access) to enter the private specialist-request workspace. The [Trust Center](https://alyssa-boa-web.pages.dev/trust) documents current controls, data handling, service health, and procurement disclosures.
 
 BOA-Story does not replace legal, tax, regulatory or in-country commercial diligence. The Enterprise page publishes fixed entry pricing — a US$750 focused brief, a US$1,800 comparative entry pilot, and a US$300 per month monitoring extension — together with scope, delivery, payment terms, and a credibility-stage disclosure.
+
+### Specialist Marketplace
+
+The repository implements an invite-only, administrator-screened specialist marketplace with a separate public interest registry. The marketplace is enabled in the verified Alyssa deployment; account-neutral and default deployment profiles keep the directory and authenticated marketplace disabled until an operator deliberately completes rollout. Anyone may [register interest](https://alyssa-boa-web.pages.dev/specialists/interest) using bounded professional coverage information, but registration creates no account or application and promises no invitation, admission, endorsement, or work.
+
+Operators review interest against actual Enterprise demand by country, sector, service, and language. They can mark a record for review, close it, or issue a linked single-use invitation. Only an invited candidate can create hashed credentials and submit the guided four-stage application covering account details, prospective public profile, credentials and conflicts, and final confirmation. Private registry, qualification, and screening data remain separate from public profiles.
+
+The initial **Founding Specialist Network** is deliberately capped at 50 profiles, with an operating target of roughly 20–50 credible economists, lawyers, sector operators, former regulators, bankers, consultants, academics, and other professionals relevant to observed Enterprise demand. Admin tooling aggregates active requests into country, sector, language, and service demand signals so recruitment expands where clients actually need coverage rather than toward arbitrary marketplace volume.
+
+The public [specialist directory](https://alyssa-boa-web.pages.dev/specialists) supports country, sector, language, and service filters, removable filter chips, result counts, public credential/reference links, founding-cohort badges, verification standing, and launch-safe empty states. Returning specialists use a dedicated [specialist sign-in](https://alyssa-boa-web.pages.dev/specialists/sign-in). Their private dashboard presents the actual lifecycle — application, screening, approval, listing access, publication, and matching — and provides profile editing, waiver/billing guidance, confirmed opportunities, and proposal submission.
+
+Public standing follows a three-level evidence hierarchy:
+
+1. **BOA Specialist** — screened for network access using submitted professional evidence.
+2. **Verified Specialist** — additional documented experience, references, or professional credentials have been reviewed.
+3. **Senior / Featured Specialist** — stronger documented standing and relevant delivery history have been reviewed.
+
+Administrators must record a public evidence summary before assigning either elevated level. Founding status, a listing waiver, or payment cannot purchase a verification level.
+
+Approved Enterprise clients sign in separately and require a live administrator marketplace-access grant before any private request form renders. They receive a request inbox, research/profile prefilling, request-status timelines, proposal comparisons, and mutation feedback. Matching remains deterministic across country, sector, language, and service category; administrators must confirm a suggestion before request details become visible to a specialist.
+
+Approval alone does not publish a specialist profile. Public listing requires continuing screening approval plus either a current BOA listing-fee waiver or an active Stripe listing subscription. Founding specialists automatically receive waived listing access, so Stripe is not required to publish the early cohort. The verified deployment intentionally keeps Stripe unconfigured while BOA validates repeatable demand.
+
+The MVP boundary is deliberate:
+
+- founding specialists receive free listing access while demand is being proven;
+- Stripe Checkout and Customer Portal are reserved for a later listing arrangement and do not determine verification standing;
+- BOA-Story does not collect percentage commissions or client engagement fees and does not pay specialists;
+- engagement contracts and delivery occur independently of BOA-Story;
+- chat, milestones, reviews, disputes, engagement refunds, and transaction payouts are not implemented;
+- screening is not an endorsement or substitute for client due diligence;
+- identity documents, CV uploads, confidential records, and sensitive data are prohibited.
+
+The current operating sequence is:
+
+1. An Enterprise need or repeated demand signal appears.
+2. BOA identifies the required country, sector, language, and service coverage.
+3. Operators review the public interest registry and recruit additional candidates deliberately.
+4. Selected candidates receive a single-use, expiring invitation.
+5. Invited applications undergo evidence-based screening.
+6. Approved founding specialists receive waived listing access and an evidence-supported standing.
+7. BOA confirms deterministic match suggestions before specialists see request details.
+8. Clients and specialists contract, pay, and deliver independently of BOA-Story.
+
+The three standing levels are not customer ratings:
+
+| Standing | Minimum current basis | Payment effect |
+| --- | --- | --- |
+| BOA Specialist | Submitted professional evidence reviewed for network access | None |
+| Verified Specialist | Additional documented experience, references, or professional credentials reviewed | None |
+| Senior / Featured Specialist | Stronger documented standing and relevant delivery history reviewed | None |
+
+BOA should add transaction commissions, managed payments, reviews, or deeper engagement tooling only after observed evidence shows recurring Enterprise requests and repeatable specialist engagements. None of those future capabilities is represented as current functionality.
+
+For a new deployment, apply migrations `0065_specialist_marketplace.sql` through `0068_founding_specialist_network.sql`. Migration `0069_verified_country_resources.sql` adds the evidence-bearing country-resource registry used by the reader product. Enable the directory/authenticated marketplace flag only after validating invitation, screening, waiver, verification, listing, matching, and proposal controls. Stripe testing is required only before activating paid listing arrangements. `wrangler.alyssa.toml` currently enables the marketplace; `wrangler.toml` and `wrangler.portable.toml.example` keep it disabled. Interest records are retained for no more than 24 months and are removed by bounded scheduled cleanup.
 
 ### Evidence boundary
 
@@ -36,7 +97,7 @@ The repository and live deployment demonstrate implemented software, operating c
 
 ### Reader position and validation
 
-The enterprise decision proposition remains the primary commercial workflow. Alongside it, the initial reader pathway is designed for African diaspora and globally connected professionals who want to follow African business, economic, and policy developments without reconciling fragmented sources themselves.
+The Enterprise decision proposition remains the primary commercial workflow. The application homepage and navigation are editorial-first, however, so readers are not forced through a buyer funnel before reaching reporting. The reader pathway is designed for African diaspora and globally connected professionals who want to follow African business, economic, and policy developments without reconciling fragmented sources themselves.
 
 The recurring reader habit is the **Africa Briefing**:
 
@@ -59,24 +120,40 @@ Reader membership pricing is published at US$4, US$9, and US$19 per month throug
 | API Worker | [alyssa-boa-api.alyssavanklassen.workers.dev](https://alyssa-boa-api.alyssavanklassen.workers.dev) |
 | Deep health | [API `/api/v1/health/deep`](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/health/deep) |
 | API documentation | [Swagger UI](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/docs) |
+| Specialist directory | [Public marketplace](https://alyssa-boa-web.pages.dev/specialists) |
+| Enterprise access | [Private client sign-in](https://alyssa-boa-web.pages.dev/enterprise/access) |
+| Specialist access | [Private specialist sign-in](https://alyssa-boa-web.pages.dev/specialists/sign-in) |
 
 These URLs describe the currently verified Alyssa Cloudflare deployment. The repository also supports account-neutral deployment under a different resource prefix and Cloudflare account.
 
 ### Verified state
 
-Production snapshot captured at 13:13 UTC on 9 August 2026:
+### Production verification policy
 
-- the frontend and API were reachable, along with the reader, enterprise, membership, countries, trust, and pilot-application routes;
+Cloudflare deployment identifiers describe the executable release, while mutable database counts and health checks must be read from the live API. The README therefore does not treat a copied article total, coverage share or test count as permanently current.
+
+The last live audit was performed at 00:39 UTC on 11 August 2026:
+
+- the frontend and API were reachable, including the editorial-first reader paths, Enterprise access, specialist directory, public interest registry, specialist sign-in, trust, and pilot-application routes;
 - the structured pilot application was reachable and its protected operator inbox was reading the migrated production table;
-- D1, content processing, KV media storage, Vectorize, Durable Objects, and autonomous worker outputs were healthy;
-- the database contained 831 article records;
+- the specialist marketplace was enabled and healthy, its D1 schema was ready, and its public API returned successfully; founding waivers make Stripe optional at this stage;
+- the Founding Specialist Network currently contained zero profiles and zero active waivers, so the 20–50 profile target is an operating plan rather than a claimed cohort;
+- D1, content processing, KV media storage, Vectorize, Durable Objects, sector assignment, and autonomous worker outputs were healthy;
+- the database contained 856 article records at the time of inspection;
 - the worker-output inventory reported 372 published articles, 372 audio files, and 2,231 quality-approved translations across six non-English languages, plus 84 market reports;
 - the production bundle was served with immutable asset caching;
-- the complete test suite contained 311 passing tests.
+- the complete local quality gate passed at the time of inspection; the current CI run is the authoritative test result for a committed revision;
+- ten priority reader, Enterprise, and specialist routes passed both mobile and desktop browser audits.
 
-The verified Alyssa-account runtime was Pages deployment [`ef889c40`](https://ef889c40.alyssa-boa-web.pages.dev), whose deployment metadata identifies source revision `16f1e64`, together with Worker version `2374595b-8c51-4f91-a18d-f8b32a70ca92`.
+The verified Alyssa-account runtime is Pages deployment [`f1954a22`](https://f1954a22.alyssa-boa-web.pages.dev) together with Worker version `1ade3452-dccc-4d8a-b6c4-de5898e8a7bd`. These are direct deployments from the current working tree; the Pages project has no Git connection, and deployment metadata is not evidence that every deployed change has been committed.
 
-The deep-health response is currently `degraded`, rather than `healthy`, because of two checks: `coverage_diversity` reports that the rolling evidence window has not yet met the all-country, publisher, and global-source quality standard, and `email_delivery` reports that no verified transactional email provider and sender are configured. The endpoint returns HTTP 503 while any check is degraded by design. The content, intelligence, search, audio, translation, and web delivery paths remain operational.
+At that audit, deep health was `degraded` and returned HTTP 503 because three checks had not met their production standard: `coverage_diversity`, `source_acquisition`, and `email_delivery`. The 30-day evidence window covered 43 of 54 countries; its top country and publisher each represented roughly 41% of the window, and primary/global evidence represented 16.5%, below the 50% health threshold. The current working tree retains hard admission caps for new publications and corrects acquisition health to count one canonical source per URL, matching ingestion behaviour. Those safeguards improve the forward cohort but do not rewrite historical reporting. Stripe configuration is marketplace metadata rather than a health requirement while listing access is waived.
+
+The live status endpoints remain authoritative:
+
+- [`/api/v1/health`](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/health) for reachability;
+- [`/api/v1/health/deep`](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/health/deep) for output, diversity, acquisition, marketplace and integration health;
+- [`/api/v1/market-intel/coverage-pulse`](https://alyssa-boa-api.alyssavanklassen.workers.dev/api/v1/market-intel/coverage-pulse) for the current coverage ledger.
 
 ## What is implemented
 
@@ -86,11 +163,13 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 - Country coverage for all 54 African states, with country hubs, economic and trade context, current evidence, linked sources, events, decision dossiers, and a country narrative toolkit.
 - Market Intelligence, dedicated sector-performance dossiers, generated reports, and a Continental Overview built around official indicators, evidence notes, comparison boundaries, counter-signals, and narrated briefings when available.
 - Search across reporting and countries with autocomplete, filters, similar-story retrieval, a command menu, and a cached research-answer path grounded in retrieved platform records.
+- An editorial-first homepage and consistent desktop/mobile information architecture: Briefing, Stories, Countries, Research, Enterprise, and Specialists. The mobile dock prioritizes Briefing, Stories, Countries, Search, and the complete menu.
 - An Africa Briefing and curated feed, plus Mission Control preferences for role, country, and sector. Preview mode exposes the read-only experience; persisted personalization and account actions retain their API access checks.
-- A Decision Workspace for saved articles and country comparisons, embedded decision panels on intelligence pages, reader settings, density controls, route-specific reading guides, notifications for authenticated sessions, and a global audio player.
+- A distinct analytical Decision Workspace and clearly named Saved research library, embedded decision panels on intelligence pages, reader settings, density controls, route-specific reading guides, notifications for authenticated sessions, and a global audio player.
 - Events and event registration, consultation intake, curated travel information with an explicit no-booking disclaimer, newsletter subscription records, and contact forms. Email confirmations and digest delivery remain unavailable in the verified deployment until transactional email is configured.
 - Published membership tiers, a one-time Ko-fi support path, a supporter-transparency feed, and a separately authorized sponsor dashboard for organization-isolated campaign delivery records.
-- A global Enterprise offer, structured pilot application, protected qualification inbox, and Trust Center for data handling, operational controls, procurement review, and current limitations.
+- A global Enterprise offer, structured pilot application, password-based client access, protected qualification inbox, private specialist-request workspace, and Trust Center for data handling, operational controls, procurement review, and current limitations.
+- Shared accessible journey primitives for page heroes, loading/error/empty states, access gates, lifecycle progress, form summaries, and pending submissions. Raw API status strings are converted into approachable marketplace guidance.
 - Responsive navigation and layouts for desktop and mobile, including mobile alternatives for wide data tables and right-to-left layout for Arabic.
 
 ### Application surfaces and access boundaries
@@ -106,7 +185,8 @@ The deep-health response is currently `degraded`, rather than `healthy`, because
 | Events, travel and consultation | `/events`, `/travel`, `/request-consultation` | Browsing and intake are public; registration writes are validated and session/origin protected where required |
 | Reader communications | `/newsletter`, notification controls | Subscription records can be created; outbound email is unavailable without a verified sender |
 | Supporter and sponsor reporting | `/supporter-feed`, `/sponsor/dashboard` | Supporter transparency follows preview membership; campaign records require partner authorization |
-| Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/trust` | Offer and application are public; qualification records and private notes are administrator only |
+| Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/enterprise/access`, `/trust` | Offer and application are public; password access is private; qualification records and private notes are administrator only |
+| Specialist marketplace | `/specialists`, `/specialists/interest`, `/specialists/:slug`, `/specialists/join/:token`, `/specialists/sign-in`, `/specialists/dashboard`, `/specialists/requests`, `/specialists/requests/new`, `/specialists/requests/:id` | Interest registration is public and creates no account; public profiles require approval plus a waiver or active subscription; applications require an invitation; dashboards require verified specialist identity; requests require Enterprise tier plus a live administrator access grant |
 | Administration | `/admin` | Requires `ADMIN_API_KEY`; reader and client sessions do not grant administrator access |
 | Legal and support | `/privacy`, `/terms`, `/contact` | Public |
 | Seasonal archive | `/world-cup` | Route and data contract remain in code; global World Cup promotion is currently disabled |
@@ -129,7 +209,7 @@ Published article translations are stored for the six non-English languages and 
 
 - The Worker generates the XML sitemap, latest-story RSS feed, and Daily Pulse podcast feed.
 - Pages Functions expose those documents at `/sitemap.xml`, `/rss.xml`, and `/podcast.xml` on the reader origin by proxying the configured `BACKEND_ORIGIN`.
-- `robots.txt` excludes administrator, settings, and member-access screens and advertises the sitemap.
+- `robots.txt` excludes administrator, settings, member-access, Enterprise access, specialist invitation/sign-in/dashboard, and private request screens and advertises the sitemap. When enabled, the sitemap includes active public specialist profiles.
 - The frontend publishes branded manifest and icon metadata, canonical URLs, page titles and descriptions, and RSS discovery links.
 
 ### Editorial and intelligence controls
@@ -152,6 +232,7 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 - Source creation, monitoring and deletion; country record maintenance; editorial rule evolution; and protected operational triggers.
 - Client provisioning with hashed credentials and one-time API-key display, plus Ko-fi webhook provisioning for reader memberships when its verification token is configured.
 - Editorial and pilot inboxes, structured qualification and private review notes, audience reporting, source and sector-quality audits, analytics, provider controls, and worker health.
+- Specialist interest review, demand-signal aggregation, founding-cohort controls, evidence-based verification standing, listing waivers, invitation, screening, approval, Enterprise access grant/suspension/revocation, deterministic match confirmation, and audit history.
 - Operator-only audience reporting with explicit metric definitions, zero-safe empty states, and no substituted estimates.
 - Member OTP authentication, profiles, preferences, notifications, bookmarks, campaign authorization, events, newsletters, and reporting APIs. OTP and other outbound messages fail honestly when email delivery is unavailable.
 - OpenAPI/Swagger documentation under `/api/v1/docs`.
@@ -166,8 +247,9 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 | Reporting and media | `/articles`, article images and audio, root `/sitemap.xml`, `/rss.xml`, `/podcast.xml` |
 | Retrieval and research | `/search`, `/countries`, `/intel`, `/market-intel`, `/dashboards`, `/narratives`, `/world-cup` |
 | Reader state | `/members`, `/auth`, `/personalization`, `/bookmarks`, `/notifications`, `/analytics` |
-| Services and communications | `/services`, `/events`, `/newsletter`, `/contact`, `/translate/interface` |
+| Services and communications | `/services` pilot and specialist-interest intake, `/events`, `/newsletter`, `/contact`, `/translate/interface` |
 | Commercial reporting | `/campaigns` and sponsor-scoped analytics |
+| Specialist marketplace | `/specialists` directory, invitation redemption, dashboard, waiver/subscription listing access, Enterprise requests, confirmed matches, proposals, and the exact signed Stripe webhook |
 | Administration | `/admin`, `/audit`, protected client/source/editorial and pilot-inbox operations |
 | Autonomous processing | `/agent`, `/agent/providers`, provider OAuth/bootstrap routes, `/self-improve` |
 | Operations | `/health`, `/health/live`, `/health/ready`, `/health/deep`, `/status`, `/config`, `/docs` |
@@ -191,6 +273,7 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Layer | Current implementation |
 | --- | --- |
 | Frontend | React 18, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS, Radix UI, Framer Motion, Recharts |
+| UX and access state | Audience-centred route journeys, verified `/auth/me` hydration, role-aware route gates, shared async/form/lifecycle primitives, and explicit Portuguese interface coverage |
 | API | TypeScript Cloudflare Worker using Hono and Zod |
 | Relational data | Cloudflare D1 with versioned SQL migrations |
 | Cache, sessions and throttling | Separate Cloudflare KV namespaces for cache/session state and rate-limit counters |
@@ -203,7 +286,28 @@ This is deliberate review configuration, not the final subscription policy. Rest
 | Reader evidence | D1 engagement events plus Analytics Engine delivery, using hashed sessions, stored IP addresses, and one-way user-agent fingerprints |
 | Live state | Durable Object `LiveCounter` |
 | Transactional email | Optional Cloudflare Email Sending binding or Resend; unavailable when no verified sender/provider is configured |
+| Marketplace listing access | Founding-network waivers or Stripe Checkout/Customer Portal subscriptions; neither payment path determines verification standing |
 | Frontend hosting | Cloudflare Pages |
+
+### Marketplace data model
+
+The marketplace keeps public, private, commercial, and operational records separate:
+
+| Table | Purpose |
+| --- | --- |
+| `specialist_interest_registrations` | Public expressions of interest, demand-fit review status, private qualification notes, linked invitation, and 24-month retention deadline |
+| `specialist_invites` | Email-bound, single-use, expiring invitation hashes |
+| `specialist_applications` | Private invited application, credentials, conflict declaration, screening state, and retention controls |
+| `specialist_profiles` | Public profile projection, founding-cohort status, evidence-based standing, waiver state, screening status, and listing state |
+| `specialist_subscriptions` | Optional future Stripe listing-customer and subscription state |
+| `marketplace_client_access` | Live administrator grant, suspension, or revocation for Enterprise request access |
+| `specialist_requests` | Bounded Enterprise decision request and required expertise |
+| `specialist_matches` | Deterministic candidate score, reasons, and administrator confirmation |
+| `specialist_proposals` | Indicative specialist scope, assumptions, timeline, fee, and client decision state |
+| `marketplace_audit_events` | Status and operator-action history without publishing private application material |
+| `country_official_resources` | Country resource links with verification evidence, review state and last-check timestamp; unverified legacy portal fields are not reader-facing |
+
+Interest registration never inserts a client account or specialist application. Public APIs project an allow-listed subset of profile fields; fee-waiver administration, private notes, conflicts, contact details, and billing identifiers remain non-public.
 
 ### Autonomous lifecycle
 
@@ -229,6 +333,7 @@ The current bounded cadence is:
 | Every two minutes | Next-country evidence refresh and stale generation-task recovery |
 | Every 15 minutes | Saved World Bank-derived continental and sector dataset refresh |
 | Every 30 minutes | Seasonal World Cup data refresh; the reader promotion remains disabled |
+| Hourly | Expired marketplace interest, invitation, abandoned-application, orphaned-account, and associated interest-audit cleanup |
 | Every four hours | Fairly rotated country reporting |
 | Every six hours | Content optimization and live-event discovery on offset schedules |
 | Daily | Recurring-event rollover, sector reporting, daily digest attempt, and retention cleanup |
@@ -245,8 +350,10 @@ The external runtime is deployment-specific and requires an admin key plus its o
 ## Repository layout
 
 ```text
-frontend/                 React reader and admin application
+frontend/                 React reader, Enterprise, specialist and admin application
 frontend/functions/       Pages Functions for sitemap, RSS, podcast and article social metadata
+frontend/src/components/  Shared shell, journey, accessibility and domain components
+frontend/src/pages/       Reader, access, marketplace, legal and operator route surfaces
 src/index.ts              Worker entry point, routing, cron and queue dispatch
 src/routes/               Public, member, admin and system API routes
 src/lib/                  Editorial, evidence, media and platform services
@@ -287,7 +394,7 @@ Apply migrations to the local D1 database:
 npm run db:migrate
 ```
 
-That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0064_world_bank_country_evidence.sql`.
+That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0069_verified_country_resources.sql`.
 
 For local Worker secrets and overrides, create `.dev.vars` and do not commit it. A practical development configuration is:
 
@@ -299,6 +406,7 @@ DEV_SECRET=replace-with-a-long-random-value
 PUBLIC_API_URL=http://localhost:8787
 PUBLIC_SITE_URL=http://localhost:5173
 ADDITIONAL_ORIGINS=http://localhost:5173
+MARKETPLACE_ENABLED=false
 ```
 
 Start the Worker and Vite application together:
@@ -313,7 +421,7 @@ Default local addresses are normally:
 - Worker: `http://localhost:8787`
 - API base: `http://localhost:8787/api/v1`
 
-Optional source, narration, and email credentials activate their corresponding integrations. Missing optional credentials use documented fallbacks or report the integration as unavailable.
+Optional source, narration, email, and Stripe credentials activate their corresponding integrations. Missing optional credentials use documented fallbacks or report the integration as unavailable. Local marketplace development requires migrations `0065` through `0068`; founding listing waivers require no Stripe configuration.
 
 ## Validation
 
@@ -321,14 +429,14 @@ Run the complete local release checks:
 
 ```bash
 npm run typecheck
-npm test
+npm test -- --pool=threads
 npm run audit:portuguese
 npx tsc --noEmit -p frontend/tsconfig.app.json
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-The CI quality gate runs backend typechecking, all Vitest unit and integration tests, the maintained Portuguese-interface audit, frontend typechecking and linting, and the complete Vite production build on every push and pull request.
+The CI quality gate installs both backend and frontend dependencies before running the combined Vitest suite because focused React component tests live under `frontend/src`. It then runs backend typechecking, all unit/integration/contract/component tests, the maintained Portuguese-interface audit, frontend typechecking and linting, and the complete Vite production build on every push and pull request.
 
 ## Cloudflare deployment
 
@@ -366,9 +474,13 @@ Useful options include `--account-id`, `--site-url`, `--api-url`, `--pages-proje
 
 The script never deletes or replaces remote resources. If R2 is unavailable, setup provisions a KV media namespace unless `--require-r2` was requested.
 
+### Reproducible release guard
+
+`npm run deploy` and `npm run cloudflare:deploy` refuse to deploy a working tree containing modified or untracked files. This prevents a direct Cloudflare release from containing code that cannot be recovered from GitHub. Run the complete quality gate, commit only the intended source and migration files, and confirm `npm run release:clean` before applying remote migrations or deploying the Worker and Pages build. A deliberate emergency override is available only by invoking `node scripts/verify-clean-release.mjs --allow-dirty`; routine releases must not use it.
+
 Three Worker configuration paths are intentionally distinct:
 
-- `wrangler.alyssa.toml` describes the verified Alyssa deployment, including KV-backed media and no active email binding.
+- `wrangler.alyssa.toml` describes the verified Alyssa deployment, including KV-backed media, no active email binding, and the enabled marketplace rollout flag.
 - `wrangler.toml` is another account-specific deployment profile with its own resource IDs, origins, R2 bucket, and optional Cloudflare Email binding.
 - `wrangler.portable.toml.example` and `scripts/cloudflare-portable.mjs` are the account-neutral path. Generated IDs, secrets, API origins, and Pages settings remain outside version control.
 
@@ -393,6 +505,9 @@ npx wrangler secret put ELEVENLABS_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put ELEVENLABS_VOICE_ID --config wrangler.alyssa.toml
 npx wrangler secret put EMAIL_FROM --config wrangler.alyssa.toml
 npx wrangler secret put RESEND_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put STRIPE_SECRET_KEY --config wrangler.alyssa.toml
+npx wrangler secret put STRIPE_WEBHOOK_SECRET --config wrangler.alyssa.toml
+npx wrangler secret put STRIPE_SPECIALIST_PRICE_ID --config wrangler.alyssa.toml
 npx wrangler secret put OPENAI_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put ANTHROPIC_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put GOOGLE_AI_API_KEY --config wrangler.alyssa.toml
@@ -404,6 +519,8 @@ npx wrangler secret put MOONSHOT_CLIENT_SECRET --config wrangler.alyssa.toml
 The explicit config is essential: omitting it targets the Worker named by the default `wrangler.toml`. Portable deployments instead use the ignored generated config and secrets file created by the setup script.
 
 `KOFI_TOKEN` verifies membership webhooks. External model credentials are optional operational/provider integrations; the information model used by the application remains the configured Workers AI path unless an explicitly supported operator workflow selects otherwise. Gemini and Moonshot also expose protected OAuth bootstrap routes, and provider records can be managed through the admin-gated agent-provider API.
+
+The three Stripe values configure a later specialist listing subscription only. The server-controlled Price ID is never accepted from the browser. The webhook endpoint is `/api/v1/specialists/stripe/webhook`; it must receive the untouched body and a valid `Stripe-Signature`. New/default deployments should keep paid listing disabled until test-mode checkout, portal, replay, failure, cancellation, and publication gating have been verified. The Alyssa deployment uses founding-network waivers and therefore does not require Stripe for current listing publication.
 
 Transactional email requires `EMAIL_FROM` on a verified sender domain plus either the Cloudflare `EMAIL` binding or `RESEND_API_KEY`. The runtime tries Cloudflare Email Sending first, then Resend, and finally a legacy MailChannels request that normally cannot deliver without a paid setup. Deep health reports email as configured only for the first two supported paths. Setting an API key without a verified sender is intentionally treated as unavailable.
 
@@ -440,6 +557,41 @@ PATCH /api/v1/admin/pilot-requests/:id
 
 The application endpoint is public, origin checked, rate limited, and schema validated. Inbox and qualification-status operations require administrator authentication. The application accepts no confidential or sensitive information and does not promise pilot acceptance or an outcome.
 
+Specialist marketplace contracts:
+
+```text
+POST  /api/v1/services/specialist-interest
+GET   /api/v1/specialists
+GET   /api/v1/specialists/:slug
+POST  /api/v1/specialists/join
+GET   /api/v1/specialists/dashboard
+PUT   /api/v1/specialists/dashboard/profile
+POST  /api/v1/specialists/billing/checkout
+POST  /api/v1/specialists/billing/portal
+GET   /api/v1/specialists/requests
+POST  /api/v1/specialists/requests
+GET   /api/v1/specialists/requests/:id
+POST  /api/v1/specialists/matches/:id/proposals
+PATCH /api/v1/specialists/proposals/:id
+POST  /api/v1/specialists/stripe/webhook
+```
+
+Principal administrator contracts:
+
+```text
+GET    /api/v1/admin/specialists
+PATCH  /api/v1/admin/specialists/interest/:id
+POST   /api/v1/admin/specialists/invites
+DELETE /api/v1/admin/specialists/invites/:id
+PATCH  /api/v1/admin/specialists/applications/:id
+PATCH  /api/v1/admin/specialists/profiles/:id/standing
+PUT    /api/v1/admin/specialists/enterprise-access/:clientId
+POST   /api/v1/admin/specialists/requests/:id/match
+PATCH  /api/v1/admin/specialists/matches/:id
+```
+
+The public interest endpoint is origin checked, rate limited, schema validated, and enumeration-safe: repeated, invited, and already-applying email addresses receive the same generic response without exposing account state. Public directory responses contain only projected public profile fields. Dashboard and proposal actions check the current specialist application, waiver, and subscription state in D1. Enterprise request operations require both an Enterprise account and an enabled `marketplace_client_access` row; frontend route guards improve guidance but do not replace these server-side checks.
+
 Reader measurement contracts:
 
 ```text
@@ -461,10 +613,13 @@ npm run tail
 ## Known operational limitations
 
 - Transactional email is not active in the currently verified Alyssa deployment because no verified sender has been configured.
+- The specialist marketplace is enabled in the Alyssa deployment with founding-network fee waivers. Stripe checkout and billing portal remain unavailable until Stripe secrets and a Price ID are configured, but they are not required for waived founding listings.
 - That Cloudflare account uses KV media storage because R2 is unavailable. The abstraction supports migration to R2 later.
 - Member preview and server-side paywall bypass are intentionally enabled for stakeholder review.
 - Subscription prices and commercial entitlements are product configuration, not evidence about platform health.
 - Live coverage counts change as the autonomous pipeline publishes, translates, and refreshes records.
+- Historical country portal columns are retained for migration compatibility but are not exposed to readers. Country pages always provide primary World Bank, IMF and UN Comtrade evidence links; additional national portals appear only through the verified-resource registry.
+- The 30-day diversity window contains historical concentration and improves only as older records expire and newly admitted records satisfy the current country, publisher and source-tier caps.
 - Consumer retention, acquisition, conversion, churn, and revenue are not treated as proven until the new first-party measurement record contains sufficient observed activity.
 - External sources and processing services can rate-limit or fail; the scheduler isolates failures and retries bounded queue work, but it cannot guarantee third-party availability.
 - Public AI-assisted endpoints enforce per-IP rate limits, and the interface translation endpoint is throttled against bulk automated use.

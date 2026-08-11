@@ -79,3 +79,7 @@ API_VERSION = "v1"
 PUBLIC_API_URL = "https://alyssa-boa-api.alyssavanklassen.workers.dev"
 PUBLIC_SITE_URL = "https://alyssa-boa-web.pages.dev"
 ADDITIONAL_ORIGINS = "https://alyssa-boa-web.pages.dev"
+MARKETPLACE_ENABLED = "true"
+
+# Configure with `wrangler secret put --config wrangler.alyssa.toml` before rollout:
+# STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_SPECIALIST_PRICE_ID

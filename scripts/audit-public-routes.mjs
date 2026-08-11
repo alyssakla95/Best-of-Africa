@@ -7,7 +7,10 @@ const strict = process.argv.includes('--strict');
 const viewport = viewportName === 'desktop'
   ? { width: 1440, height: 1000, mobile: false }
   : { width: 390, height: 844, mobile: true };
-const routes = JSON.parse(await readFile(new URL('./public-route-inventory.json', import.meta.url), 'utf8'));
+const inventory = JSON.parse(await readFile(new URL('./public-route-inventory.json', import.meta.url), 'utf8'));
+const routes = process.env.BOA_AUDIT_ROUTES
+  ? process.env.BOA_AUDIT_ROUTES.split(',').map(route => route.trim()).filter(Boolean)
+  : inventory;
 
 const tabs = await fetch(`http://127.0.0.1:${port}/json`).then(response => response.json());
 const tab = tabs.find(item => item.type === 'page');
@@ -54,6 +57,13 @@ await command('Emulation.setDeviceMetricsOverride', {
   width: viewport.width, height: viewport.height, deviceScaleFactor: 1,
   mobile: viewport.mobile, screenWidth: viewport.width, screenHeight: viewport.height,
 });
+if (process.env.BOA_AUDIT_AUTH_TOKEN) {
+  await command('Page.navigate', { url: baseUrl });
+  await delay(500);
+  await command('Runtime.evaluate', {
+    expression: `localStorage.setItem('boa_auth_token', ${JSON.stringify(process.env.BOA_AUDIT_AUTH_TOKEN)})`,
+  });
+}
 
 const results = [];
 for (const route of routes) {
@@ -86,6 +96,7 @@ for (const route of routes) {
       }).length;
       return {
         title: document.title,
+        textPreview: text.slice(0, 500),
         h1: document.querySelectorAll('h1').length,
         main: document.querySelectorAll('main').length,
         bodyLength: text.length,

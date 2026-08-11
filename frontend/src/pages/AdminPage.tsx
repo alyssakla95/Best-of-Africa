@@ -32,6 +32,7 @@ import { AdminSourcesTab } from '../components/admin/AdminSourcesTab';
 import { AdminClientsTab } from '../components/admin/AdminClientsTab';
 import { AdminInboxTab } from '../components/admin/AdminInboxTab';
 import { AdminAudienceTab } from '../components/admin/AdminAudienceTab';
+import { AdminSpecialistsTab } from '../components/admin/AdminSpecialistsTab';
 import type { ArticleListItem } from '../types';
 
 export const AdminPage: React.FC = () => {
@@ -178,6 +179,9 @@ export const AdminPage: React.FC = () => {
                             <TabsTrigger value="clients" className="rounded-xl px-6 py-2 flex gap-2 text-muted-foreground hover:text-foreground">
                                 <LockClosedIcon className="h-4 w-4" /> Clients
                             </TabsTrigger>
+                            <TabsTrigger value="specialists" className="rounded-xl px-6 py-2 flex gap-2 text-muted-foreground hover:text-foreground">
+                                <StarIcon className="h-4 w-4" /> Specialists
+                            </TabsTrigger>
                             <TabsTrigger value="agents" className="rounded-xl px-6 py-2 flex gap-2 text-muted-foreground hover:text-foreground">
                                 <ActivityLogIcon className="h-4 w-4" /> Systems Monitor
                             </TabsTrigger>
@@ -189,6 +193,10 @@ export const AdminPage: React.FC = () => {
 
                         <TabsContent value="audience">
                             <AdminAudienceTab />
+                        </TabsContent>
+
+                        <TabsContent value="specialists">
+                            <AdminSpecialistsTab />
                         </TabsContent>
 
                         <TabsContent value="moderation" className="space-y-6">
@@ -371,7 +379,7 @@ export const AdminPage: React.FC = () => {
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-navy-card border border-accent/30 shadow-lg">
                             <LockClosedIcon className="h-8 w-8 text-accent" />
                         </div>
-                        <CardTitle className="text-2xl font-serif font-black italic text-white tracking-tight">Intelligence Access</CardTitle>
+                        <h1 className="text-2xl font-serif font-black italic text-white tracking-tight">Intelligence Access</h1>
                         <CardDescription className="text-ink-mute">Authorized personnel only. Sessions are logged.</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-8">

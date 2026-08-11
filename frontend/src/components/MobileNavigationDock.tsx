@@ -1,4 +1,4 @@
-import { BarChart3, Home, Menu, Newspaper, Radar } from 'lucide-react';
+import { BookOpen, Map, Menu, Newspaper, Search } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,10 +10,10 @@ export function MobileNavigationDock() {
   const { t } = useLanguage();
 
   const destinations = [
-    { href: '/', label: t('nav.home', 'Home'), Icon: Home, active: pathname === '/' },
-    { href: '/intelligence', label: t('nav.intelligence_short', 'Intel'), Icon: Radar, active: pathname.startsWith('/intelligence') },
-    { href: '/dashboards/overview', label: t('nav.dashboard_short', 'Dashboard'), Icon: BarChart3, active: pathname.startsWith('/dashboards') },
-    { href: '/posts', label: t('nav.stories', 'Stories'), Icon: Newspaper, active: pathname.startsWith('/posts') },
+    { href: '/feed', label: t('nav.briefing_short', 'Briefing'), Icon: Newspaper, active: pathname.startsWith('/feed') },
+    { href: '/posts', label: t('nav.stories', 'Stories'), Icon: BookOpen, active: pathname.startsWith('/posts') },
+    { href: '/countries', label: t('nav.countries', 'Countries'), Icon: Map, active: pathname.startsWith('/countries') },
+    { href: '/search', label: t('nav.search', 'Search'), Icon: Search, active: pathname.startsWith('/search') },
   ];
 
   return (

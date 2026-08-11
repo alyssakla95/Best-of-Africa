@@ -156,6 +156,55 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    const marketplaceStart = Date.now();
+    try {
+        const schema = await c.env.DB.prepare(`
+            SELECT COUNT(*) AS count FROM sqlite_master
+            WHERE type = 'table' AND name IN (
+                'specialist_invites', 'specialist_applications', 'specialist_profiles',
+                'specialist_subscriptions', 'stripe_webhook_events',
+                'marketplace_client_access', 'specialist_requests',
+                'specialist_matches', 'specialist_proposals', 'marketplace_audit_events',
+                'specialist_interest_registrations'
+            )
+        `).first<{ count: number }>();
+        const standing = await c.env.DB.prepare(`
+            SELECT
+                SUM(CASE WHEN founding_cohort = 1 THEN 1 ELSE 0 END) AS founding_count,
+                SUM(CASE WHEN listing_fee_waived = 1 THEN 1 ELSE 0 END) AS waived_count
+            FROM specialist_profiles
+        `).first<{ founding_count: number; waived_count: number }>();
+        const enabled = c.env.MARKETPLACE_ENABLED === 'true';
+        const stripeConfigured = Boolean(
+            c.env.STRIPE_SECRET_KEY
+            && c.env.STRIPE_WEBHOOK_SECRET
+            && c.env.STRIPE_SPECIALIST_PRICE_ID,
+        );
+        const schemaReady = Number(schema?.count || 0) === 11;
+        checks.push({
+            name: 'specialist_marketplace',
+            status: schemaReady ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - marketplaceStart,
+            message: !schemaReady
+                ? 'Marketplace migration is not fully applied'
+                : undefined,
+            details: {
+                enabled,
+                schemaReady,
+                stripeConfigured,
+                foundingCount: Number(standing?.founding_count || 0),
+                waivedCount: Number(standing?.waived_count || 0),
+            },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'specialist_marketplace',
+            status: 'degraded',
+            responseTimeMs: Date.now() - marketplaceStart,
+            message: error instanceof Error ? error.message : 'Marketplace health check failed',
+        });
+    }
+
     // Check KV Cache
     const cacheStart = Date.now();
     try {
@@ -407,6 +456,11 @@ router.get('/health/deep', async (c) => {
             FROM sources s
             LEFT JOIN source_acquisition_yield y ON y.source_id = s.id
             WHERE s.is_active = 1 AND s.type IN ('rss', 'html', 'newsapi', 'worldbank-api')
+              AND s.id = (
+                SELECT canonical.id FROM sources canonical
+                WHERE canonical.is_active = 1 AND canonical.url = s.url
+                ORDER BY canonical.created_at ASC, canonical.id ASC LIMIT 1
+              )
         `).all<Record<string, string | number | null>>();
         const acquisitionRows = acquisition.results || [];
         const activeSources = acquisitionRows.length;

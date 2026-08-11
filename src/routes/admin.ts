@@ -13,6 +13,15 @@ import { editorialApprovalFailure } from '../lib/editorial-quality';
 import { indexArticle } from '../lib/vectorize';
 import { onArticlePublished } from '../lib/alerts';
 import { autoPostArticle } from '../lib/social';
+import {
+    appendMarketplaceAudit,
+    createSecureToken,
+    parseStringArray,
+    rankSpecialistProfile,
+    sha256,
+    synchronizeProfileListing,
+} from '../lib/marketplace';
+import { sendEmail } from '../lib/email';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -1111,6 +1120,417 @@ router.post('/editorial/instruction-update', async (c) => {
     ).run();
 
     return c.json({ success: true, logged_as_task: id });
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Specialist Marketplace
+// ───────────────────────────────────────────────────────────────────────────────
+router.get('/specialists', async (c) => {
+    const [interest, applications, invites, access, requests, matches] = await Promise.all([
+        c.env.DB.prepare(`
+            SELECT * FROM specialist_interest_registrations
+            ORDER BY
+                CASE status WHEN 'new' THEN 0 WHEN 'reviewing' THEN 1 WHEN 'invited' THEN 2 ELSE 3 END,
+                created_at DESC
+            LIMIT 200
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT a.*, p.id AS profile_id, p.slug, p.is_listed, p.verification_level,
+                   p.verification_summary, p.founding_cohort, p.listing_fee_waived,
+                   p.listing_fee_waived_until, s.status AS subscription_status
+            FROM specialist_applications a
+            LEFT JOIN specialist_profiles p ON p.client_id = a.client_id
+            LEFT JOIN specialist_subscriptions s ON s.client_id = a.client_id
+            ORDER BY a.created_at DESC LIMIT 200
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT id, email, status, expires_at, redeemed_at, application_id, created_at
+            FROM specialist_invites ORDER BY created_at DESC LIMIT 200
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT m.*, c.name, c.email, c.organization
+            FROM marketplace_client_access m JOIN clients c ON c.id = m.client_id
+            ORDER BY m.granted_at DESC
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT r.*, c.name AS requester_name, c.organization AS requester_organization
+            FROM specialist_requests r JOIN clients c ON c.id = r.requester_client_id
+            ORDER BY r.created_at DESC LIMIT 200
+        `).all(),
+        c.env.DB.prepare(`
+            SELECT m.*, r.title AS request_title, p.display_name, p.organization
+            FROM specialist_matches m
+            JOIN specialist_requests r ON r.id = m.request_id
+            JOIN specialist_profiles p ON p.client_id = m.specialist_client_id
+            ORDER BY m.created_at DESC LIMIT 500
+        `).all(),
+    ]);
+    const demand = new Map<string, { dimension: 'country' | 'sector' | 'language' | 'service'; value: string; request_count: number }>();
+    const addDemand = (dimension: 'country' | 'sector' | 'language' | 'service', value: unknown) => {
+        const normalized = String(value || '').trim();
+        if (!normalized) return;
+        const key = `${dimension}:${normalized.toLowerCase()}`;
+        const current = demand.get(key);
+        if (current) current.request_count += 1;
+        else demand.set(key, { dimension, value: normalized, request_count: 1 });
+    };
+    for (const request of (requests.results || []) as Record<string, unknown>[]) {
+        if (['closed', 'cancelled'].includes(String(request.status))) continue;
+        for (const country of parseStringArray(request.countries)) addDemand('country', country);
+        addDemand('sector', request.sector);
+        for (const language of parseStringArray(request.preferred_languages)) addDemand('language', language);
+        for (const service of parseStringArray(request.required_expertise)) addDemand('service', service);
+    }
+    return c.json({
+        interest: interest.results || [],
+        applications: applications.results || [],
+        invites: invites.results || [],
+        enterprise_access: access.results || [],
+        requests: requests.results || [],
+        matches: matches.results || [],
+        demand_signals: [...demand.values()]
+            .sort((a, b) => b.request_count - a.request_count
+                || a.dimension.localeCompare(b.dimension)
+                || a.value.localeCompare(b.value))
+            .slice(0, 50),
+    });
+});
+
+router.post('/specialists/invites', async (c) => {
+    const parsed = z.object({
+        email: z.string().email().max(320).transform(value => value.toLowerCase()),
+        expires_in_days: z.number().int().min(1).max(30).default(7),
+        interest_id: z.string().uuid().optional(),
+    }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'validation_error', issues: parsed.error.issues }, 400);
+    let interestFromStatus: string | null = null;
+    if (parsed.data.interest_id) {
+        const interest = await c.env.DB.prepare(`
+            SELECT id, work_email, status FROM specialist_interest_registrations WHERE id = ?
+        `).bind(parsed.data.interest_id).first<{ id: string; work_email: string; status: string }>();
+        if (!interest || !['new', 'reviewing'].includes(interest.status)) {
+            return c.json({ error: 'interest_not_invitable' }, 409);
+        }
+        if (interest.work_email.toLowerCase() !== parsed.data.email) {
+            return c.json({ error: 'interest_email_mismatch' }, 409);
+        }
+        interestFromStatus = interest.status;
+    }
+    const existing = await c.env.DB.prepare(`
+        SELECT id FROM specialist_invites WHERE lower(email) = ? AND status = 'issued'
+          AND expires_at > datetime('now')
+    `).bind(parsed.data.email).first();
+    if (existing) return c.json({ error: 'active_invitation_exists' }, 409);
+
+    const id = crypto.randomUUID();
+    const token = createSecureToken();
+    const tokenHash = await sha256(token);
+    await c.env.DB.prepare(`
+        INSERT INTO specialist_invites (id, email, token_hash, expires_at)
+        VALUES (?, ?, ?, datetime('now', ?))
+    `).bind(id, parsed.data.email, tokenHash, `+${parsed.data.expires_in_days} days`).run();
+    if (parsed.data.interest_id) {
+        await c.env.DB.prepare(`
+            UPDATE specialist_interest_registrations
+            SET status = 'invited', invite_id = ?, updated_at = datetime('now')
+            WHERE id = ?
+        `).bind(id, parsed.data.interest_id).run();
+        await appendMarketplaceAudit(c.env, {
+            actorType: 'admin',
+            entityType: 'specialist_interest',
+            entityId: parsed.data.interest_id,
+            eventType: 'invited',
+            fromStatus: interestFromStatus,
+            toStatus: 'invited',
+        });
+    }
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'invite',
+        entityId: id,
+        eventType: 'issued',
+        toStatus: 'issued',
+    });
+    const base = (c.env.PUBLIC_SITE_URL || '').replace(/\/$/, '');
+    const invitationUrl = `${base}/specialists/join/${encodeURIComponent(token)}`;
+    const emailed = await sendEmail(c.env, {
+        to: parsed.data.email,
+        subject: 'Your BOA-Story specialist invitation',
+        html: `<p>You have been invited to apply to the BOA-Story Specialist Marketplace.</p>
+            <p><a href="${invitationUrl}">Open your invitation</a></p>
+            <p>This single-use invitation expires in ${parsed.data.expires_in_days} days. Do not submit identity documents or sensitive client information.</p>`,
+    });
+    return c.json({ id, invitation_url: invitationUrl, emailed }, 201);
+});
+
+router.patch('/specialists/interest/:id', async (c) => {
+    const parsed = z.object({
+        status: z.enum(['reviewing', 'closed']),
+        qualification_notes: z.string().trim().max(5000).optional(),
+    }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'validation_error', issues: parsed.error.issues }, 400);
+    const interest = await c.env.DB.prepare(`
+        SELECT id, status FROM specialist_interest_registrations WHERE id = ?
+    `).bind(c.req.param('id')).first<{ id: string; status: string }>();
+    if (!interest) return c.json({ error: 'not_found' }, 404);
+    const allowed: Record<string, string[]> = {
+        new: ['reviewing', 'closed'],
+        reviewing: ['closed'],
+    };
+    if (!allowed[interest.status]?.includes(parsed.data.status)) {
+        return c.json({ error: 'invalid_transition', from: interest.status, to: parsed.data.status }, 409);
+    }
+    await c.env.DB.prepare(`
+        UPDATE specialist_interest_registrations
+        SET status = ?, qualification_notes = COALESCE(?, qualification_notes),
+            updated_at = datetime('now')
+        WHERE id = ?
+    `).bind(parsed.data.status, parsed.data.qualification_notes || null, interest.id).run();
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'specialist_interest',
+        entityId: interest.id,
+        eventType: 'status_changed',
+        fromStatus: interest.status,
+        toStatus: parsed.data.status,
+        notes: parsed.data.qualification_notes,
+    });
+    return c.json({ success: true, id: interest.id, status: parsed.data.status });
+});
+
+router.delete('/specialists/invites/:id', async (c) => {
+    const result = await c.env.DB.prepare(`
+        UPDATE specialist_invites SET status = 'revoked', updated_at = datetime('now')
+        WHERE id = ? AND status = 'issued'
+    `).bind(c.req.param('id')).run();
+    if (!result.meta.changes) return c.json({ error: 'not_found_or_not_revocable' }, 404);
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'invite',
+        entityId: c.req.param('id'),
+        eventType: 'revoked',
+        fromStatus: 'issued',
+        toStatus: 'revoked',
+    });
+    return c.json({ success: true });
+});
+
+router.patch('/specialists/applications/:id', async (c) => {
+    const parsed = z.object({
+        status: z.enum(['screening', 'needs_information', 'approved', 'rejected']),
+        private_notes: z.string().trim().max(5000).optional(),
+    }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'validation_error', issues: parsed.error.issues }, 400);
+    const application = await c.env.DB.prepare(`
+        SELECT * FROM specialist_applications WHERE id = ?
+    `).bind(c.req.param('id')).first<Record<string, unknown>>();
+    if (!application) return c.json({ error: 'not_found' }, 404);
+    const current = String(application.status);
+    const allowed: Record<string, string[]> = {
+        submitted: ['screening', 'needs_information', 'approved', 'rejected'],
+        screening: ['needs_information', 'approved', 'rejected'],
+        needs_information: ['screening', 'approved', 'rejected'],
+    };
+    if (!allowed[current]?.includes(parsed.data.status)) {
+        return c.json({ error: 'invalid_transition', from: current, to: parsed.data.status }, 409);
+    }
+
+    await c.env.DB.prepare(`
+        UPDATE specialist_applications SET status = ?, screening_notes = COALESCE(?, screening_notes),
+            screened_by = 'admin', screened_at = datetime('now'), updated_at = datetime('now')
+        WHERE id = ?
+    `).bind(parsed.data.status, parsed.data.private_notes || null, c.req.param('id')).run();
+    let approvalUrl: string | null = null;
+    if (parsed.data.status === 'approved') {
+        const slugBase = String(application.contact_name || 'specialist').toLowerCase()
+            .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+        const slug = `${slugBase || 'specialist'}-${crypto.randomUUID().slice(0, 8)}`;
+        await c.env.DB.prepare(`
+            INSERT INTO specialist_profiles (
+                id, application_id, client_id, slug, display_name, organization, headline,
+                biography, countries, sectors, service_categories, languages,
+                credential_summary, credential_links, indicative_pricing, availability
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(application_id) DO UPDATE SET screening_status = 'approved',
+                updated_at = datetime('now')
+        `).bind(
+            crypto.randomUUID(), application.id, application.client_id, slug,
+            application.contact_name, application.organization, application.headline,
+            application.biography, application.countries, application.sectors,
+            application.service_categories, application.languages, application.credential_summary,
+            application.credential_links, application.indicative_pricing, application.availability,
+        ).run();
+        approvalUrl = `${(c.env.PUBLIC_SITE_URL || '').replace(/\/$/, '')}/specialists/dashboard`;
+        await sendEmail(c.env, {
+            to: String(application.work_email),
+            toName: String(application.contact_name),
+            subject: 'Your BOA-Story specialist application is approved',
+            html: `<p>Your specialist application is approved.</p>
+                <p><a href="${approvalUrl}">Open your dashboard</a> to review your public profile and listing status. BOA will confirm whether a founding-network waiver or later billing arrangement applies before publication.</p>`,
+        });
+    }
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'application',
+        entityId: c.req.param('id'),
+        eventType: 'status_changed',
+        fromStatus: current,
+        toStatus: parsed.data.status,
+        notes: parsed.data.private_notes,
+    });
+    return c.json({ success: true, status: parsed.data.status, approval_url: approvalUrl });
+});
+
+router.patch('/specialists/profiles/:id/standing', async (c) => {
+    const parsed = z.object({
+        verification_level: z.enum(['boa_specialist', 'verified', 'senior_featured']),
+        verification_summary: z.string().trim().max(500).nullable().optional(),
+        founding_cohort: z.boolean(),
+        listing_fee_waived: z.boolean(),
+        listing_fee_waived_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    }).superRefine((value, ctx) => {
+        if (value.verification_level !== 'boa_specialist'
+            && (!value.verification_summary || value.verification_summary.length < 20)) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['verification_summary'],
+                message: 'Verified and Senior / Featured standing requires a public evidence summary.',
+            });
+        }
+    }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'validation_error', issues: parsed.error.issues }, 400);
+    const profile = await c.env.DB.prepare(`
+        SELECT id, client_id, founding_cohort, verification_level
+        FROM specialist_profiles WHERE id = ?
+    `).bind(c.req.param('id')).first<{
+        id: string;
+        client_id: string;
+        founding_cohort: number;
+        verification_level: string;
+    }>();
+    if (!profile) return c.json({ error: 'profile_not_found' }, 404);
+    if (parsed.data.founding_cohort && !profile.founding_cohort) {
+        const count = await c.env.DB.prepare(`
+            SELECT COUNT(*) AS count FROM specialist_profiles WHERE founding_cohort = 1
+        `).first<{ count: number }>();
+        if (Number(count?.count || 0) >= 50) {
+            return c.json({ error: 'founding_cohort_limit_reached' }, 409);
+        }
+    }
+    const feeWaived = parsed.data.founding_cohort || parsed.data.listing_fee_waived;
+    await c.env.DB.prepare(`
+        UPDATE specialist_profiles SET
+            verification_level = ?, verification_summary = ?, founding_cohort = ?,
+            listing_fee_waived = ?, listing_fee_waived_until = ?,
+            updated_at = datetime('now')
+        WHERE id = ?
+    `).bind(
+        parsed.data.verification_level,
+        parsed.data.verification_summary || null,
+        parsed.data.founding_cohort ? 1 : 0,
+        feeWaived ? 1 : 0,
+        parsed.data.listing_fee_waived_until || null,
+        profile.id,
+    ).run();
+    await synchronizeProfileListing(c.env, profile.client_id);
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'profile',
+        entityId: profile.id,
+        eventType: 'standing_changed',
+        fromStatus: profile.verification_level,
+        toStatus: parsed.data.verification_level,
+        notes: `founding=${parsed.data.founding_cohort}; fee_waived=${feeWaived}; ${parsed.data.verification_summary || ''}`.slice(0, 1000),
+    });
+    return c.json({
+        success: true,
+        verification_level: parsed.data.verification_level,
+        founding_cohort: parsed.data.founding_cohort,
+        listing_fee_waived: feeWaived,
+    });
+});
+
+router.put('/specialists/enterprise-access/:clientId', async (c) => {
+    const parsed = z.object({
+        status: z.enum(['enabled', 'suspended', 'revoked']).default('enabled'),
+    }).safeParse(await c.req.json().catch(() => ({})));
+    if (!parsed.success) return c.json({ error: 'validation_error' }, 400);
+    const client = await c.env.DB.prepare('SELECT id, tier FROM clients WHERE id = ?')
+        .bind(c.req.param('clientId')).first<{ id: string; tier: string }>();
+    if (!client || client.tier !== 'enterprise') {
+        return c.json({ error: 'enterprise_client_not_found' }, 404);
+    }
+    await c.env.DB.prepare(`
+        INSERT INTO marketplace_client_access (client_id, status)
+        VALUES (?, ?)
+        ON CONFLICT(client_id) DO UPDATE SET status = excluded.status, updated_at = datetime('now')
+    `).bind(client.id, parsed.data.status).run();
+    await appendMarketplaceAudit(c.env, {
+        actorType: 'admin',
+        entityType: 'enterprise_access',
+        entityId: client.id,
+        eventType: 'access_changed',
+        toStatus: parsed.data.status,
+    });
+    return c.json({ success: true, status: parsed.data.status });
+});
+
+router.post('/specialists/requests/:id/match', async (c) => {
+    const request = await c.env.DB.prepare('SELECT * FROM specialist_requests WHERE id = ?')
+        .bind(c.req.param('id')).first<Record<string, unknown>>();
+    if (!request) return c.json({ error: 'not_found' }, 404);
+    const profiles = await c.env.DB.prepare(`
+        SELECT client_id, countries, sectors, languages, service_categories
+        FROM specialist_profiles WHERE is_listed = 1 AND screening_status = 'approved'
+    `).all<Record<string, unknown>>();
+    const ranked = (profiles.results || []).map(profile => rankSpecialistProfile(request, profile))
+        .filter(match => match.score > 0)
+        .sort((a, b) => b.score - a.score || a.clientId.localeCompare(b.clientId));
+    for (const match of ranked.slice(0, 20)) {
+        await c.env.DB.prepare(`
+            INSERT INTO specialist_matches (
+                id, request_id, specialist_client_id, match_score, match_reasons
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(request_id, specialist_client_id) DO UPDATE SET
+                match_score = excluded.match_score, match_reasons = excluded.match_reasons,
+                updated_at = datetime('now')
+        `).bind(
+            crypto.randomUUID(), c.req.param('id'), match.clientId, match.score,
+            JSON.stringify(match.reasons),
+        ).run();
+    }
+    await c.env.DB.prepare(`
+        UPDATE specialist_requests SET status = 'matching', updated_at = datetime('now') WHERE id = ?
+    `).bind(c.req.param('id')).run();
+    return c.json({ matches: ranked });
+});
+
+router.patch('/specialists/matches/:id', async (c) => {
+    const parsed = z.object({ confirmed: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'validation_error' }, 400);
+    const status = parsed.data.confirmed ? 'invited' : 'declined';
+    const result = await c.env.DB.prepare(`
+        UPDATE specialist_matches SET status = ?, confirmed_by = 'admin',
+            confirmed_at = datetime('now'), updated_at = datetime('now')
+        WHERE id = ? AND status = 'suggested'
+    `).bind(status, c.req.param('id')).run();
+    if (!result.meta.changes) return c.json({ error: 'not_found_or_already_reviewed' }, 404);
+    return c.json({ success: true, status });
+});
+
+router.get('/specialists/audit', async (c) => {
+    const entityType = c.req.query('entity_type');
+    const entityId = c.req.query('entity_id');
+    const result = entityType && entityId
+        ? await c.env.DB.prepare(`
+            SELECT * FROM marketplace_audit_events
+            WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC LIMIT 200
+        `).bind(entityType, entityId).all()
+        : await c.env.DB.prepare(`
+            SELECT * FROM marketplace_audit_events ORDER BY created_at DESC LIMIT 200
+        `).all();
+    return c.json({ data: result.results || [] });
 });
 
 export { router as adminRouter };

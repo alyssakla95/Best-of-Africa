@@ -79,6 +79,50 @@ export async function requireClientAuth(c: AppContext, next: Next) {
     await next();
 }
 
+/**
+ * Require a currently approved specialist account. The database is checked on
+ * every request so suspension and revocation take effect immediately.
+ */
+export async function requireSpecialist(c: AppContext, next: Next) {
+    const authResult = await requireClientAuth(c, async () => {});
+    if (authResult instanceof Response) return authResult;
+
+    const clientId = c.get('clientId') as string;
+    const specialist = await c.env.DB.prepare(`
+        SELECT a.status AS application_status, p.screening_status
+        FROM specialist_applications a
+        LEFT JOIN specialist_profiles p ON p.client_id = a.client_id
+        WHERE a.client_id = ?
+    `).bind(clientId).first<{ application_status: string; screening_status: string | null }>();
+
+    if (!specialist || specialist.application_status !== 'approved' || specialist.screening_status !== 'approved') {
+        return c.json({ error: 'forbidden', message: 'Approved specialist access required' }, 403);
+    }
+    await next();
+}
+
+/**
+ * Require an administrator-enabled Enterprise marketplace account. Client
+ * tier/type claims in the JWT are never trusted as authorization state.
+ */
+export async function requireMarketplaceEnterprise(c: AppContext, next: Next) {
+    const authResult = await requireClientAuth(c, async () => {});
+    if (authResult instanceof Response) return authResult;
+
+    const clientId = c.get('clientId') as string;
+    const access = await c.env.DB.prepare(`
+        SELECT m.status, c.type, c.tier
+        FROM marketplace_client_access m
+        JOIN clients c ON c.id = m.client_id
+        WHERE m.client_id = ?
+    `).bind(clientId).first<{ status: string; type: string; tier: string }>();
+
+    if (!access || access.status !== 'enabled' || access.tier !== 'enterprise') {
+        return c.json({ error: 'forbidden', message: 'Qualified Enterprise marketplace access required' }, 403);
+    }
+    await next();
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 // Middleware: Require API Key (for paid intelligence clients)
 // ───────────────────────────────────────────────────────────────────────────────

@@ -30,6 +30,13 @@ router.get('/sitemap.xml', async (c) => {
     const countries = await c.env.DB.prepare(
         "SELECT DISTINCT country_code FROM articles WHERE status = 'published' AND country_code IS NOT NULL"
     ).all<{ country_code: string }>();
+    const specialists = c.env.MARKETPLACE_ENABLED === 'true'
+        ? await c.env.DB.prepare(`
+            SELECT slug, updated_at FROM specialist_profiles
+            WHERE is_listed = 1 AND screening_status = 'approved'
+            ORDER BY updated_at DESC
+        `).all<{ slug: string; updated_at: string }>()
+        : { results: [] as { slug: string; updated_at: string }[] };
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -42,6 +49,8 @@ router.get('/sitemap.xml', async (c) => {
         '/intelligence',
         '/dashboards/overview',
         '/enterprise',
+        '/specialists/interest',
+        ...(c.env.MARKETPLACE_ENABLED === 'true' ? ['/specialists'] : []),
         '/trust',
         '/about',
         '/member-access',
@@ -72,6 +81,15 @@ router.get('/sitemap.xml', async (c) => {
         if (article.published_at) {
             xml += `    <lastmod>${new Date(article.published_at).toISOString()}</lastmod>\n`;
         }
+        xml += `    <changefreq>monthly</changefreq>\n`;
+        xml += `    <priority>0.6</priority>\n`;
+        xml += `  </url>\n`;
+    }
+
+    for (const specialist of specialists.results || []) {
+        xml += `  <url>\n`;
+        xml += `    <loc>${BASE_URL}/specialists/${specialist.slug}</loc>\n`;
+        xml += `    <lastmod>${new Date(specialist.updated_at).toISOString()}</lastmod>\n`;
         xml += `    <changefreq>monthly</changefreq>\n`;
         xml += `    <priority>0.6</priority>\n`;
         xml += `  </url>\n`;

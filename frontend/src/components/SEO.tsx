@@ -9,6 +9,7 @@ interface SEOProps {
     type?: string;
     publishedTime?: string;
     author?: string;
+    noIndex?: boolean;
 }
 
 export const SEO: React.FC<SEOProps> = ({
@@ -17,7 +18,8 @@ export const SEO: React.FC<SEOProps> = ({
     image,
     type = 'website',
     publishedTime,
-    author = 'Mailles Cortes | BOA-Story'
+    author = 'Mailles Cortes | BOA-Story',
+    noIndex = false
 }) => {
     const { language } = useLanguage();
     const translatePortugueseInterfaceText = usePortugueseCatalogue(language === 'pt');
@@ -57,6 +59,7 @@ export const SEO: React.FC<SEOProps> = ({
 
         // Standard Meta
         updateMeta('description', localizedDescription);
+        updateMeta('robots', noIndex ? 'noindex,nofollow' : 'index,follow');
         updateMeta('theme-color', '#1a1a1a'); // Dark theme color
         updateMeta('keywords', language === 'pt'
             ? 'inteligência de mercado africana, entrada em mercados africanos, informação nacional, evidência sectorial, comércio africano, diligência, BOA-Story'
@@ -88,7 +91,7 @@ export const SEO: React.FC<SEOProps> = ({
         }
         updateMeta('author', author);
 
-    }, [localizedTitle, localizedDescription, image, type, publishedTime, author, language]);
+    }, [localizedTitle, localizedDescription, image, type, publishedTime, author, language, noIndex]);
 
     return null;
 };

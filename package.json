@@ -9,9 +9,12 @@
         "dev:frontend": "cd frontend && npm run dev",
         "build": "npm run build:frontend",
         "build:frontend": "cd frontend && npm run build",
+        "release:clean": "node scripts/verify-clean-release.mjs",
+        "predeploy": "npm run release:clean",
         "deploy": "wrangler deploy",
         "cloudflare:plan": "node scripts/cloudflare-portable.mjs plan",
         "cloudflare:setup": "node scripts/cloudflare-portable.mjs setup",
+        "precloudflare:deploy": "npm run release:clean",
         "cloudflare:deploy": "node scripts/cloudflare-portable.mjs deploy",
         "db:migrate": "wrangler d1 migrations apply best-of-africa-db --local",
         "db:migrate:prod": "wrangler d1 migrations apply best-of-africa-db --remote",
@@ -27,11 +30,13 @@
     "dependencies": {
         "@cf-wasm/photon": "^0.3.6",
         "hono": "^4.12.27",
+        "stripe": "^22.4.0",
         "zod": "^4.3.6"
     },
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20241127.0",
         "concurrently": "^9.1.0",
+        "jsdom": "^30.0.1",
         "typescript": "^5.7.0",
         "vitest": "^4.0.18",
         "wrangler": "4.92.0"

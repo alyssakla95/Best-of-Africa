@@ -11,6 +11,7 @@ import { validate, BookingRequestSchema, PaginationSchema, EventRegistrationSche
 import { callConfiguredAI } from '../lib/ai';
 import { z } from 'zod';
 import { sendRegistrationConfirmation } from '../lib/email';
+import { appendMarketplaceAudit } from '../lib/marketplace';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -35,6 +36,80 @@ export const PilotRequestSchema = z.object({
     current_research_process: z.string().trim().min(20).max(2000),
     success_measure: z.string().trim().min(20).max(1000),
     no_sensitive_data_confirmed: z.literal(true),
+});
+
+const specialistInterestList = z.array(z.string().trim().min(2).max(100)).min(1).max(20)
+    .transform(values => [...new Set(values)]);
+
+export const SpecialistInterestSchema = z.object({
+    contact_name: z.string().trim().min(2).max(100),
+    work_email: z.string().trim().email().max(254).transform(value => value.toLowerCase()),
+    entity_type: z.enum(['individual', 'organization']).default('individual'),
+    organization: z.string().trim().min(2).max(150).optional(),
+    role_title: z.string().trim().min(2).max(120).optional(),
+    countries: specialistInterestList,
+    sectors: specialistInterestList,
+    service_categories: specialistInterestList,
+    languages: specialistInterestList,
+    interest_summary: z.string().trim().min(20).max(1000),
+    no_sensitive_data_confirmed: z.literal(true),
+});
+
+router.post('/specialist-interest', validate('json', SpecialistInterestSchema), async (c) => {
+    const { throttle } = await import('../lib/ratelimit');
+    const limited = await throttle(c, 'specialist-interest');
+    if (limited) return limited;
+
+    const body = (c.req as any).valid('json') as z.infer<typeof SpecialistInterestSchema>;
+    const existing = await c.env.DB.prepare(`
+        SELECT 1 AS found FROM specialist_interest_registrations
+        WHERE lower(work_email) = ? AND status IN ('new', 'reviewing', 'invited')
+        UNION ALL
+        SELECT 1 AS found FROM specialist_invites
+        WHERE lower(email) = ? AND status = 'issued' AND expires_at > datetime('now')
+        UNION ALL
+        SELECT 1 AS found FROM specialist_applications
+        WHERE lower(work_email) = ? AND status NOT IN ('rejected', 'withdrawn')
+        LIMIT 1
+    `).bind(body.work_email, body.work_email, body.work_email).first();
+
+    // Keep the public response intentionally idempotent so this endpoint cannot
+    // be used to discover whether an email is invited or already registered.
+    if (!existing) {
+        const id = crypto.randomUUID();
+        await c.env.DB.prepare(`
+            INSERT INTO specialist_interest_registrations (
+                id, contact_name, work_email, entity_type, organization, role_title,
+                countries, sectors, service_categories, languages, interest_summary,
+                no_sensitive_data_confirmed, retention_until
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now', '+24 months'))
+        `).bind(
+            id,
+            body.contact_name,
+            body.work_email,
+            body.entity_type,
+            body.organization || null,
+            body.role_title || null,
+            JSON.stringify(body.countries),
+            JSON.stringify(body.sectors),
+            JSON.stringify(body.service_categories),
+            JSON.stringify(body.languages),
+            body.interest_summary,
+        ).run();
+        await appendMarketplaceAudit(c.env, {
+            actorType: 'system',
+            entityType: 'specialist_interest',
+            entityId: id,
+            eventType: 'registered',
+            toStatus: 'new',
+        });
+    }
+
+    return c.json({
+        success: true,
+        status: 'registered',
+        message: 'Your interest has been registered for consideration. Selected specialists may be invited to complete screening.',
+    }, 202);
 });
 
 router.post('/pilot-requests', validate('json', PilotRequestSchema), async (c) => {

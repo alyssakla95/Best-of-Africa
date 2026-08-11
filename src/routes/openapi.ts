@@ -113,6 +113,93 @@ const openApiSpec = {
                 },
             },
         },
+        '/services/specialist-interest': {
+            post: {
+                summary: 'Register interest in the invite-only specialist network',
+                description: 'Records non-sensitive professional coverage information for possible operator consideration. This does not create an account or application and does not promise an invitation, admission or work.',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['contact_name', 'work_email', 'countries', 'sectors', 'service_categories', 'languages', 'interest_summary', 'no_sensitive_data_confirmed'],
+                                properties: {
+                                    contact_name: { type: 'string', minLength: 2, maxLength: 100 },
+                                    work_email: { type: 'string', format: 'email' },
+                                    entity_type: { type: 'string', enum: ['individual', 'organization'], default: 'individual' },
+                                    organization: { type: 'string', minLength: 2, maxLength: 150 },
+                                    role_title: { type: 'string', minLength: 2, maxLength: 120 },
+                                    countries: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } },
+                                    sectors: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } },
+                                    service_categories: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } },
+                                    languages: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } },
+                                    interest_summary: { type: 'string', minLength: 20, maxLength: 1000 },
+                                    no_sensitive_data_confirmed: { type: 'boolean', enum: [true] },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    202: { description: 'Interest accepted through an enumeration-safe, idempotent response' },
+                    400: { description: 'Input failed validation or the information boundary was not confirmed' },
+                    429: { description: 'Submission rate limit exceeded' },
+                },
+            },
+        },
+        '/specialists': {
+            get: {
+                summary: 'List approved specialists with current listing access',
+                description: 'Returns the public-safe profile projection, founding-cohort status and evidence-based verification standing. Listing access may be waived or subscription-backed; payment never determines verification. Private application, conflict, contact, waiver and billing fields are excluded.',
+                responses: {
+                    200: { description: 'Public specialist profiles' },
+                    404: { description: 'Marketplace rollout flag is disabled' },
+                },
+            },
+        },
+        '/specialists/{slug}': {
+            get: {
+                summary: 'Get one public specialist profile',
+                parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Public specialist profile' },
+                    404: { description: 'Profile is not currently listed' },
+                },
+            },
+        },
+        '/specialists/join': {
+            post: {
+                summary: 'Redeem an administrator-issued specialist invitation',
+                description: 'Requires a valid single-use email-bound token, conflict declaration and no-sensitive-data confirmation.',
+                responses: {
+                    201: { description: 'Specialist account and submitted application created' },
+                    400: { description: 'Invitation or application is invalid' },
+                    409: { description: 'An account already exists for the invitation email' },
+                },
+            },
+        },
+        '/specialists/requests': {
+            post: {
+                summary: 'Submit an Enterprise specialist request',
+                description: 'Requires a currently enabled Enterprise marketplace account. Requests are shared only after administrator match confirmation.',
+                responses: {
+                    201: { description: 'Request recorded for matching' },
+                    403: { description: 'Qualified Enterprise access required' },
+                },
+            },
+        },
+        '/specialists/stripe/webhook': {
+            post: {
+                summary: 'Receive signed Stripe listing-subscription events',
+                description: 'Verifies the untouched request body and Stripe signature and processes event IDs idempotently.',
+                responses: {
+                    200: { description: 'Event processed or previously processed' },
+                    400: { description: 'Invalid Stripe signature' },
+                    503: { description: 'Stripe webhook configuration is absent' },
+                },
+            },
+        },
         '/analytics/events': {
             post: {
                 summary: 'Record a bounded first-party reader event',

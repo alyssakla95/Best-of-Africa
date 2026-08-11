@@ -64,8 +64,8 @@ export const NavBar: React.FC = () => {
             heading: t("group.read", "Read"),
             links: [
                 { href: "/", label: t("nav.home", "Home") },
+                { href: "/feed", label: t("nav.briefing_short", "Briefing") },
                 { href: "/posts", label: t("nav.stories", "Stories") },
-                { href: "/feed", label: t("nav.briefing", "Africa Briefing") },
                 { href: "/countries", label: t("nav.countries", "Countries") },
                 { href: "/gallery", label: t("nav.gallery", "Gallery") },
                 { href: "/supporter-feed", label: t("nav.supporter", "Supporter Feed") },
@@ -74,15 +74,16 @@ export const NavBar: React.FC = () => {
         {
             heading: t("group.intelligence", "Intelligence"),
             links: [
-                { href: "/intelligence", label: t("nav.intelligence", "Market Intelligence") },
-                { href: "/dashboards/overview", label: t("nav.dashboard", "Continental Dashboard") },
-                { href: "/library", label: t("nav.library", "Decision Workspace") },
+                { href: "/intelligence", label: t("nav.research", "Research") },
+                { href: "/dashboards/overview", label: t("nav.decision_workspace", "Decision Workspace") },
+                { href: "/library", label: t("nav.saved_research", "Saved research") },
             ],
         },
         {
             heading: t("group.services", "Services"),
             links: [
-                { href: "/enterprise", label: "Market-Entry Pilot" },
+                { href: "/enterprise", label: t("nav.enterprise", "Enterprise") },
+                { href: "/specialists", label: t("nav.specialists", "Specialists") },
                 { href: "/events", label: t("nav.events", "Summits & Events") },
                 { href: "/request-consultation", label: t("nav.concierge", "Concierge") },
                 { href: "/travel", label: t("nav.travel", "Business Travel") },
@@ -130,12 +131,12 @@ export const NavBar: React.FC = () => {
                 {/* navy/70 is the contrast floor for 11px text on white — /60 is 4.38:1, under WCAG's 4.5 */}
                 <nav aria-label="Primary navigation" className="relative z-0 ml-5 hidden flex-1 items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-[0.11em] text-navy/70 lg:flex xl:ml-10">
                     {[
-                        { path: '/intelligence', label: t('nav.intelligence_short', 'Intelligence'), priority: true },
-                        { path: '/dashboards/overview', label: t('nav.dashboard', 'Dashboard'), priority: true },
-                        { path: '/countries', label: t('nav.countries', 'Countries') },
                         { path: '/feed', label: t('nav.briefing_short', 'Briefing') },
                         { path: '/posts', label: t('nav.stories', 'Stories') },
-                        { path: '/enterprise', label: t('nav.enterprise', 'Enterprise'), priority: true },
+                        { path: '/countries', label: t('nav.countries', 'Countries') },
+                        { path: '/intelligence', label: t('nav.research', 'Research') },
+                        { path: '/enterprise', label: t('nav.enterprise', 'Enterprise') },
+                        { path: '/specialists', label: t('nav.specialists', 'Specialists') },
                     ].map((item) => {
                         const isActive = isPathActive(item.path);
                         return (
@@ -143,7 +144,7 @@ export const NavBar: React.FC = () => {
                                 key={item.path}
                                 to={item.path}
                                 aria-current={isActive ? 'page' : undefined}
-                                className={cn("relative z-10 whitespace-nowrap rounded-md px-3 py-2.5 transition-colors xl:px-4", item.priority && !isActive && "text-navy", isActive ? "bg-navy text-white" : "hover:bg-navy/5 hover:text-navy")}
+                                className={cn("relative z-10 whitespace-nowrap rounded-md px-3 py-2.5 transition-colors xl:px-4", isActive ? "bg-navy text-white" : "hover:bg-navy/5 hover:text-navy")}
                             >
                                 {item.label}
                             </Link>

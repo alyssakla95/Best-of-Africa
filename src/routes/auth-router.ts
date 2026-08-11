@@ -7,68 +7,9 @@ import { Hono } from 'hono';
 import type { Env, Variables } from '../types';
 import { createJWT, verifyJWT } from '../lib/auth';
 import { throttle } from '../lib/ratelimit';
+import { hashPassword, verifyPassword } from '../lib/password';
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
-
-// ───────────────────────────────────────────────────────────────────────────────
-// Password storage uses PBKDF2-SHA256. Existing SHA-256 rows are accepted once
-// and upgraded after a successful login so current accounts are not locked out.
-// ───────────────────────────────────────────────────────────────────────────────
-const PASSWORD_ITERATIONS = 210_000;
-
-function toBase64(bytes: Uint8Array): string {
-    let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-}
-
-function fromBase64(value: string): Uint8Array {
-    return Uint8Array.from(atob(value), character => character.charCodeAt(0));
-}
-
-async function derivePassword(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-    const material = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(password),
-        'PBKDF2',
-        false,
-        ['deriveBits'],
-    );
-    const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', hash: 'SHA-256', salt, iterations },
-        material,
-        256,
-    );
-    return new Uint8Array(bits);
-}
-
-async function hashPassword(password: string): Promise<string> {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const derived = await derivePassword(password, salt, PASSWORD_ITERATIONS);
-    return `pbkdf2-sha256$${PASSWORD_ITERATIONS}$${toBase64(salt)}$${toBase64(derived)}`;
-}
-
-async function verifyPassword(password: string, stored: string): Promise<{ valid: boolean; legacy: boolean }> {
-    if (stored.startsWith('pbkdf2-sha256$')) {
-        const [, iterationsText, saltText, hashText] = stored.split('$');
-        const iterations = Number(iterationsText);
-        if (!Number.isInteger(iterations) || iterations < 100_000 || !saltText || !hashText) {
-            return { valid: false, legacy: false };
-        }
-        const expected = fromBase64(hashText);
-        const actual = await derivePassword(password, fromBase64(saltText), iterations);
-        if (expected.length !== actual.length) return { valid: false, legacy: false };
-        let difference = 0;
-        for (let index = 0; index < expected.length; index += 1) difference |= expected[index] ^ actual[index];
-        return { valid: difference === 0, legacy: false };
-    }
-
-    // Legacy rows contain a 64-character hexadecimal SHA-256 digest.
-    if (!/^[a-f0-9]{64}$/i.test(stored)) return { valid: false, legacy: false };
-    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)));
-    const actual = Array.from(digest).map(byte => byte.toString(16).padStart(2, '0')).join('');
-    return { valid: actual === stored.toLowerCase(), legacy: true };
-}
 
 // ───────────────────────────────────────────────────────────────────────────────
 // POST /auth/login - Authenticate and issue JWT
@@ -271,12 +212,28 @@ router.get('/me', async (c) => {
     }
 
     try {
-        // Get client info
+        // Resolve identity and marketplace access from live account state.
         const client = await c.env.DB.prepare(`
-            SELECT id, name, email, organization, tier, rate_limit_per_hour, created_at
-            FROM clients
-            WHERE id = ? AND is_active = 1
-        `).bind(payload.sub).first();
+            SELECT
+                c.id,
+                c.name,
+                c.email,
+                c.organization,
+                c.type,
+                c.tier,
+                COALESCE(mca.status, 'not_granted') AS marketplace_access_status
+            FROM clients c
+            LEFT JOIN marketplace_client_access mca ON mca.client_id = c.id
+            WHERE c.id = ? AND c.is_active = 1
+        `).bind(payload.sub).first<{
+            id: string;
+            name: string;
+            email: string;
+            organization: string | null;
+            type: string;
+            tier: string;
+            marketplace_access_status: string;
+        }>();
 
         if (!client) {
             return c.json({
@@ -287,7 +244,15 @@ router.get('/me', async (c) => {
 
         return c.json({
             authenticated: true,
-            client: client
+            client: {
+                id: client.id,
+                name: client.name,
+                email: client.email,
+                organization: client.organization,
+                type: client.type,
+                tier: client.tier,
+                marketplace_access_status: client.marketplace_access_status,
+            }
         });
 
     } catch (error) {

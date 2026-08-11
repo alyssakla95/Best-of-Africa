@@ -11,11 +11,11 @@ export interface Country {
     investment_highlights: string[];
     tourism_highlights: string[];
     flag_emoji: string;
-    hero_image_url: string;
+    hero_image_url?: string | null;
     image_credit?: string | null;
     image_source_url?: string | null;
-    diplomacy_score: number;
-    image_strength_score: number;
+    diplomacy_score?: number;
+    image_strength_score?: number;
     fdi_inflow_usd?: number;
     fdi_yoy_growth?: number;
     key_narratives?: string;
@@ -24,6 +24,8 @@ export interface Country {
     business_portal_url?: string;
     tourism_portal_url?: string;
     history_baobab_content?: string;
+    official_resources?: { name: string; url: string; source_type: string }[];
+    data_quality?: { authoritative_country_profile: boolean; legacy_portals_exposed: boolean; metric_basis: string };
 }
 
 export interface Sector {

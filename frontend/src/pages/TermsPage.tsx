@@ -6,7 +6,9 @@ const SECTIONS = [
     { id: 'acceptance', title: '1. Acceptance of Terms' },
     { id: 'ip', title: '2. Intellectual Property' },
     { id: 'disclaimer', title: '3. Disclaimer' },
-    { id: 'termination', title: '4. Termination' },
+    { id: 'marketplace', title: '4. Specialist Marketplace' },
+    { id: 'prohibited', title: '5. Prohibited Services' },
+    { id: 'termination', title: '6. Termination' },
 ];
 
 export const TermsPage: React.FC = () => {
@@ -16,7 +18,7 @@ export const TermsPage: React.FC = () => {
             <div className="container py-14 md:py-20 max-w-3xl">
                 <header className="app-hero mb-10 rounded-lg border-b border-border p-6 sm:p-8">
                     <h1 className="mb-4 text-4xl font-serif font-semibold tracking-tight text-ink md:text-5xl">Terms of Service</h1>
-                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-accent">Last Updated: June 2026</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-accent">Last Updated: August 2026</p>
                 </header>
 
                 {/* Table of contents */}
@@ -44,12 +46,25 @@ export const TermsPage: React.FC = () => {
 
                     <section id="disclaimer" className="mb-10 scroll-mt-24">
                         <h2 className="mb-4 text-2xl font-bold text-ink">3. Disclaimer</h2>
-                        <p>Market intelligence is provided for informational purposes only and does not constitute financial advice.</p>
+                        <p>Market intelligence and specialist profiles are provided for informational purposes only and do not constitute financial, legal, tax, medical, regulatory or investment advice. Marketplace screening controls access; it is not an endorsement, warranty of credentials or guarantee of results. Clients remain responsible for due diligence and independent professional advice.</p>
+                    </section>
+
+                    <section id="marketplace" className="mb-10 scroll-mt-24">
+                        <h2 className="mb-4 text-2xl font-bold text-ink">4. Specialist Marketplace</h2>
+                        <p>The public interest registry is not an application, account, endorsement, admission decision or promise of work. BOA-Story may use registry information to identify expertise relevant to emerging Enterprise needs. Only selected specialists receive a separate, single-use invitation to apply, and every invited application remains subject to screening.</p>
+                        <p className="mt-4">Founding specialists may receive free, waived listing access while BOA-Story validates repeatable Enterprise demand. A waiver does not create an entitlement to opportunities and payment never purchases verification standing. If a later recurring Stripe listing arrangement applies, its fee is for platform listing access only.</p>
+                        <p className="mt-4">BOA-Story is not a party to a later engagement and does not collect percentage commissions or engagement fees, hold client funds, pay specialists, operate milestones, provide marketplace messaging, issue refunds for specialist work, decide disputes or host reviews in this MVP.</p>
+                        <p className="mt-4">Specialists control whether to submit a proposal. Indicative fees and timelines are non-binding until the client and specialist enter their own separate agreement. Listing visibility requires continuing approval plus a current BOA listing waiver or active subscription and may be suspended when either basis expires.</p>
+                    </section>
+
+                    <section id="prohibited" className="mb-10 scroll-mt-24">
+                        <h2 className="mb-4 text-2xl font-bold text-ink">5. Prohibited Services</h2>
+                        <p>Users may not offer or request unlawful, deceptive, discriminatory, sanctioned, exploitative or unlicensed regulated services; evade anti-corruption, export, immigration, employment, privacy or professional rules; solicit confidential government or competitor information; or submit identity documents, financial account data, health data or other sensitive material through marketplace forms.</p>
                     </section>
 
                     <section id="termination" className="mb-10 scroll-mt-24">
-                        <h2 className="mb-4 text-2xl font-bold text-ink">4. Termination</h2>
-                        <p>We reserve the right to terminate access for violation of these terms.</p>
+                        <h2 className="mb-4 text-2xl font-bold text-ink">6. Termination</h2>
+                        <p>We reserve the right to suspend or terminate access, screening approval, Enterprise request privileges or public listing for violation of these terms, unresolved conflicts, inaccurate representations, billing status or platform risk.</p>
                     </section>
                 </div>
 

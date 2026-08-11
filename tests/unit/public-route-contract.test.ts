@@ -12,8 +12,7 @@ describe('public route production acceptance inventory', () => {
             .filter(path => !['/admin', '/sponsor/dashboard', '*'].includes(path));
         const represented = (pattern: string) => inventory.some(route => {
             const expected = pattern
-                .replace(':slug', '[^/]+').replace(':code', '[^/]+')
-                .replace(':view', '[^/]+').replace(':id', '[^/]+');
+                .replace(/:[^/]+/g, '[^/]+');
             return new RegExp(`^${expected}$`).test(route);
         });
         expect(routePatterns.filter(pattern => !represented(pattern))).toEqual([]);

@@ -156,6 +156,12 @@ export const EnterprisePage = () => {
             >
               Review trust disclosures
             </Link>
+            <Link
+              to="/enterprise/access"
+              className="inline-flex min-h-12 items-center justify-center px-3 py-3 text-sm font-bold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
+            >
+              Existing Enterprise client sign in
+            </Link>
           </div>
         </div>
 
@@ -356,6 +362,9 @@ export const EnterprisePage = () => {
             </Link>
             <Link to="/trust" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-navy px-6 py-3 text-sm font-bold text-navy hover:bg-navy hover:text-white">
               Open Trust Center
+            </Link>
+            <Link to="/enterprise/access" className="inline-flex min-h-12 items-center justify-center rounded-xl px-6 py-3 text-sm font-bold text-navy underline underline-offset-4">
+              Open client workspace
             </Link>
           </div>
         </div>

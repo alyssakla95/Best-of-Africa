@@ -54,15 +54,18 @@ describe('reader-facing presentation text', () => {
         expect(systemPanel).toContain('Article preparation');
     });
 
-    it('adds a truthful reader habit without reducing the enterprise position', () => {
+    it('makes the editorial reader journey primary while preserving professional pathways', () => {
         const landing = readFileSync('frontend/src/pages/beta/BetaLanding.tsx', 'utf8');
         const briefing = readFileSync('frontend/src/pages/beta/BetaFeed.tsx', 'utf8');
 
-        expect(landing).toContain('Intelligence for decisions across Africa.');
-        expect(landing).toContain('Explore the market-entry pilot');
-        expect(landing).toContain('For organizations worldwide deciding which African market deserves deeper entry diligence');
-        expect(landing).toContain('For diaspora and globally connected readers');
-        expect(landing).toContain('Open Africa Briefing');
+        expect(landing).toContain('Know what is shaping Africa today.');
+        expect(landing).toContain('Open the Briefing');
+        expect(landing).toContain('Browse Stories');
+        expect(landing).toContain('Explore Countries');
+        expect(landing).toContain('Open Research');
+        expect(landing).toContain('Professional pathways');
+        expect(landing).toContain('to="/enterprise"');
+        expect(landing).toContain('to="/specialists"');
         expect(briefing).toContain('Your Africa Briefing');
         expect(briefing).not.toMatch(/every morning|every single day|54 Nations|Daily Briefing/);
     });

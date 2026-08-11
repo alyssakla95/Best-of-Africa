@@ -39,34 +39,46 @@ export const BetaLanding = () => {
         description="Independent reporting and intelligence from across Africa."
       />
 
-      <section className="bg-navy text-white border-b border-white/10">
-        <div className="page-container py-14 md:py-20 grid lg:grid-cols-[1.05fr_.95fr] gap-10 lg:gap-16 items-center">
+      <section className="border-b border-white/10 bg-navy text-white">
+        <div className="page-container grid items-center gap-10 py-12 md:py-16 lg:grid-cols-[.85fr_1.15fr] lg:gap-16">
           <div>
             <p className="text-accent text-xs font-semibold uppercase tracking-[0.12em] mb-5">
-              Africa business intelligence
+              Independent reporting across Africa
             </p>
             <h1 dir="auto" className="font-serif text-white text-[clamp(3rem,6vw,5.5rem)] leading-[0.98] tracking-tight max-w-3xl mb-6">
-              Intelligence for decisions across Africa.
+              Know what is shaping Africa today.
             </h1>
             <p className="text-white/75 text-lg md:text-xl leading-relaxed max-w-2xl mb-8">
-              Structured country intelligence, market coverage and decision-ready briefings for investors, companies, governments and institutions operating across the continent.
+              Start with the daily Briefing, then follow source-attributed stories, countries and research across the continent.
             </p>
             <div className="grid gap-3 sm:flex sm:flex-wrap">
-              <Link to="/enterprise" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-semibold text-navy transition-colors hover:bg-white/90">
-                Explore the market-entry pilot <ArrowRight size={16} />
+              <Link to="/feed" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-semibold text-navy transition-colors hover:bg-accent/90">
+                Open the Briefing <ArrowRight size={16} />
               </Link>
-              <Link to="/intelligence" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
-                Enter Intelligence
+              <Link to="/posts" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
+                Browse Stories
               </Link>
+            </div>
+            <div className="mt-8 border-t border-white/15 pt-5">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">Professional pathways</p>
+              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+                <Link to="/enterprise" className="inline-flex items-center gap-1.5 font-semibold text-white/80 hover:text-accent">
+                  Enterprise <ArrowRight size={14} />
+                </Link>
+                <Link to="/specialists" className="inline-flex items-center gap-1.5 font-semibold text-white/80 hover:text-accent">
+                  Specialists <ArrowRight size={14} />
+                </Link>
+              </div>
             </div>
           </div>
 
           {lead && (
-            <Link to={`/posts/${lead.slug}`} className="group relative min-h-[22rem] md:min-h-[430px] overflow-hidden rounded-xl border border-white/15 bg-navy-mid block">
+            <Link to={`/posts/${lead.slug}`} className="group relative block min-h-[22rem] overflow-hidden rounded-xl border border-white/15 bg-navy-mid md:min-h-[430px]" aria-label={`Read story: ${stripMarkdown(lead.title)}`}>
               {leadImage && <img src={heroThumb(leadImage)} alt={stripMarkdown(lead.title)} onError={(event) => hideFailedEditorialImage(event.currentTarget)} className="absolute inset-0 h-full w-full object-cover" fetchPriority="high" />}
               <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/45 to-transparent" />
               {leadImage && <PhotoCredit credit={lead.image_credit} sourceUrl={lead.image_source_url} className="absolute right-3 top-3 z-10 rounded bg-navy/80 px-2 py-1 text-white" />}
               <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Current reporting</p>
                 <StoryMeta article={lead} />
                 <h2 className="font-serif text-white text-3xl md:text-4xl leading-tight mt-4 group-hover:text-accent transition-colors">
                   {stripMarkdown(lead.title)}
@@ -80,31 +92,21 @@ export const BetaLanding = () => {
         </div>
       </section>
 
-      <section className="border-b border-border bg-card">
-        <div className="page-container py-6">
-          <p className="mb-5 max-w-4xl font-serif text-xl text-navy">For organizations worldwide deciding which African market deserves deeper entry diligence—and which risks must be resolved first.</p>
-          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Built for consequential decisions</p>
-          <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-navy">
-            {['Corporate strategy', 'Growth teams', 'Export leaders', 'Trade advisers', 'Market-entry counsel', 'Investment committees'].map(label => <span key={label}>{label}</span>)}
-          </div>
-        </div>
-      </section>
-
       <section className="border-b border-border bg-white">
         <div className="page-container grid gap-8 py-10 md:grid-cols-[1fr_auto] md:items-center md:py-12">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">For diaspora and globally connected readers</p>
-            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">One Africa briefing. Your countries and sectors.</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">Go beyond the headline</p>
+            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">Follow the story into country context and research.</h2>
             <p className="mt-4 text-base leading-8 text-navy/70">
-              Follow current, source-attributed reporting without reconciling fragmented sources yourself. Start with the concise briefing, then move into country records and official market evidence when you need more depth.
+              Move from current reporting to country records and official market evidence without leaving the reader journey.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 md:min-w-[22rem]">
-            <Link to="/feed" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">
-              Open Africa Briefing <ArrowRight size={16} />
+            <Link to="/countries" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">
+              Explore Countries <ArrowRight size={16} />
             </Link>
-            <Link to="/settings" className="inline-flex min-h-12 items-center justify-center rounded-md border border-navy px-5 py-3 text-sm font-semibold text-navy">
-              Choose interests
+            <Link to="/intelligence" className="inline-flex min-h-12 items-center justify-center rounded-md border border-navy px-5 py-3 text-sm font-semibold text-navy">
+              Open Research
             </Link>
           </div>
         </div>
@@ -153,10 +155,10 @@ export const BetaLanding = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 border border-border rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
             {[
-              { Icon: Newspaper, title: 'Reporting', copy: 'Source-attributed stories and a concise current briefing.', to: '/posts' },
-              { Icon: Map, title: 'Country hubs', copy: 'Coverage, sectors and context for all 54 nations.', to: '/countries' },
-              { Icon: TrendingUp, title: 'Intelligence', copy: 'Comparable sector measures and official market evidence.', to: '/intelligence' },
-              { Icon: Headphones, title: 'Listen', copy: 'Clear, consistent audio briefings for listening on the move.', to: '/posts' },
+              { Icon: Headphones, title: 'Briefing', copy: 'A concise view of the developments shaping Africa now.', to: '/feed' },
+              { Icon: Newspaper, title: 'Stories', copy: 'Source-attributed reporting with the context behind the headline.', to: '/posts' },
+              { Icon: Map, title: 'Countries', copy: 'Coverage, sectors and context for all 54 nations.', to: '/countries' },
+              { Icon: TrendingUp, title: 'Research', copy: 'Comparable sector measures and official market evidence.', to: '/intelligence' },
             ].map(({ Icon, title, copy, to }) => (
               <Link key={title} to={to} className="group p-6 bg-card hover:bg-secondary/60 transition-colors">
                 <Icon size={20} className="text-accent-ink mb-5" />

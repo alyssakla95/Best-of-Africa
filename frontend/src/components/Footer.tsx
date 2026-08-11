@@ -4,18 +4,18 @@ import { KO_FI_URL } from '../constants/beta';
 import { useLanguage } from '../context/LanguageContext';
 
 const groups = [
-  { title: 'Read', links: [['Stories', '/posts'], ['Africa Briefing', '/feed'], ['Countries', '/countries'], ['Gallery', '/gallery']] },
-  { title: 'Intelligence', links: [['Market Intelligence', '/intelligence'], ['Continental Overview', '/dashboards/overview'], ['Decision Workspace', '/library']] },
-  { title: 'Enterprise', links: [['Market-Entry Pilot', '/enterprise'], ['Apply for a Pilot', '/enterprise/apply'], ['Trust Center', '/trust'], ['Consultation', '/request-consultation'], ['Events', '/events'], ['Business Travel', '/travel'], ['Contact', '/contact']] },
+  { title: 'Read', links: [['Briefing', '/feed'], ['Stories', '/posts'], ['Countries', '/countries'], ['Gallery', '/gallery']] },
+  { title: 'Research', links: [['Research', '/intelligence'], ['Decision Workspace', '/dashboards/overview'], ['Saved research', '/library']] },
+  { title: 'Services', links: [['Enterprise', '/enterprise'], ['Specialists', '/specialists'], ['Express specialist interest', '/specialists/interest'], ['Request a Specialist', '/specialists/requests/new'], ['Apply for a Pilot', '/enterprise/apply'], ['Trust Center', '/trust'], ['Consultation', '/request-consultation'], ['Events', '/events'], ['Business Travel', '/travel'], ['Contact', '/contact']] },
   { title: 'Account', links: [['Membership', '/membership'], ['Newsletter', '/newsletter'], ['Member Access', '/member-access'], ['Sign In', '/login']] },
 ] as const;
 
 export const Footer: React.FC = () => {
   const { language } = useLanguage();
   const visibleGroups = language === 'pt' ? [
-    { title: 'Ler', links: [['Histórias', '/posts'], ['Síntese de África', '/feed'], ['Países', '/countries'], ['Galeria', '/gallery']] },
-    { title: 'Inteligência', links: [['Inteligência de mercado', '/intelligence'], ['Panorama continental', '/dashboards/overview'], ['Espaço de decisão', '/library']] },
-    { title: 'Empresas', links: [['Projecto-piloto de entrada no mercado', '/enterprise'], ['Candidatar-se ao projecto-piloto', '/enterprise/apply'], ['Centro de confiança', '/trust'], ['Consulta', '/request-consultation'], ['Eventos', '/events'], ['Viagens de negócios', '/travel'], ['Contacto', '/contact']] },
+    { title: 'Ler', links: [['Síntese', '/feed'], ['Histórias', '/posts'], ['Países', '/countries'], ['Galeria', '/gallery']] },
+    { title: 'Pesquisa', links: [['Pesquisa', '/intelligence'], ['Espaço de decisão', '/dashboards/overview'], ['Pesquisa guardada', '/library']] },
+    { title: 'Serviços', links: [['Empresas', '/enterprise'], ['Especialistas', '/specialists'], ['Manifestar interesse como especialista', '/specialists/interest'], ['Solicitar um especialista', '/specialists/requests/new'], ['Candidatar-se ao projecto-piloto', '/enterprise/apply'], ['Centro de confiança', '/trust'], ['Consulta', '/request-consultation'], ['Eventos', '/events'], ['Viagens de negócios', '/travel'], ['Contacto', '/contact']] },
     { title: 'Conta', links: [['Adesão', '/membership'], ['Boletim', '/newsletter'], ['Acesso de membro', '/member-access'], ['Entrar', '/login']] },
   ] as const : groups;
   return (

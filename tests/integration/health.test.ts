@@ -49,6 +49,7 @@ describe('Health Check Endpoints', () => {
             // Verify all expected checks are present
             const checkNames = body.checks.map((c: { name: string }) => c.name);
             expect(checkNames).toContain('database');
+            expect(checkNames).toContain('knowledge_network');
             expect(checkNames).toContain('kv_cache');
             expect(checkNames).toContain('rate_limit');
             expect(checkNames).toContain('sector_assignment_audit');

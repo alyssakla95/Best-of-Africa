@@ -205,6 +205,43 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    const knowledgeStart = Date.now();
+    try {
+        const schema = await c.env.DB.prepare(`
+            SELECT COUNT(*) AS count FROM sqlite_master
+            WHERE type = 'table' AND name IN (
+                'knowledge_groups', 'knowledge_group_memberships', 'knowledge_contributions',
+                'knowledge_reactions', 'knowledge_group_follows'
+            )
+        `).first<{ count: number }>();
+        const schemaReady = Number(schema?.count || 0) === 5;
+        let activity = { active_groups: 0, approved_contributions: 0, pending_contributions: 0, approved_memberships: 0 };
+        if (schemaReady) {
+            const measured = await c.env.DB.prepare(`
+                SELECT
+                    (SELECT COUNT(*) FROM knowledge_groups WHERE is_active = 1) AS active_groups,
+                    (SELECT COUNT(*) FROM knowledge_contributions WHERE moderation_status = 'approved') AS approved_contributions,
+                    (SELECT COUNT(*) FROM knowledge_contributions WHERE moderation_status = 'pending') AS pending_contributions,
+                    (SELECT COUNT(*) FROM knowledge_group_memberships WHERE status = 'approved') AS approved_memberships
+            `).first<typeof activity>();
+            if (measured) activity = measured;
+        }
+        checks.push({
+            name: 'knowledge_network',
+            status: schemaReady ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - knowledgeStart,
+            message: schemaReady ? undefined : 'Knowledge-network migration is not fully applied',
+            details: { schemaReady, ...activity },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'knowledge_network',
+            status: 'degraded',
+            responseTimeMs: Date.now() - knowledgeStart,
+            message: error instanceof Error ? error.message : 'Knowledge-network health check failed',
+        });
+    }
+
     // Check KV Cache
     const cacheStart = Date.now();
     try {

@@ -9,6 +9,7 @@ import type { ArticleListItem } from '../../types';
 import { heroThumb, stripMarkdown } from '@/lib/utils';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
+import { KnowledgeNetworkSection } from '../KnowledgeNetworkPages';
 
 const StoryMeta = ({ article }: { article: ArticleListItem }) => (
   <div className="flex items-center gap-3 text-xs text-white/75">
@@ -109,6 +110,16 @@ export const BetaLanding = () => {
               Open Research
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="border-b border-border bg-[#f7f8fa]">
+        <div className="page-container py-14 md:py-20">
+          <div className="grid gap-6 lg:grid-cols-[1fr_.5fr] lg:items-end">
+            <div className="max-w-3xl"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">The public knowledge network</p><h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">Read the wisdom around the evidence.</h2><p className="mt-4 text-base leading-8 text-navy/70">Reviewed reader questions, specialist explanations, evidence challenges and consented Enterprise learning connect reporting to practical experience without turning popularity into authority.</p></div>
+            <Link to="/specialists/circles" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">Explore knowledge circles <ArrowRight size={16} /></Link>
+          </div>
+          <div className="mt-9"><KnowledgeNetworkSection surface="readers" compact /></div>
         </div>
       </section>
 

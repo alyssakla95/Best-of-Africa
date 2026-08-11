@@ -17,7 +17,8 @@ import {
     eventsRouter, campaignsRouter, configRouter, devRouter,
     bookmarksRouter, systemRouter, openapiRouter, agentWebhooksRouter, auditRouter, selfImproveRouter, notificationsRouter,
     newsletterRouter, agentProvidersRouter, membersRouter, seoRouter, moonshotOAuthRouter, geminiOAuthRouter, translationRouter,
-    specialistsRouter
+    specialistsRouter,
+    knowledgeNetworkRouter
 } from './routes';
 import worldCupRouter from './routes/worldcup';
 import { MODELS } from './lib/ai';
@@ -258,6 +259,7 @@ api.route('/agent/moonshot/oauth', moonshotOAuthRouter);
 api.route('/agent/gemini/oauth', geminiOAuthRouter);
 api.route('/members', membersRouter);
 api.route('/specialists', specialistsRouter);
+api.route('/knowledge', knowledgeNetworkRouter);
 api.route('/translate', translationRouter);
 api.route('/dev', devRouter);
 api.route('/bookmarks', bookmarksRouter);

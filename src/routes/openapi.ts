@@ -148,6 +148,53 @@ const openApiSpec = {
                 },
             },
         },
+        '/knowledge/groups': {
+            get: {
+                summary: 'List explicit public knowledge groups',
+                description: 'Returns active Enterprise-audience, regional, sector, professional, language and decision circles with observed contribution, approved-specialist and follower counts.',
+                parameters: [{ name: 'surface', in: 'query', required: false, schema: { type: 'string', enum: ['enterprise', 'specialists', 'readers'] } }],
+                responses: { 200: { description: 'Active knowledge groups and observed participation counts' } },
+            },
+        },
+        '/knowledge/contributions': {
+            get: {
+                summary: 'Read human-reviewed public knowledge contributions',
+                description: 'Returns only approved contributions and public-safe identities. Supports group, type, country and sector filters.',
+                responses: { 200: { description: 'Approved public contributions with evidence labels, sources, disclosures and observed reactions' } },
+            },
+            post: {
+                summary: 'Submit a contribution or linked response for human review',
+                description: 'Requires reader authentication. Account role limits contribution types; evidence challenges and field signals require source links. Nothing is published automatically.',
+                responses: {
+                    201: { description: 'Contribution recorded as pending human review' },
+                    400: { description: 'Input, evidence or information-boundary validation failed' },
+                    403: { description: 'Account role cannot submit this contribution type' },
+                    429: { description: 'Submission rate limit exceeded' },
+                },
+            },
+        },
+        '/knowledge/contributions/{id}/useful': {
+            post: {
+                summary: 'Toggle an authenticated useful reaction',
+                parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Updated observed useful-reaction state and count' }, 404: { description: 'Approved contribution not found' } },
+            },
+        },
+        '/knowledge/groups/{slug}/follow': {
+            post: {
+                summary: 'Follow or unfollow a public knowledge group',
+                parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Updated authenticated follow state' }, 404: { description: 'Active group not found' } },
+            },
+        },
+        '/knowledge/groups/{slug}/membership': {
+            post: {
+                summary: 'Request evidence-reviewed specialist circle membership',
+                description: 'Requires an approved specialist account. Membership is pending until an administrator reviews the submitted experience; payment and popularity do not determine approval.',
+                parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 201: { description: 'Membership request recorded for human review' }, 403: { description: 'Approved specialist access required' } },
+            },
+        },
         '/specialists': {
             get: {
                 summary: 'List approved specialists with current listing access',

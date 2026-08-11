@@ -26,6 +26,7 @@ import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/edito
 import { PhotoCredit } from '../../components/PhotoCredit';
 import { activeReaderLocale, formatReaderDate, formatReaderDateTime } from '../../i18n/locale';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
+import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -510,6 +511,8 @@ export const BetaCountryHub = () => {
             </div>
           )}
         </motion.section>
+
+        <ContextualKnowledgeFeed country={countryName} />
 
         {/* ── Member CTA (non-members) ───────────────────────────────────────── */}
         {!isMember && (

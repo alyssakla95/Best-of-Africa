@@ -8,11 +8,14 @@ const read = (path: string) => readFileSync(resolve(path), 'utf8');
 describe('specialist marketplace browser contract', () => {
     const app = read('frontend/src/App.tsx');
     const pages = read('frontend/src/pages/SpecialistMarketplacePages.tsx');
+    const knowledge = read('frontend/src/pages/KnowledgeNetworkPages.tsx') + read('frontend/src/pages/KnowledgeNetworkRoutePages.tsx');
     const robots = read('frontend/public/robots.txt');
 
     it('registers every public, invitation, dashboard, and request route lazily', () => {
         for (const route of [
             '/specialists',
+            '/specialists/circles',
+            '/enterprise/communities',
             '/specialists/interest',
             '/specialists/:slug',
             '/specialists/join/:token',
@@ -26,6 +29,16 @@ describe('specialist marketplace browser contract', () => {
             expect(app).toContain(`path="${route}"`);
         }
         expect(app).toContain("import('./pages/SpecialistMarketplacePages')");
+    });
+
+    it('provides explicit groups with moderated, role-labelled public participation', () => {
+        expect(knowledge).toContain('Enterprise groups');
+        expect(knowledge).toContain('Regional circles');
+        expect(knowledge).toContain('Professional circles');
+        expect(knowledge).toContain('Human review before publication');
+        expect(knowledge).toContain('Private decisions');
+        expect(knowledge).toContain('Submit a reviewed response');
+        expect(knowledge).toContain('no confidential, regulated, personal or material non-public information');
     });
 
     it('keeps private marketplace surfaces out of search indexing', () => {
@@ -67,6 +80,11 @@ describe('specialist marketplace OpenAPI contract', () => {
             '/specialists/join',
             '/specialists/requests',
             '/specialists/stripe/webhook',
+            '/knowledge/groups',
+            '/knowledge/contributions',
+            '/knowledge/contributions/{id}/useful',
+            '/knowledge/groups/{slug}/follow',
+            '/knowledge/groups/{slug}/membership',
         ]));
     });
 });

@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import { useLanguage } from '@/context/LanguageContext';
+import { KnowledgeNetworkSection } from './KnowledgeNetworkPages';
 
 const workflow = [
   {
@@ -107,6 +108,7 @@ const commercialPackages: Array<{
 
 const sectionLinks = [
   ['Who it is for', 'fit'],
+  ['Buyer groups', 'communities'],
   ['Decision workflow', 'workflow'],
   ['Pilot scope', 'pilot'],
   ['Introductory pricing', 'pricing'],
@@ -228,6 +230,20 @@ export const EnterprisePage = () => {
             </ul>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section id="communities" className="scroll-mt-40 border-b border-border bg-[#f7f8fa]">
+      <div className="page-container py-14 md:py-20">
+        <div className="grid gap-7 lg:grid-cols-[1fr_.55fr] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-navy/60">Enterprise buyer groups and public learning</p>
+            <h2 className="mt-3 font-serif text-4xl text-navy md:text-5xl">Different institutions make different decisions.</h2>
+            <p className="mt-5 text-lg leading-8 text-navy/70">Companies, investors, public institutions, advisers and African or diaspora business networks now have explicit communities for reviewed questions, specialist explanations and consented learning. Private client work remains private.</p>
+          </div>
+          <Link to="/enterprise/communities" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3 text-sm font-bold text-white hover:bg-navy/90">Open Enterprise communities <ArrowRight size={16} /></Link>
+        </div>
+        <div className="mt-10"><KnowledgeNetworkSection surface="enterprise" compact /></div>
       </div>
     </section>
 

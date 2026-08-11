@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import type { AdminSpecialistApplication, SpecialistVerificationLevel } from '@/services/api';
+import type { AdminKnowledgeContribution, AdminKnowledgeMembership, AdminSpecialistApplication, SpecialistVerificationLevel } from '@/services/api';
 
 const formatList = (value: string | string[]) => {
   if (Array.isArray(value)) return value.join(', ');
@@ -43,10 +43,57 @@ export function AdminSpecialistsTab() {
   const [enterpriseClientId, setEnterpriseClientId] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [standingDrafts, setStandingDrafts] = useState<Record<string, StandingDraft>>({});
+  const [knowledgeNotes, setKnowledgeNotes] = useState<Record<string, string>>({});
+  const [membershipNotes, setMembershipNotes] = useState<Record<string, string>>({});
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-specialists'],
     queryFn: api.getAdminSpecialists,
   });
+  const knowledge = useQuery({
+    queryKey: ['admin-knowledge-contributions'],
+    queryFn: () => api.getAdminKnowledgeContributions('pending'),
+  });
+  const memberships = useQuery({
+    queryKey: ['admin-knowledge-memberships'],
+    queryFn: api.getAdminKnowledgeMemberships,
+  });
+
+  const moderateKnowledge = async (item: AdminKnowledgeContribution, status: 'approved' | 'rejected') => {
+    const note = knowledgeNotes[item.id]?.trim();
+    if (!note) {
+      toast.error('Record a moderation reason before deciding');
+      return;
+    }
+    setBusyAction(`${item.id}:${status}`);
+    try {
+      await api.moderateKnowledgeContribution(item.id, status, note);
+      toast.success(status === 'approved' ? 'Contribution published' : 'Contribution rejected');
+      await knowledge.refetch();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Contribution could not be moderated');
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const moderateMembership = async (item: AdminKnowledgeMembership, status: 'approved' | 'rejected') => {
+    const key = `${item.group_id}:${item.client_id}`;
+    const note = membershipNotes[key]?.trim();
+    if (!note) {
+      toast.error('Record a membership review reason before deciding');
+      return;
+    }
+    setBusyAction(`${key}:${status}`);
+    try {
+      await api.moderateKnowledgeMembership(item.group_id, item.client_id, { status, member_role: 'contributor', notes: note });
+      toast.success(status === 'approved' ? 'Circle membership approved' : 'Circle membership rejected');
+      await memberships.refetch();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Membership could not be reviewed');
+    } finally {
+      setBusyAction('');
+    }
+  };
 
   const issueInvite = async (targetEmail = email, interestId?: string) => {
     setBusyAction(interestId ? `${interestId}:invite` : 'direct-invite');
@@ -125,6 +172,37 @@ export function AdminSpecialistsTab() {
   };
 
   return <div className="space-y-8">
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Public knowledge moderation</h2><p className="mt-1 text-sm text-muted-foreground">Nothing reaches the public knowledge network until a human checks evidence, confidentiality, attribution and disclosure.</p></div><Badge variant="outline">{knowledge.data?.data.length || 0} pending</Badge></div>
+      {knowledge.isLoading && <p className="mt-4 text-sm">Loading pending contributions…</p>}
+      {knowledge.error && <p role="alert" className="mt-4 text-sm text-destructive">{knowledge.error instanceof Error ? knowledge.error.message : 'Knowledge moderation could not load.'}</p>}
+      <div className="mt-4 grid gap-4">{knowledge.data?.data.map(item => <Card key={item.id}><CardContent className="pt-6">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap gap-2"><Badge>{item.contribution_type.replace(/_/g, ' ')}</Badge><Badge variant="outline">{item.author_role}</Badge><Badge variant="secondary">{item.fact_basis.replace(/_/g, ' ')}</Badge></div><h3 className="mt-3 text-lg font-bold">{item.title}</h3><p className="mt-1 text-sm text-muted-foreground">{item.author_display_name} · {item.group_name}</p></div><span className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</span></div>
+        <p className="mt-4 whitespace-pre-line text-sm leading-7">{item.body}</p>
+        {item.source_urls.length > 0 && <div className="mt-4 space-y-1 text-sm">{item.source_urls.map(url => <a key={url} className="block break-all font-semibold underline" href={url} target="_blank" rel="noreferrer">{url}</a>)}</div>}
+        {item.conflict_disclosure && <p className="mt-4 text-sm"><strong>Disclosure:</strong> {item.conflict_disclosure}</p>}
+        <div className="mt-5"><Label htmlFor={`knowledge-note-${item.id}`}>Required moderation record</Label><Textarea id={`knowledge-note-${item.id}`} value={knowledgeNotes[item.id] || ''} onChange={event => setKnowledgeNotes(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Evidence checked, privacy boundary, corrections required, or reason for rejection." /></div>
+        <div className="mt-4 flex gap-2"><Button disabled={Boolean(busyAction)} onClick={() => void moderateKnowledge(item, 'approved')}>Approve and publish</Button><Button variant="destructive" disabled={Boolean(busyAction)} onClick={() => void moderateKnowledge(item, 'rejected')}>Reject</Button></div>
+      </CardContent></Card>)}</div>
+      {!knowledge.isLoading && knowledge.data?.data.length === 0 && <p className="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No knowledge contributions are awaiting review.</p>}
+    </section>
+
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Knowledge-circle membership</h2><p className="mt-1 text-sm text-muted-foreground">Approve specialists only where their submitted experience supports the circle. Membership affects standing inside that circle, not verification elsewhere.</p></div><Badge variant="outline">{memberships.data?.data.length || 0} pending</Badge></div>
+      {memberships.isLoading && <p className="mt-4 text-sm">Loading membership requests…</p>}
+      {memberships.error && <p role="alert" className="mt-4 text-sm text-destructive">{memberships.error instanceof Error ? memberships.error.message : 'Membership requests could not load.'}</p>}
+      <div className="mt-4 grid gap-4">{memberships.data?.data.map(item => {
+        const key = `${item.group_id}:${item.client_id}`;
+        return <Card key={key}><CardContent className="pt-6">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{item.display_name}</h3><p className="mt-1 text-sm text-muted-foreground">{item.group_name} · {item.specialist_slug}</p></div><Badge variant="outline">Pending review</Badge></div>
+          <p className="mt-4 whitespace-pre-line text-sm leading-7"><strong>Submitted fit:</strong> {item.evidence_summary}</p>
+          <div className="mt-5"><Label htmlFor={`membership-note-${key}`}>Required private review record</Label><Textarea id={`membership-note-${key}`} value={membershipNotes[key] || ''} onChange={event => setMembershipNotes(current => ({ ...current, [key]: event.target.value }))} placeholder="Evidence reviewed, scope approved, or reason for rejection." /></div>
+          <div className="mt-4 flex gap-2"><Button disabled={Boolean(busyAction)} onClick={() => void moderateMembership(item, 'approved')}>Approve as contributor</Button><Button variant="destructive" disabled={Boolean(busyAction)} onClick={() => void moderateMembership(item, 'rejected')}>Reject</Button></div>
+        </CardContent></Card>;
+      })}</div>
+      {!memberships.isLoading && memberships.data?.data.length === 0 && <p className="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No circle memberships are awaiting review.</p>}
+    </section>
+
     <Card>
       <CardHeader><CardTitle>Demand-led recruitment signals</CardTitle></CardHeader>
       <CardContent>

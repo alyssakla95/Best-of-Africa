@@ -54,7 +54,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
 
     // Admin surface authenticates with the admin API key, not the member JWT.
     // Without this header no admin call has ever carried credentials.
-    if (endpoint.startsWith('/admin')) {
+    if (endpoint.startsWith('/admin') || endpoint.startsWith('/knowledge/admin')) {
         const adminToken = getAdminToken();
         if (adminToken) headers['X-Admin-Key'] = adminToken;
     }
@@ -298,6 +298,82 @@ export interface SpecialistProfile {
     verification_summary: string | null;
     founding_cohort: boolean;
     listed_at: string;
+}
+
+export type KnowledgeGroupType = 'enterprise_audience' | 'region' | 'sector' | 'profession' | 'language' | 'decision';
+export type KnowledgeContributionType = 'field_signal' | 'expert_explanation' | 'evidence_challenge' | 'enterprise_question' | 'reader_question' | 'country_perspective' | 'sector_perspective' | 'decision_reflection';
+export type KnowledgeFactBasis = 'sourced_analysis' | 'professional_experience' | 'question' | 'consented_learning';
+
+export interface KnowledgeGroup {
+    id: string;
+    slug: string;
+    name: string;
+    group_type: KnowledgeGroupType;
+    description: string;
+    audience_summary: string;
+    contribution_count: number;
+    specialist_count: number;
+    follower_count: number;
+}
+
+export interface KnowledgeContribution {
+    id: string;
+    parent_id: string | null;
+    author_display_name: string;
+    author_role: 'reader' | 'specialist' | 'enterprise' | 'editorial';
+    author_profile_slug: string | null;
+    author_verification_level: SpecialistVerificationLevel | null;
+    contribution_type: KnowledgeContributionType;
+    title: string;
+    body: string;
+    countries: string[];
+    sectors: string[];
+    source_urls: string[];
+    fact_basis: KnowledgeFactBasis;
+    conflict_disclosure: string | null;
+    group_slug: string;
+    group_name: string;
+    group_type: KnowledgeGroupType;
+    useful_count: number;
+    reply_count: number;
+    published_at: string;
+    corrected_at: string | null;
+}
+
+export interface KnowledgeContributionInput {
+    group_slug: string;
+    parent_id?: string;
+    contribution_type: KnowledgeContributionType;
+    title: string;
+    body: string;
+    countries: string[];
+    sectors: string[];
+    source_urls: string[];
+    fact_basis: KnowledgeFactBasis;
+    conflict_disclosure?: string;
+    no_sensitive_data_confirmed: true;
+    public_identity_confirmed: boolean;
+}
+
+export interface AdminKnowledgeContribution extends KnowledgeContribution {
+    moderation_status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+    moderation_notes: string | null;
+    created_at: string;
+}
+
+export interface AdminKnowledgeMembership {
+    group_id: string;
+    client_id: string;
+    specialist_profile_id: string;
+    member_role: 'participant' | 'contributor' | 'moderator';
+    status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+    evidence_summary: string;
+    review_notes: string | null;
+    group_slug: string;
+    group_name: string;
+    display_name: string;
+    specialist_slug: string;
+    created_at: string;
 }
 
 export interface SpecialistApplicationInput {
@@ -1179,6 +1255,41 @@ export const api = {
         request<{ data: SpecialistProfile[] }>(`/specialists?${new URLSearchParams(filters)}`),
     getSpecialist: (slug: string) =>
         request<{ data: SpecialistProfile }>(`/specialists/${encodeURIComponent(slug)}`),
+    getKnowledgeGroups: (surface: 'enterprise' | 'specialists' | 'readers') =>
+        request<{ data: KnowledgeGroup[] }>(`/knowledge/groups?surface=${surface}`),
+    getKnowledgeContributions: (filters: Record<string, string> = {}) =>
+        request<{ data: KnowledgeContribution[] }>(`/knowledge/contributions?${new URLSearchParams(filters)}`),
+    submitKnowledgeContribution: (data: KnowledgeContributionInput) =>
+        request<{ id: string; status: 'pending'; message: string }>('/knowledge/contributions', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    toggleKnowledgeUseful: (id: string) =>
+        request<{ useful: boolean; useful_count: number }>(`/knowledge/contributions/${id}/useful`, { method: 'POST' }),
+    toggleKnowledgeGroupFollow: (slug: string) =>
+        request<{ following: boolean }>(`/knowledge/groups/${encodeURIComponent(slug)}/follow`, { method: 'POST' }),
+    requestKnowledgeMembership: (slug: string, evidenceSummary: string) =>
+        request<{ status: 'pending'; message: string }>(`/knowledge/groups/${encodeURIComponent(slug)}/membership`, {
+            method: 'POST',
+            body: JSON.stringify({ evidence_summary: evidenceSummary }),
+        }),
+    getAdminKnowledgeContributions: (status = 'pending') =>
+        request<{ data: AdminKnowledgeContribution[] }>(`/knowledge/admin/contributions?status=${encodeURIComponent(status)}`),
+    moderateKnowledgeContribution: (id: string, status: 'approved' | 'rejected', notes: string) =>
+        request<{ id: string; status: string }>(`/knowledge/admin/contributions/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, notes }),
+        }),
+    getAdminKnowledgeMemberships: () =>
+        request<{ data: AdminKnowledgeMembership[] }>('/knowledge/admin/memberships'),
+    moderateKnowledgeMembership: (groupId: string, clientId: string, data: {
+        status: 'approved' | 'rejected';
+        member_role: 'participant' | 'contributor' | 'moderator';
+        notes: string;
+    }) => request<{ status: string }>(`/knowledge/admin/memberships/${encodeURIComponent(groupId)}/${encodeURIComponent(clientId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    }),
     redeemSpecialistInvite: (data: SpecialistApplicationInput) =>
         request<{ success: true; application_id: string; token: string }>('/specialists/join', {
             method: 'POST',

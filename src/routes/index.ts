@@ -29,3 +29,4 @@ export { membersRouter } from './members';
 export { seoRouter } from './seo';
 export { translationRouter } from './translation';
 export { specialistsRouter } from './specialists';
+export { knowledgeNetworkRouter } from './knowledge-network';

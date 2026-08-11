@@ -1,6 +1,6 @@
 # BOA-Story
 
-BOA-Story is a deployed African reporting, research, and market-intelligence platform for readers, Enterprise decision teams, and screened specialists. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, search, personalization, member services, a structured Enterprise pilot, and an invite-only specialist marketplace in one responsive application.
+BOA-Story is a deployed African reporting, research, and market-intelligence platform for readers, Enterprise decision teams, and screened specialists. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, search, personalization, member services, a structured Enterprise pilot, an invite-only specialist marketplace, and a moderated public knowledge network in one responsive application.
 
 The product is organized around three explicit journeys:
 
@@ -43,6 +43,12 @@ The repository implements an invite-only, administrator-screened specialist mark
 Operators review interest against actual Enterprise demand by country, sector, service, and language. They can mark a record for review, close it, or issue a linked single-use invitation. Only an invited candidate can create hashed credentials and submit the guided four-stage application covering account details, prospective public profile, credentials and conflicts, and final confirmation. Private registry, qualification, and screening data remain separate from public profiles.
 
 The initial **Founding Specialist Network** is deliberately capped at 50 profiles, with an operating target of roughly 20–50 credible economists, lawyers, sector operators, former regulators, bankers, consultants, academics, and other professionals relevant to observed Enterprise demand. Admin tooling aggregates active requests into country, sector, language, and service demand signals so recruitment expands where clients actually need coverage rather than toward arbitrary marketplace volume.
+
+### Moderated Knowledge Network
+
+Enterprise audiences and specialists have separate dominant community pages at `/enterprise/communities` and `/specialists/circles`. The network divides participation into named Enterprise-audience, regional, sector, professional, language, and decision circles. Approved contributions can also appear contextually on reader, country, Market Intelligence, and Continental Dashboard surfaces.
+
+The interaction model supports reader and Enterprise questions, specialist explanations, field signals, evidence challenges, country and sector perspectives, consented decision learning, useful reactions, follows, and linked responses. Contribution types are restricted by authenticated account role. Field signals and evidence challenges require source links; every submission remains pending until a human approves it. Public projections omit private client identifiers and moderation records, while specialist circle membership has a separate evidence-based administrator review. Private Enterprise engagements and workspace discussions never enter the public feed automatically. Payment, popularity, reactions, and follower counts do not determine screening, verification, or circle standing.
 
 The public [specialist directory](https://alyssa-boa-web.pages.dev/specialists) supports country, sector, language, and service filters, removable filter chips, result counts, public credential/reference links, founding-cohort badges, verification standing, and launch-safe empty states. Returning specialists use a dedicated [specialist sign-in](https://alyssa-boa-web.pages.dev/specialists/sign-in). Their private dashboard presents the actual lifecycle — application, screening, approval, listing access, publication, and matching — and provides profile editing, waiver/billing guidance, confirmed opportunities, and proposal submission.
 
@@ -89,7 +95,7 @@ The three standing levels are not customer ratings:
 
 BOA should add transaction commissions, managed payments, reviews, or deeper engagement tooling only after observed evidence shows recurring Enterprise requests and repeatable specialist engagements. None of those future capabilities is represented as current functionality.
 
-For a new deployment, apply migrations `0065_specialist_marketplace.sql` through `0068_founding_specialist_network.sql`. Migration `0069_verified_country_resources.sql` adds the evidence-bearing country-resource registry used by the reader product. Enable the directory/authenticated marketplace flag only after validating invitation, screening, waiver, verification, listing, matching, and proposal controls. Stripe testing is required only before activating paid listing arrangements. `wrangler.alyssa.toml` currently enables the marketplace; `wrangler.toml` and `wrangler.portable.toml.example` keep it disabled. Interest records are retained for no more than 24 months and are removed by bounded scheduled cleanup.
+For a new deployment, apply migrations `0065_specialist_marketplace.sql` through `0068_founding_specialist_network.sql`. Migration `0069_verified_country_resources.sql` adds the evidence-bearing country-resource registry used by the reader product; `0070_knowledge_network.sql` adds moderated groups, memberships, contributions, reactions, and follows. Enable the directory/authenticated marketplace flag only after validating invitation, screening, waiver, verification, listing, matching, proposal, contribution-moderation, and membership-review controls. Stripe testing is required only before activating paid listing arrangements. `wrangler.alyssa.toml` currently enables the marketplace; `wrangler.toml` and `wrangler.portable.toml.example` keep it disabled. Interest records are retained for no more than 24 months and are removed by bounded scheduled cleanup.
 
 ### Evidence boundary
 
@@ -187,6 +193,7 @@ The live status endpoints remain authoritative:
 | Supporter and sponsor reporting | `/supporter-feed`, `/sponsor/dashboard` | Supporter transparency follows preview membership; campaign records require partner authorization |
 | Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/enterprise/access`, `/trust` | Offer and application are public; password access is private; qualification records and private notes are administrator only |
 | Specialist marketplace | `/specialists`, `/specialists/interest`, `/specialists/:slug`, `/specialists/join/:token`, `/specialists/sign-in`, `/specialists/dashboard`, `/specialists/requests`, `/specialists/requests/new`, `/specialists/requests/:id` | Interest registration is public and creates no account; public profiles require approval plus a waiver or active subscription; applications require an invitation; dashboards require verified specialist identity; requests require Enterprise tier plus a live administrator access grant |
+| Public knowledge network | `/enterprise/communities`, `/specialists/circles`, plus contextual feeds on reader and intelligence surfaces | Reading is public; submitting, reacting and following require authentication; all contributions and responses require human moderation; specialist circle standing requires separate evidence review |
 | Administration | `/admin` | Requires `ADMIN_API_KEY`; reader and client sessions do not grant administrator access |
 | Legal and support | `/privacy`, `/terms`, `/contact` | Public |
 | Seasonal archive | `/world-cup` | Route and data contract remain in code; global World Cup promotion is currently disabled |
@@ -250,6 +257,7 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 | Services and communications | `/services` pilot and specialist-interest intake, `/events`, `/newsletter`, `/contact`, `/translate/interface` |
 | Commercial reporting | `/campaigns` and sponsor-scoped analytics |
 | Specialist marketplace | `/specialists` directory, invitation redemption, dashboard, waiver/subscription listing access, Enterprise requests, confirmed matches, proposals, and the exact signed Stripe webhook |
+| Moderated knowledge network | `/knowledge` groups, public approved contributions, reviewed responses, follows, useful reactions, specialist membership requests, and administrator moderation |
 | Administration | `/admin`, `/audit`, protected client/source/editorial and pilot-inbox operations |
 | Autonomous processing | `/agent`, `/agent/providers`, provider OAuth/bootstrap routes, `/self-improve` |
 | Operations | `/health`, `/health/live`, `/health/ready`, `/health/deep`, `/status`, `/config`, `/docs` |
@@ -306,6 +314,10 @@ The marketplace keeps public, private, commercial, and operational records separ
 | `specialist_proposals` | Indicative specialist scope, assumptions, timeline, fee, and client decision state |
 | `marketplace_audit_events` | Status and operator-action history without publishing private application material |
 | `country_official_resources` | Country resource links with verification evidence, review state and last-check timestamp; unverified legacy portal fields are not reader-facing |
+| `knowledge_groups` | Explicit public audience, regional, sector, professional, language, and decision circles |
+| `knowledge_group_memberships` | Private specialist evidence, human review record, circle role, and approval state |
+| `knowledge_contributions` | Questions, perspectives and linked responses with evidence basis, sources, disclosures, privacy consent, and moderation state |
+| `knowledge_reactions` / `knowledge_group_follows` | Authenticated useful reactions and circle follows without converting popularity into authority |
 
 Interest registration never inserts a client account or specialist application. Public APIs project an allow-listed subset of profile fields; fee-waiver administration, private notes, conflicts, contact details, and billing identifiers remain non-public.
 
@@ -394,7 +406,7 @@ Apply migrations to the local D1 database:
 npm run db:migrate
 ```
 
-That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0069_verified_country_resources.sql`.
+That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0070_knowledge_network.sql`.
 
 For local Worker secrets and overrides, create `.dev.vars` and do not commit it. A practical development configuration is:
 
@@ -574,6 +586,21 @@ GET   /api/v1/specialists/requests/:id
 POST  /api/v1/specialists/matches/:id/proposals
 PATCH /api/v1/specialists/proposals/:id
 POST  /api/v1/specialists/stripe/webhook
+```
+
+Moderated knowledge-network contracts:
+
+```text
+GET   /api/v1/knowledge/groups
+GET   /api/v1/knowledge/contributions
+POST  /api/v1/knowledge/contributions
+POST  /api/v1/knowledge/contributions/:id/useful
+POST  /api/v1/knowledge/groups/:slug/follow
+POST  /api/v1/knowledge/groups/:slug/membership
+GET   /api/v1/knowledge/admin/contributions
+PATCH /api/v1/knowledge/admin/contributions/:id
+GET   /api/v1/knowledge/admin/memberships
+PATCH /api/v1/knowledge/admin/memberships/:groupId/:clientId
 ```
 
 Principal administrator contracts:

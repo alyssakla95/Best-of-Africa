@@ -211,18 +211,27 @@ router.get('/health/deep', async (c) => {
             SELECT COUNT(*) AS count FROM sqlite_master
             WHERE type = 'table' AND name IN (
                 'knowledge_groups', 'knowledge_group_memberships', 'knowledge_contributions',
-                'knowledge_reactions', 'knowledge_group_follows'
+                'knowledge_reactions', 'knowledge_group_follows', 'decision_rooms',
+                'decision_room_items', 'decision_room_participants', 'decision_room_follows',
+                'community_transition_applications', 'community_transition_programs',
+                'community_transition_invitations', 'community_transition_activations'
             )
         `).first<{ count: number }>();
-        const schemaReady = Number(schema?.count || 0) === 5;
-        let activity = { active_groups: 0, approved_contributions: 0, pending_contributions: 0, approved_memberships: 0 };
+        const schemaReady = Number(schema?.count || 0) === 13;
+        let activity = { active_groups: 0, approved_contributions: 0, pending_contributions: 0, approved_memberships: 0, public_rooms: 0, private_rooms: 0, pending_room_items: 0, documented_outcomes: 0, open_transitions: 0, transition_activations: 0 };
         if (schemaReady) {
             const measured = await c.env.DB.prepare(`
                 SELECT
                     (SELECT COUNT(*) FROM knowledge_groups WHERE is_active = 1) AS active_groups,
                     (SELECT COUNT(*) FROM knowledge_contributions WHERE moderation_status = 'approved') AS approved_contributions,
                     (SELECT COUNT(*) FROM knowledge_contributions WHERE moderation_status = 'pending') AS pending_contributions,
-                    (SELECT COUNT(*) FROM knowledge_group_memberships WHERE status = 'approved') AS approved_memberships
+                    (SELECT COUNT(*) FROM knowledge_group_memberships WHERE status = 'approved') AS approved_memberships,
+                    (SELECT COUNT(*) FROM decision_rooms WHERE visibility = 'consented_public' AND moderation_status = 'approved') AS public_rooms,
+                    (SELECT COUNT(*) FROM decision_rooms WHERE visibility = 'private') AS private_rooms,
+                    (SELECT COUNT(*) FROM decision_room_items WHERE moderation_status = 'pending') AS pending_room_items,
+                    (SELECT COUNT(*) FROM decision_room_items WHERE moderation_status = 'approved' AND item_type = 'documented_outcome') AS documented_outcomes,
+                    (SELECT COUNT(*) FROM community_transition_programs WHERE status = 'open') AS open_transitions,
+                    (SELECT COUNT(*) FROM community_transition_activations) AS transition_activations
             `).first<typeof activity>();
             if (measured) activity = measured;
         }

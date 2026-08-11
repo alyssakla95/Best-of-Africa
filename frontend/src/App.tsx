@@ -83,6 +83,12 @@ const SpecialistRequestNewPage = lazyWithRetry(() => import('./pages/SpecialistM
 const SpecialistRequestPage = lazyWithRetry(() => import('./pages/SpecialistMarketplacePages').then(m => ({ default: m.SpecialistRequestPage })));
 const EnterpriseCommunitiesPage = lazyWithRetry(() => import('./pages/KnowledgeNetworkRoutePages').then(m => ({ default: m.EnterpriseCommunitiesPage })));
 const SpecialistCirclesPage = lazyWithRetry(() => import('./pages/KnowledgeNetworkRoutePages').then(m => ({ default: m.SpecialistCirclesPage })));
+const DecisionRoomsPage = lazyWithRetry(() => import('./pages/DecisionRoomPages').then(m => ({ default: m.DecisionRoomsPage })));
+const DecisionRoomDetailPage = lazyWithRetry(() => import('./pages/DecisionRoomPages').then(m => ({ default: m.DecisionRoomDetailPage })));
+const EnterpriseDecisionRoomsPage = lazyWithRetry(() => import('./pages/DecisionRoomPages').then(m => ({ default: m.EnterpriseDecisionRoomsPage })));
+const PrivateDecisionRoomPage = lazyWithRetry(() => import('./pages/DecisionRoomPages').then(m => ({ default: m.PrivateDecisionRoomPage })));
+const CommunityTransitionPage = lazyWithRetry(() => import('./pages/CommunityTransitionPages').then(m => ({ default: m.CommunityTransitionPage })));
+const CommunityTransitionDetailPage = lazyWithRetry(() => import('./pages/CommunityTransitionPages').then(m => ({ default: m.CommunityTransitionDetailPage })));
 const EnterpriseAccessPage = lazyWithRetry(() => import('./pages/MarketplaceAccessPages').then(m => ({ default: m.EnterpriseAccessPage })));
 const SpecialistSignInPage = lazyWithRetry(() => import('./pages/MarketplaceAccessPages').then(m => ({ default: m.SpecialistSignInPage })));
 
@@ -193,6 +199,8 @@ const AnimatedRoutes = () => {
           <Route path="/enterprise/apply"       element={<PageTransition><EnterprisePilotPage /></PageTransition>} />
           <Route path="/enterprise/access"      element={<PageTransition><EnterpriseAccessPage /></PageTransition>} />
           <Route path="/enterprise/communities" element={<PageTransition><EnterpriseCommunitiesPage /></PageTransition>} />
+          <Route path="/enterprise/decision-rooms" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><EnterpriseDecisionRoomsPage /></MarketplaceAccessGate></PageTransition>} />
+          <Route path="/enterprise/decision-rooms/:id" element={<PageTransition><PrivateDecisionRoomPage /></PageTransition>} />
           <Route path="/trust"                  element={<PageTransition><TrustCenterPage /></PageTransition>} />
           <Route path="/travel"                 element={<PageTransition><BetaTravel /></PageTransition>} />
           <Route path="/search"                 element={<PageTransition><BetaSearch /></PageTransition>} />
@@ -203,6 +211,10 @@ const AnimatedRoutes = () => {
           <Route path="/specialists/join/:token" element={<PageTransition><SpecialistJoinPage /></PageTransition>} />
           <Route path="/specialists/sign-in" element={<PageTransition><SpecialistSignInPage /></PageTransition>} />
           <Route path="/specialists/circles" element={<PageTransition><SpecialistCirclesPage /></PageTransition>} />
+          <Route path="/decision-rooms" element={<PageTransition><DecisionRoomsPage /></PageTransition>} />
+          <Route path="/decision-rooms/:slug" element={<PageTransition><DecisionRoomDetailPage /></PageTransition>} />
+          <Route path="/community-transition" element={<PageTransition><CommunityTransitionPage /></PageTransition>} />
+          <Route path="/community-transition/:slug" element={<PageTransition><CommunityTransitionDetailPage /></PageTransition>} />
           <Route path="/specialists/dashboard" element={<PageTransition><MarketplaceAccessGate kind="specialist"><SpecialistDashboardPage /></MarketplaceAccessGate></PageTransition>} />
           <Route path="/specialists/requests" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><SpecialistRequestsPage /></MarketplaceAccessGate></PageTransition>} />
           <Route path="/specialists/requests/new" element={<PageTransition><MarketplaceAccessGate kind="enterprise"><SpecialistRequestNewPage /></MarketplaceAccessGate></PageTransition>} />

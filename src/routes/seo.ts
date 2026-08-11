@@ -37,6 +37,16 @@ router.get('/sitemap.xml', async (c) => {
             ORDER BY updated_at DESC
         `).all<{ slug: string; updated_at: string }>()
         : { results: [] as { slug: string; updated_at: string }[] };
+    const decisionRooms = await c.env.DB.prepare(`
+        SELECT slug, updated_at FROM decision_rooms
+        WHERE visibility = 'consented_public' AND moderation_status = 'approved'
+        ORDER BY updated_at DESC
+    `).all<{ slug: string; updated_at: string }>();
+    const communityTransitions = await c.env.DB.prepare(`
+        SELECT slug, updated_at FROM community_transition_programs
+        WHERE status IN ('open', 'completed') AND published_at IS NOT NULL
+        ORDER BY updated_at DESC
+    `).all<{ slug: string; updated_at: string }>();
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -50,6 +60,8 @@ router.get('/sitemap.xml', async (c) => {
         '/dashboards/overview',
         '/enterprise',
         '/enterprise/communities',
+        '/decision-rooms',
+        '/community-transition',
         '/specialists/interest',
         '/specialists/circles',
         ...(c.env.MARKETPLACE_ENABLED === 'true' ? ['/specialists'] : []),
@@ -94,6 +106,24 @@ router.get('/sitemap.xml', async (c) => {
         xml += `    <lastmod>${new Date(specialist.updated_at).toISOString()}</lastmod>\n`;
         xml += `    <changefreq>monthly</changefreq>\n`;
         xml += `    <priority>0.6</priority>\n`;
+        xml += `  </url>\n`;
+    }
+
+    for (const room of decisionRooms.results || []) {
+        xml += `  <url>\n`;
+        xml += `    <loc>${BASE_URL}/decision-rooms/${room.slug}</loc>\n`;
+        xml += `    <lastmod>${new Date(room.updated_at).toISOString()}</lastmod>\n`;
+        xml += `    <changefreq>weekly</changefreq>\n`;
+        xml += `    <priority>0.7</priority>\n`;
+        xml += `  </url>\n`;
+    }
+
+    for (const transition of communityTransitions.results || []) {
+        xml += `  <url>\n`;
+        xml += `    <loc>${BASE_URL}/community-transition/${transition.slug}</loc>\n`;
+        xml += `    <lastmod>${new Date(transition.updated_at).toISOString()}</lastmod>\n`;
+        xml += `    <changefreq>weekly</changefreq>\n`;
+        xml += `    <priority>0.7</priority>\n`;
         xml += `  </url>\n`;
     }
 

@@ -7,8 +7,13 @@ import { request } from '../../services/api';
 import { KO_FI_URL } from '../../constants/beta';
 import { useMember } from '../../context/MemberContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const BetaMemberAccess = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedReturn = searchParams.get('returnTo') || '';
+  const safeReturn = requestedReturn.startsWith('/') && !requestedReturn.startsWith('//') ? requestedReturn : '';
   const { language } = useLanguage();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -72,6 +77,7 @@ export const BetaMemberAccess = () => {
       if (res.ok && res.token) {
         login(res.token, { tier: res.tier, name: res.name, expires_in_days: null });
         setPhase('success');
+        if (safeReturn) navigate(safeReturn, { replace: true });
       } else {
         throw new Error('Invalid verification code');
       }

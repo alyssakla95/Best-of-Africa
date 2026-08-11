@@ -14,6 +14,7 @@ import { stripMarkdown } from '../../lib/utils';
 import { useLanguage } from '../../context/LanguageContext';
 import { readerCountryName } from '../../i18n/pt-country-data';
 import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
+import { ContextualDecisionRooms } from '@/components/decision-rooms/DecisionRoomDiscovery';
 
 const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
 const compact = (value: number, digits = 1) => new Intl.NumberFormat(activeLocale(), {
@@ -308,6 +309,7 @@ export const BetaContinentalOverview: React.FC = () => {
 
         {view === 'countries' && <DecisionWorkspace context="continental" />}
 
+        <ContextualDecisionRooms />
         <div className="page-section"><ContextualKnowledgeFeed /></div>
 
         <section className="page-section rounded-2xl border border-border bg-navy p-6 text-white md:p-8"><div className="flex items-start gap-4"><Scale className="mt-1 shrink-0" size={20}/><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-white/60">Method and comparability</p><p className="mt-3 text-sm leading-7 text-white/75">{view === 'sectors' ? data.sector_methodology : data.methodology}</p><a href={data.source_url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-white underline underline-offset-4">Inspect {data.source_name} <ExternalLink size={12}/></a></div></div></section>

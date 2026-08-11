@@ -241,7 +241,7 @@ export const EnterprisePage = () => {
             <h2 className="mt-3 font-serif text-4xl text-navy md:text-5xl">Different institutions make different decisions.</h2>
             <p className="mt-5 text-lg leading-8 text-navy/70">Companies, investors, public institutions, advisers and African or diaspora business networks now have explicit communities for reviewed questions, specialist explanations and consented learning. Private client work remains private.</p>
           </div>
-          <Link to="/enterprise/communities" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3 text-sm font-bold text-white hover:bg-navy/90">Open Enterprise communities <ArrowRight size={16} /></Link>
+          <div className="flex flex-col gap-3"><Link to="/enterprise/decision-rooms" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3 text-sm font-bold text-white hover:bg-navy/90">Open a Decision Room <ArrowRight size={16} /></Link><Link to="/enterprise/communities" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-navy px-6 py-3 text-sm font-bold text-navy">Open Enterprise communities</Link></div>
         </div>
         <div className="mt-10"><KnowledgeNetworkSection surface="enterprise" compact /></div>
       </div>

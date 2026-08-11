@@ -195,6 +195,69 @@ const openApiSpec = {
                 responses: { 201: { description: 'Membership request recorded for human review' }, 403: { description: 'Approved specialist access required' } },
             },
         },
+        '/knowledge/rooms': {
+            get: {
+                summary: 'List reviewed public Decision Rooms',
+                description: 'Returns consented and human-approved rooms with their decision question, evidence counts, unresolved work, specialist participation and documented outcomes.',
+                responses: { 200: { description: 'Reviewed public Decision Rooms' } },
+            },
+            post: {
+                summary: 'Open an Enterprise Decision Room',
+                description: 'Requires enabled Enterprise access. Private rooms remain private; consented-public rooms remain pending until editorial approval.',
+                responses: { 201: { description: 'Private room opened or public room submitted for review' }, 403: { description: 'Enabled Enterprise access required' } },
+            },
+        },
+        '/knowledge/transitions': {
+            get: {
+                summary: 'List reviewed public community transition programmes',
+                description: 'Returns only steward-approved, published transition records with observed invitation, activation and contribution counts.',
+                responses: { 200: { description: 'Published community transitions' } },
+            },
+        },
+        '/knowledge/transitions/apply': {
+            post: {
+                summary: 'Propose a steward-led community transition',
+                description: 'Public intake requiring stewardship evidence, authority confirmation, a no-member-data pledge and contact consent. Nothing publishes automatically.',
+                responses: { 201: { description: 'Application recorded for review' }, 409: { description: 'An active application already exists' } },
+            },
+        },
+        '/knowledge/transitions/{slug}': {
+            get: {
+                summary: 'Read a published community transition record',
+                parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Public transition scope and observed progress' }, 404: { description: 'Not published or not found' } },
+            },
+        },
+        '/knowledge/transitions/invitations/{token}/activate': {
+            post: {
+                summary: 'Voluntarily activate a signed-in community member',
+                description: 'Records explicit member consent and follows the receiving BOA circle. It does not import an external identity or post history.',
+                parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Member activation recorded' }, 401: { description: 'Sign-in required' } },
+            },
+        },
+        '/knowledge/rooms/{slug}': {
+            get: {
+                summary: 'Read one reviewed public Decision Room',
+                parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Room and approved evidence ledger' }, 404: { description: 'Room is private, pending or not found' } },
+            },
+        },
+        '/knowledge/rooms/{id}/items': {
+            post: {
+                summary: 'Submit a Decision Room evidence item for review',
+                description: 'Role-scoped submission for owners, invited specialists or readers of public rooms. Source-sensitive item types require evidence links and nothing publishes automatically.',
+                parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+                responses: { 201: { description: 'Item received as pending human review' }, 403: { description: 'Role or room access does not permit this item' } },
+            },
+        },
+        '/knowledge/rooms/{id}/follow': {
+            post: {
+                summary: 'Follow or unfollow a reviewed public Decision Room',
+                parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+                responses: { 200: { description: 'Updated follow state' } },
+            },
+        },
         '/specialists': {
             get: {
                 summary: 'List approved specialists with current listing access',

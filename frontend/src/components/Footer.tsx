@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 const groups = [
   { title: 'Read', links: [['Briefing', '/feed'], ['Stories', '/posts'], ['Countries', '/countries'], ['Gallery', '/gallery']] },
   { title: 'Research', links: [['Research', '/intelligence'], ['Decision Workspace', '/dashboards/overview'], ['Saved research', '/library']] },
-  { title: 'Services', links: [['Enterprise', '/enterprise'], ['Enterprise communities', '/enterprise/communities'], ['Specialists', '/specialists'], ['Knowledge circles', '/specialists/circles'], ['Express specialist interest', '/specialists/interest'], ['Request a Specialist', '/specialists/requests/new'], ['Apply for a Pilot', '/enterprise/apply'], ['Trust Center', '/trust'], ['Consultation', '/request-consultation'], ['Events', '/events'], ['Business Travel', '/travel'], ['Contact', '/contact']] },
+  { title: 'Services', links: [['Enterprise', '/enterprise'], ['Decision rooms', '/decision-rooms'], ['Enterprise communities', '/enterprise/communities'], ['Bring an existing community', '/community-transition'], ['Specialists', '/specialists'], ['Knowledge circles', '/specialists/circles'], ['Express specialist interest', '/specialists/interest'], ['Request a Specialist', '/specialists/requests/new'], ['Apply for a Pilot', '/enterprise/apply'], ['Trust Center', '/trust'], ['Consultation', '/request-consultation'], ['Events', '/events'], ['Business Travel', '/travel'], ['Contact', '/contact']] },
   { title: 'Account', links: [['Membership', '/membership'], ['Newsletter', '/newsletter'], ['Member Access', '/member-access'], ['Sign In', '/login']] },
 ] as const;
 
@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
   const visibleGroups = language === 'pt' ? [
     { title: 'Ler', links: [['Síntese', '/feed'], ['Histórias', '/posts'], ['Países', '/countries'], ['Galeria', '/gallery']] },
     { title: 'Pesquisa', links: [['Pesquisa', '/intelligence'], ['Espaço de decisão', '/dashboards/overview'], ['Pesquisa guardada', '/library']] },
-    { title: 'Serviços', links: [['Empresas', '/enterprise'], ['Comunidades empresariais', '/enterprise/communities'], ['Especialistas', '/specialists'], ['Círculos de conhecimento', '/specialists/circles'], ['Manifestar interesse como especialista', '/specialists/interest'], ['Solicitar um especialista', '/specialists/requests/new'], ['Candidatar-se ao projecto-piloto', '/enterprise/apply'], ['Centro de confiança', '/trust'], ['Consulta', '/request-consultation'], ['Eventos', '/events'], ['Viagens de negócios', '/travel'], ['Contacto', '/contact']] },
+    { title: 'Serviços', links: [['Empresas', '/enterprise'], ['Salas de decisão', '/decision-rooms'], ['Comunidades empresariais', '/enterprise/communities'], ['Trazer uma comunidade existente', '/community-transition'], ['Especialistas', '/specialists'], ['Círculos de conhecimento', '/specialists/circles'], ['Manifestar interesse como especialista', '/specialists/interest'], ['Solicitar um especialista', '/specialists/requests/new'], ['Candidatar-se ao projecto-piloto', '/enterprise/apply'], ['Centro de confiança', '/trust'], ['Consulta', '/request-consultation'], ['Eventos', '/events'], ['Viagens de negócios', '/travel'], ['Contacto', '/contact']] },
     { title: 'Conta', links: [['Adesão', '/membership'], ['Boletim', '/newsletter'], ['Acesso de membro', '/member-access'], ['Entrar', '/login']] },
   ] as const : groups;
   return (

@@ -27,6 +27,7 @@ import { PhotoCredit } from '../../components/PhotoCredit';
 import { activeReaderLocale, formatReaderDate, formatReaderDateTime } from '../../i18n/locale';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
+import { ContextualDecisionRooms } from '@/components/decision-rooms/DecisionRoomDiscovery';
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -512,6 +513,7 @@ export const BetaCountryHub = () => {
           )}
         </motion.section>
 
+        <ContextualDecisionRooms country={countryName} />
         <ContextualKnowledgeFeed country={countryName} />
 
         {/* ── Member CTA (non-members) ───────────────────────────────────────── */}

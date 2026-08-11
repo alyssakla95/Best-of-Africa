@@ -12,6 +12,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 import { readerCountryName } from '../../i18n/pt-country-data';
 import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
+import { ContextualDecisionRooms } from '@/components/decision-rooms/DecisionRoomDiscovery';
 
 const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
 const compact = (value: number) => new Intl.NumberFormat(activeLocale(), { notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
@@ -226,6 +227,7 @@ export const BetaIntelligence = () => {
         </section>}
 
         {view === 'workspace' && <DecisionWorkspace context="market" />}
+        <ContextualDecisionRooms />
         <div className="page-section"><ContextualKnowledgeFeed /></div>
       </main>
     </div>

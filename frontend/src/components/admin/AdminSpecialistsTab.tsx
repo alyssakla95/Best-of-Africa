@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import type { AdminKnowledgeContribution, AdminKnowledgeMembership, AdminSpecialistApplication, SpecialistVerificationLevel } from '@/services/api';
+import type { AdminDecisionRoom, AdminDecisionRoomItem, AdminKnowledgeContribution, AdminKnowledgeMembership, AdminSpecialistApplication, SpecialistVerificationLevel } from '@/services/api';
+import { AdminCommunityTransitions } from './AdminCommunityTransitions';
 
 const formatList = (value: string | string[]) => {
   if (Array.isArray(value)) return value.join(', ');
@@ -45,6 +46,9 @@ export function AdminSpecialistsTab() {
   const [standingDrafts, setStandingDrafts] = useState<Record<string, StandingDraft>>({});
   const [knowledgeNotes, setKnowledgeNotes] = useState<Record<string, string>>({});
   const [membershipNotes, setMembershipNotes] = useState<Record<string, string>>({});
+  const [roomDrafts, setRoomDrafts] = useState<Record<string, { summary: string; priorities: string; notes: string }>>({});
+  const [roomItemNotes, setRoomItemNotes] = useState<Record<string, string>>({});
+  const [roomSpecialists, setRoomSpecialists] = useState<Record<string, string>>({});
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-specialists'],
     queryFn: api.getAdminSpecialists,
@@ -57,6 +61,9 @@ export function AdminSpecialistsTab() {
     queryKey: ['admin-knowledge-memberships'],
     queryFn: api.getAdminKnowledgeMemberships,
   });
+  const decisionRooms = useQuery({ queryKey: ['admin-decision-rooms'], queryFn: () => api.getAdminDecisionRooms('pending') });
+  const approvedDecisionRooms = useQuery({ queryKey: ['admin-decision-rooms', 'approved'], queryFn: () => api.getAdminDecisionRooms('approved') });
+  const decisionRoomItems = useQuery({ queryKey: ['admin-decision-room-items'], queryFn: () => api.getAdminDecisionRoomItems('pending') });
 
   const moderateKnowledge = async (item: AdminKnowledgeContribution, status: 'approved' | 'rejected') => {
     const note = knowledgeNotes[item.id]?.trim();
@@ -93,6 +100,37 @@ export function AdminSpecialistsTab() {
     } finally {
       setBusyAction('');
     }
+  };
+
+  const reviewRoom = async (room: AdminDecisionRoom, moderation_status: 'approved' | 'rejected') => {
+    const draft = roomDrafts[room.id] || { summary: room.editorial_summary, priorities: room.verification_priorities.join('\n'), notes: '' };
+    if (!draft.notes.trim() || (moderation_status === 'approved' && !draft.summary.trim())) {
+      toast.error('Record the editorial synthesis and private review reason before deciding'); return;
+    }
+    setBusyAction(`${room.id}:room:${moderation_status}`);
+    try {
+      await api.reviewDecisionRoom(room.id, { moderation_status, status: moderation_status === 'approved' ? 'evidence_review' : 'archived', editorial_summary: draft.summary.trim(), verification_priorities: draft.priorities.split('\n').map(value => value.trim()).filter(Boolean), notes: draft.notes.trim() });
+      toast.success(moderation_status === 'approved' ? 'Decision room published' : 'Decision room rejected');
+      await decisionRooms.refetch();
+    } catch (cause) { toast.error(cause instanceof Error ? cause.message : 'Room review failed'); }
+    finally { setBusyAction(''); }
+  };
+
+  const reviewRoomItem = async (item: AdminDecisionRoomItem, status: 'approved' | 'rejected') => {
+    const note = roomItemNotes[item.id]?.trim(); if (!note) { toast.error('Record an item review reason before deciding'); return; }
+    setBusyAction(`${item.id}:item:${status}`);
+    try { await api.reviewDecisionRoomItem(item.id, status, note); toast.success(status === 'approved' ? 'Evidence item published' : 'Evidence item rejected'); await decisionRoomItems.refetch(); }
+    catch (cause) { toast.error(cause instanceof Error ? cause.message : 'Evidence item review failed'); }
+    finally { setBusyAction(''); }
+  };
+
+  const inviteToRoom = async (roomId: string) => {
+    const profileId = roomSpecialists[roomId];
+    if (!profileId) { toast.error('Select an approved specialist'); return; }
+    setBusyAction(`${roomId}:invite-specialist`);
+    try { await api.inviteSpecialistToDecisionRoom(roomId, profileId); toast.success('Specialist invited to the decision room'); }
+    catch (cause) { toast.error(cause instanceof Error ? cause.message : 'Specialist invitation failed'); }
+    finally { setBusyAction(''); }
   };
 
   const issueInvite = async (targetEmail = email, interestId?: string) => {
@@ -172,6 +210,23 @@ export function AdminSpecialistsTab() {
   };
 
   return <div className="space-y-8">
+    <AdminCommunityTransitions />
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Decision-room publication</h2><p className="mt-1 text-sm text-muted-foreground">Confirm consent, remove private detail, establish the initial synthesis and publish explicit verification priorities.</p></div><Badge variant="outline">{decisionRooms.data?.data.length || 0} pending</Badge></div>
+      <div className="mt-4 grid gap-4">{decisionRooms.data?.data.map(room => { const draft=roomDrafts[room.id]||{summary:room.editorial_summary,priorities:room.verification_priorities.join('\n'),notes:''}; const update=(change:Partial<typeof draft>)=>setRoomDrafts(current=>({...current,[room.id]:{...draft,...change}})); return <Card key={room.id}><CardContent className="pt-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{room.title}</h3><p className="mt-2 font-semibold">{room.decision_question}</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{room.decision_context}</p></div><Badge variant="outline">{room.visibility}</Badge></div><div className="mt-4 flex flex-wrap gap-2">{[...room.countries,...room.sectors].map(tag=><Badge key={tag} variant="secondary">{tag}</Badge>)}</div><div className="mt-5 grid gap-4"><div><Label>Required public editorial synthesis</Label><Textarea value={draft.summary} onChange={event=>update({summary:event.target.value})} rows={4}/></div><div><Label>Verification priorities, one per line</Label><Textarea value={draft.priorities} onChange={event=>update({priorities:event.target.value})} rows={4}/></div><div><Label>Required private review record</Label><Textarea value={draft.notes} onChange={event=>update({notes:event.target.value})}/></div></div><div className="mt-4 flex gap-2"><Button disabled={Boolean(busyAction)} onClick={()=>void reviewRoom(room,'approved')}>Approve and publish room</Button><Button variant="destructive" disabled={Boolean(busyAction)} onClick={()=>void reviewRoom(room,'rejected')}>Reject</Button></div></CardContent></Card>; })}</div>
+      {!decisionRooms.isLoading && decisionRooms.data?.data.length===0&&<p className="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No public decision rooms are awaiting review.</p>}
+    </section>
+
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Decision-room evidence review</h2><p className="mt-1 text-sm text-muted-foreground">Check attribution, source support, confidence label, confidentiality and conflicts before adding anything to a room ledger.</p></div><Badge variant="outline">{decisionRoomItems.data?.data.length || 0} pending</Badge></div>
+      <div className="mt-4 grid gap-4">{decisionRoomItems.data?.data.map(item=><Card key={item.id}><CardContent className="pt-6"><div className="flex flex-wrap gap-2"><Badge>{item.item_type.replace(/_/g,' ')}</Badge><Badge variant="outline">{item.confidence.replace(/_/g,' ')}</Badge><Badge variant="secondary">{item.author_role}</Badge></div><h3 className="mt-4 text-lg font-bold">{item.title}</h3><p className="mt-1 text-sm text-muted-foreground">{item.room_title} · {item.author_display_name}</p><p className="mt-4 whitespace-pre-line text-sm leading-7">{item.body}</p>{item.source_urls.map(url=><a key={url} href={url} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm font-semibold underline">{url}</a>)}{item.conflict_disclosure&&<p className="mt-4 text-sm"><strong>Disclosure:</strong> {item.conflict_disclosure}</p>}<div className="mt-5"><Label>Required item review record</Label><Textarea value={roomItemNotes[item.id]||''} onChange={event=>setRoomItemNotes(current=>({...current,[item.id]:event.target.value}))}/></div><div className="mt-4 flex gap-2"><Button disabled={Boolean(busyAction)} onClick={()=>void reviewRoomItem(item,'approved')}>Approve evidence item</Button><Button variant="destructive" disabled={Boolean(busyAction)} onClick={()=>void reviewRoomItem(item,'rejected')}>Reject</Button></div></CardContent></Card>)}</div>
+      {!decisionRoomItems.isLoading&&decisionRoomItems.data?.data.length===0&&<p className="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No room evidence items are awaiting review.</p>}
+    </section>
+    <section>
+      <div><h2 className="font-serif text-2xl font-bold">Decision-room specialist invitations</h2><p className="mt-1 text-sm text-muted-foreground">Invite approved specialists only where their documented coverage fits the room’s countries, sectors and verification priorities.</p></div>
+      <div className="mt-4 grid gap-4">{approvedDecisionRooms.data?.data.filter(room=>!['resolved','archived'].includes(room.status)).map(room=><Card key={room.id}><CardContent className="pt-6"><h3 className="font-bold">{room.title}</h3><p className="mt-2 text-sm text-muted-foreground">{[...room.countries,...room.sectors].join(' · ')}</p><div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"><select className="min-h-11 rounded-xl border bg-white px-3" value={roomSpecialists[room.id]||''} onChange={event=>setRoomSpecialists(current=>({...current,[room.id]:event.target.value}))}><option value="">Select an approved specialist</option>{data?.applications.filter(application=>application.status==='approved'&&application.profile_id).map(application=><option key={application.profile_id!} value={application.profile_id!}>{application.contact_name} · {formatList(application.countries)} · {formatList(application.sectors)}</option>)}</select><Button disabled={Boolean(busyAction)||!roomSpecialists[room.id]} onClick={()=>void inviteToRoom(room.id)}>Send invitation</Button></div></CardContent></Card>)}</div>
+      {!approvedDecisionRooms.isLoading&&approvedDecisionRooms.data?.data.filter(room=>!['resolved','archived'].includes(room.status)).length===0&&<p className="mt-4 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No approved open decision rooms are ready for specialist invitations.</p>}
+    </section>
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Public knowledge moderation</h2><p className="mt-1 text-sm text-muted-foreground">Nothing reaches the public knowledge network until a human checks evidence, confidentiality, attribution and disclosure.</p></div><Badge variant="outline">{knowledge.data?.data.length || 0} pending</Badge></div>
       {knowledge.isLoading && <p className="mt-4 text-sm">Loading pending contributions…</p>}

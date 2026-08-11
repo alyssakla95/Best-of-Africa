@@ -376,6 +376,150 @@ export interface AdminKnowledgeMembership {
     created_at: string;
 }
 
+export type DecisionRoomStatus = 'open' | 'evidence_review' | 'resolved' | 'archived';
+export type DecisionRoomItemType = 'official_evidence' | 'boa_intelligence' | 'specialist_response' | 'field_perspective' | 'evidence_challenge' | 'contradiction' | 'unresolved_question' | 'verification_priority' | 'decision_update' | 'documented_outcome';
+export type DecisionRoomConfidence = 'documented' | 'supported_interpretation' | 'professional_experience' | 'unresolved';
+
+export interface DecisionRoom {
+    id: string;
+    slug: string;
+    title: string;
+    decision_question: string;
+    decision_context: string;
+    countries: string[];
+    sectors: string[];
+    intended_users: string[];
+    status: DecisionRoomStatus;
+    visibility: 'private' | 'consented_public';
+    editorial_summary: string;
+    verification_priorities: string[];
+    next_review_at: string;
+    decision_deadline: string;
+    group_slug: string;
+    group_name: string;
+    evidence_count: number;
+    specialist_count: number;
+    unresolved_count: number;
+    outcome_count: number;
+    follower_count: number;
+    published_at: string;
+    updated_at: string;
+}
+
+export interface DecisionRoomItem {
+    id: string;
+    room_id: string;
+    parent_id: string;
+    author_display_name: string;
+    author_role: 'reader' | 'specialist' | 'enterprise' | 'editorial';
+    item_type: DecisionRoomItemType;
+    title: string;
+    body: string;
+    source_urls: string[];
+    countries: string[];
+    sectors: string[];
+    confidence: DecisionRoomConfidence;
+    conflict_disclosure: string;
+    published_at: string;
+    created_at: string;
+}
+
+export interface DecisionRoomInput {
+    title: string;
+    decision_question: string;
+    decision_context: string;
+    countries: string[];
+    sectors: string[];
+    intended_users: string[];
+    visibility: 'private' | 'consented_public';
+    originating_request_id?: string;
+    knowledge_group_slug?: string;
+    decision_deadline?: string;
+    no_sensitive_data_confirmed: true;
+    public_consent_confirmed: boolean;
+}
+
+export interface DecisionRoomItemInput {
+    parent_id?: string;
+    item_type: DecisionRoomItemType;
+    title: string;
+    body: string;
+    source_urls: string[];
+    countries: string[];
+    sectors: string[];
+    confidence: DecisionRoomConfidence;
+    conflict_disclosure: string;
+    no_sensitive_data_confirmed: true;
+}
+
+export interface AdminDecisionRoom extends DecisionRoom {
+    moderation_status: 'pending' | 'approved' | 'rejected';
+    moderation_notes: string;
+    owner_client_id: string;
+}
+
+export interface AdminDecisionRoomItem extends DecisionRoomItem {
+    room_slug: string;
+    room_title: string;
+    moderation_status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+}
+
+export type CommunityPlatform = 'reddit' | 'linkedin' | 'facebook' | 'whatsapp' | 'discord' | 'telegram' | 'slack' | 'forum' | 'association' | 'other';
+export type CommunityMemberRange = 'under_100' | '100_499' | '500_1999' | '2000_9999' | '10000_plus' | 'not_public';
+
+export interface CommunityTransition {
+    id: string;
+    slug: string;
+    community_name: string;
+    source_platform: CommunityPlatform;
+    external_url: string;
+    public_summary: string;
+    steward_display_name: string;
+    member_range: CommunityMemberRange;
+    countries: string[];
+    sectors: string[];
+    languages: string[];
+    status: 'planning' | 'open' | 'paused' | 'completed';
+    group_slug: string;
+    group_name: string;
+    transition_started_at: string;
+    target_review_at: string;
+    invitation_visits: number;
+    activated_members: number;
+    active_contributors: number;
+    published_at: string;
+    updated_at: string;
+}
+
+export interface CommunityTransitionApplicationInput {
+    contact_name: string;
+    work_email: string;
+    organization: string;
+    community_name: string;
+    source_platform: CommunityPlatform;
+    community_url: string;
+    steward_role: string;
+    stewardship_evidence: string;
+    member_range: CommunityMemberRange;
+    countries: string[];
+    sectors: string[];
+    languages: string[];
+    transition_goals: string;
+    proposed_boundary: string;
+    authority_confirmed: true;
+    no_member_data_confirmed: true;
+    consent_confirmed: true;
+}
+
+export interface AdminCommunityTransitionApplication extends CommunityTransitionApplicationInput {
+    id: string;
+    status: 'pending' | 'reviewing' | 'approved' | 'rejected' | 'withdrawn';
+    review_notes: string;
+    program_id: string;
+    program_slug: string;
+    created_at: string;
+}
+
 export interface SpecialistApplicationInput {
     token: string;
     password: string;
@@ -1290,6 +1434,52 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
     }),
+    getCommunityTransitions: () =>
+        request<{ data: CommunityTransition[] }>('/knowledge/transitions'),
+    getCommunityTransition: (slug: string) =>
+        request<{ transition: CommunityTransition }>(`/knowledge/transitions/${encodeURIComponent(slug)}`),
+    applyForCommunityTransition: (data: CommunityTransitionApplicationInput) =>
+        request<{ id: string; status: 'pending'; message: string }>('/knowledge/transitions/apply', { method: 'POST', body: JSON.stringify(data) }),
+    recordCommunityInvitationVisit: (token: string) =>
+        request<{ recorded: true; transition_slug: string }>(`/knowledge/transitions/invitations/${encodeURIComponent(token)}/click`, { method: 'POST' }),
+    activateCommunityInvitation: (token: string) =>
+        request<{ activated: true; transition_slug: string }>(`/knowledge/transitions/invitations/${encodeURIComponent(token)}/activate`, { method: 'POST', body: JSON.stringify({ consent_confirmed: true }) }),
+    getAdminCommunityTransitionApplications: (status = 'pending') =>
+        request<{ data: AdminCommunityTransitionApplication[] }>(`/knowledge/admin/transition-applications?status=${encodeURIComponent(status)}`),
+    reviewCommunityTransitionApplication: (id: string, data: { status: 'reviewing' | 'approved' | 'rejected'; notes: string; knowledge_group_id?: string; public_summary?: string; steward_display_name?: string; target_review_at?: string }) =>
+        request<{ id: string; slug?: string; invitation_token?: string; status: string }>(`/knowledge/admin/transition-applications/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getAdminCommunityTransitions: () =>
+        request<{ data: CommunityTransition[]; invitations: { id: string; program_id: string; token: string; label: string; channel: string; is_active: number; expires_at: string; click_count: number; last_clicked_at: string }[] }>('/knowledge/admin/transitions'),
+    createCommunityTransitionInvitation: (programId: string, data: { label: string; channel: string; expires_at?: string }) =>
+        request<{ id: string; token: string; status: 'active' }>(`/knowledge/admin/transitions/${programId}/invitations`, { method: 'POST', body: JSON.stringify(data) }),
+    getDecisionRooms: (filters: Record<string, string> = {}) =>
+        request<{ data: DecisionRoom[] }>(`/knowledge/rooms?${new URLSearchParams(filters)}`),
+    getDecisionRoom: (slug: string) =>
+        request<{ room: DecisionRoom; items: DecisionRoomItem[] }>(`/knowledge/rooms/${encodeURIComponent(slug)}`),
+    getPrivateDecisionRoom: (id: string) =>
+        request<{ room: DecisionRoom & { moderation_status: string; moderation_notes: string }; items: DecisionRoomItem[] }>(`/knowledge/rooms/private/${encodeURIComponent(id)}`),
+    getMyDecisionRooms: () =>
+        request<{ data: (DecisionRoom & { moderation_status: 'pending' | 'approved' | 'rejected'; moderation_notes: string })[] }>('/knowledge/rooms/mine'),
+    createDecisionRoom: (data: DecisionRoomInput) =>
+        request<{ id: string; slug: string; status: DecisionRoomStatus; moderation_status: string }>('/knowledge/rooms', { method: 'POST', body: JSON.stringify(data) }),
+    submitDecisionRoomItem: (roomId: string, data: DecisionRoomItemInput) =>
+        request<{ id: string; moderation_status: 'pending'; message: string }>(`/knowledge/rooms/${roomId}/items`, { method: 'POST', body: JSON.stringify(data) }),
+    toggleDecisionRoomFollow: (roomId: string) =>
+        request<{ following: boolean }>(`/knowledge/rooms/${roomId}/follow`, { method: 'POST' }),
+    getDecisionRoomInvitations: () =>
+        request<{ data: (DecisionRoom & { invitation_status: 'invited' | 'accepted' })[] }>('/knowledge/rooms/invitations/me'),
+    respondToDecisionRoomInvitation: (roomId: string, status: 'accepted' | 'declined') =>
+        request<{ status: string }>(`/knowledge/rooms/invitations/${roomId}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    getAdminDecisionRooms: (moderation = 'pending') =>
+        request<{ data: AdminDecisionRoom[] }>(`/knowledge/admin/rooms?moderation=${encodeURIComponent(moderation)}`),
+    reviewDecisionRoom: (id: string, data: { moderation_status: 'approved' | 'rejected'; status: DecisionRoomStatus; editorial_summary: string; verification_priorities: string[]; next_review_at?: string; notes: string }) =>
+        request<{ id: string; moderation_status: string; status: string }>(`/knowledge/admin/rooms/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getAdminDecisionRoomItems: (status = 'pending') =>
+        request<{ data: AdminDecisionRoomItem[] }>(`/knowledge/admin/room-items?status=${encodeURIComponent(status)}`),
+    reviewDecisionRoomItem: (id: string, status: 'approved' | 'rejected', notes: string) =>
+        request<{ id: string; status: string }>(`/knowledge/admin/room-items/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes }) }),
+    inviteSpecialistToDecisionRoom: (roomId: string, specialistProfileId: string) =>
+        request<{ status: 'invited' }>(`/knowledge/admin/rooms/${roomId}/invitations`, { method: 'POST', body: JSON.stringify({ specialist_profile_id: specialistProfileId }) }),
     redeemSpecialistInvite: (data: SpecialistApplicationInput) =>
         request<{ success: true; application_id: string; token: string }>('/specialists/join', {
             method: 'POST',

@@ -18,7 +18,9 @@ const unwrap = (expression) => {
   return current;
 };
 const collectCatalogue = (node) => {
-  if (ts.isVariableDeclaration(node) && node.name.getText(portugueseSource) === 'PORTUGUESE_INTERFACE_PHRASES' && node.initializer) {
+  if (ts.isVariableDeclaration(node)
+    && ['PORTUGUESE_INTERFACE_PHRASES', 'PORTUGUESE_INTERFACE_FRAGMENTS'].includes(node.name.getText(portugueseSource))
+    && node.initializer) {
     const initializer = unwrap(node.initializer);
     if (ts.isObjectLiteralExpression(initializer)) {
       for (const property of initializer.properties) {
@@ -33,6 +35,8 @@ const collectCatalogue = (node) => {
 collectCatalogue(portugueseSource);
 
 const hasDynamicPortugueseTranslation = (value) => [
+  /^.+ is establishing a steward-led BOA presence connected to reviewed African evidence, specialist interpretation and voluntary member participation\.$/i,
+  /^.+ Community Transition$/i,
   /^Audit complete: \d+ records checked and \d+ refresh tasks created\.$/i,
   /^.+ as reported by the named official provider\.$/i,
   /^Section \d+$/i,
@@ -75,7 +79,7 @@ const walk = (directory) => {
 walk(sourceRoot);
 
 const englishMarkers = /\b(?:the|and|for|with|from|your|this|that|what|how|which|use|source|market|country|countries|read|view|loading|available|official|report|story|stories|member|search|save|open|evidence|performance|page|access|submit|register|settings|privacy|terms|contact|business|investment|trade|updated|current|failed|error|next|previous|learn|explore|support|apply|select|required|optional|prepared|change|higher|lower|growth|coverage|account|service|definition|value|unit|comparison|timing|boundary|section|observation|projection|freshness|review|reporting)\b/i;
-const ignored = /^(?:[A-Z0-9_./:@-]+|https?:|mailto:|tel:|[a-z]+(?:-[a-z0-9:[\]/.]+)+)$/i;
+const ignored = /^(?:#[a-z0-9_-]+|[A-Z0-9_./:@-]+|https?:|mailto:|tel:|[a-z]+(?:-[a-z0-9:[\]/.]+)+)$/i;
 const results = [];
 
 const record = (file, source, node, raw) => {

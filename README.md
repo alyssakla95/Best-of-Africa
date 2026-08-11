@@ -1,6 +1,6 @@
 # BOA-Story
 
-BOA-Story is a deployed African reporting, research, and market-intelligence platform for readers, Enterprise decision teams, and screened specialists. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, search, personalization, member services, a structured Enterprise pilot, an invite-only specialist marketplace, and a moderated public knowledge network in one responsive application.
+BOA-Story is a deployed African reporting, research, and market-intelligence platform for readers, Enterprise decision teams, and screened specialists. It combines source-attributed articles, country research, official economic indicators, sector-performance analysis, a continental dashboard, narrated briefings, multilingual reading, search, personalization, member services, a structured Enterprise pilot, an invite-only specialist marketplace, a moderated public knowledge network, traceable Decision Rooms, and a consent-led transition programme for established external communities in one responsive application.
 
 The product is organized around three explicit journeys:
 
@@ -95,7 +95,7 @@ The three standing levels are not customer ratings:
 
 BOA should add transaction commissions, managed payments, reviews, or deeper engagement tooling only after observed evidence shows recurring Enterprise requests and repeatable specialist engagements. None of those future capabilities is represented as current functionality.
 
-For a new deployment, apply migrations `0065_specialist_marketplace.sql` through `0068_founding_specialist_network.sql`. Migration `0069_verified_country_resources.sql` adds the evidence-bearing country-resource registry used by the reader product; `0070_knowledge_network.sql` adds moderated groups, memberships, contributions, reactions, and follows. Enable the directory/authenticated marketplace flag only after validating invitation, screening, waiver, verification, listing, matching, proposal, contribution-moderation, and membership-review controls. Stripe testing is required only before activating paid listing arrangements. `wrangler.alyssa.toml` currently enables the marketplace; `wrangler.toml` and `wrangler.portable.toml.example` keep it disabled. Interest records are retained for no more than 24 months and are removed by bounded scheduled cleanup.
+For a new deployment, apply migrations `0065_specialist_marketplace.sql` through `0068_founding_specialist_network.sql`. Migration `0069_verified_country_resources.sql` adds the evidence-bearing country-resource registry used by the reader product; `0070_knowledge_network.sql` adds moderated groups, memberships, contributions, reactions, and follows; `0071_decision_rooms.sql` adds private and consented-public Decision Rooms, evidence ledgers, participants, invitations, and follows; `0072_community_transition_program.sql` adds steward applications, reviewed transition records, invitation links and voluntary activations. Enable the directory/authenticated marketplace flag only after validating invitation, screening, waiver, verification, listing, matching, proposal, contribution moderation, membership review, room consent, private access, evidence-item moderation, community stewardship and transition-consent controls. Stripe testing is required only before activating paid listing arrangements. `wrangler.alyssa.toml` currently enables the marketplace; `wrangler.toml` and `wrangler.portable.toml.example` keep it disabled. Interest records are retained for no more than 24 months and are removed by bounded scheduled cleanup.
 
 ### Evidence boundary
 
@@ -194,6 +194,8 @@ The live status endpoints remain authoritative:
 | Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/enterprise/access`, `/trust` | Offer and application are public; password access is private; qualification records and private notes are administrator only |
 | Specialist marketplace | `/specialists`, `/specialists/interest`, `/specialists/:slug`, `/specialists/join/:token`, `/specialists/sign-in`, `/specialists/dashboard`, `/specialists/requests`, `/specialists/requests/new`, `/specialists/requests/:id` | Interest registration is public and creates no account; public profiles require approval plus a waiver or active subscription; applications require an invitation; dashboards require verified specialist identity; requests require Enterprise tier plus a live administrator access grant |
 | Public knowledge network | `/enterprise/communities`, `/specialists/circles`, plus contextual feeds on reader and intelligence surfaces | Reading is public; submitting, reacting and following require authentication; all contributions and responses require human moderation; specialist circle standing requires separate evidence review |
+| Decision Rooms | `/decision-rooms`, `/decision-rooms/:slug`, `/enterprise/decision-rooms`, `/enterprise/decision-rooms/:id` | Approved, explicitly consented rooms are public; creating and managing rooms requires Enterprise access; private rooms are restricted to their owner and accepted specialists; every ledger contribution requires human review |
+| Community transition | `/community-transition`, `/community-transition/:slug` | Applications are public but private; a transition becomes visible only after stewardship, consent, scope and receiving-circle review; membership is voluntary and no external member list or post archive is imported |
 | Administration | `/admin` | Requires `ADMIN_API_KEY`; reader and client sessions do not grant administrator access |
 | Legal and support | `/privacy`, `/terms`, `/contact` | Public |
 | Seasonal archive | `/world-cup` | Route and data contract remain in code; global World Cup promotion is currently disabled |
@@ -258,6 +260,8 @@ Prepared text is never published merely because preparation succeeded. Audit, re
 | Commercial reporting | `/campaigns` and sponsor-scoped analytics |
 | Specialist marketplace | `/specialists` directory, invitation redemption, dashboard, waiver/subscription listing access, Enterprise requests, confirmed matches, proposals, and the exact signed Stripe webhook |
 | Moderated knowledge network | `/knowledge` groups, public approved contributions, reviewed responses, follows, useful reactions, specialist membership requests, and administrator moderation |
+| Decision Rooms | `/knowledge/rooms` public discovery and detail, Enterprise room creation and private workspaces, specialist invitations, moderated evidence-ledger contributions, follows, and administrator publication controls |
+| Community transition | `/knowledge/transitions` reviewed public records, consented steward applications, invitation-visit measurement, signed-in voluntary activation, receiving-circle follows and administrator controls |
 | Administration | `/admin`, `/audit`, protected client/source/editorial and pilot-inbox operations |
 | Autonomous processing | `/agent`, `/agent/providers`, provider OAuth/bootstrap routes, `/self-improve` |
 | Operations | `/health`, `/health/live`, `/health/ready`, `/health/deep`, `/status`, `/config`, `/docs` |
@@ -406,7 +410,7 @@ Apply migrations to the local D1 database:
 npm run db:migrate
 ```
 
-That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0070_knowledge_network.sql`.
+That convenience script targets the default local database name `best-of-africa-db`. Alyssa and portable deployments use different generated or account-specific names and configurations; apply migrations with the matching `--config` and `--remote` options rather than reusing the local shortcut. The ordered migration set currently extends through `0072_community_transition_program.sql`.
 
 For local Worker secrets and overrides, create `.dev.vars` and do not commit it. A practical development configuration is:
 

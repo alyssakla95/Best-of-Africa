@@ -309,6 +309,11 @@ const lifecycleIndex = (dashboard: SpecialistDashboard) => {
 export function SpecialistDashboardPage() {
   const [params] = useSearchParams();
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['specialist-dashboard'], queryFn: api.getSpecialistDashboard, staleTime: 0 });
+  const roomInvitations = useQuery({ queryKey: ['decision-room-invitations'], queryFn: api.getDecisionRoomInvitations, staleTime: 0 });
+  const respondToRoom = useMutation({
+    mutationFn: ({ roomId, status }: { roomId: string; status: 'accepted' | 'declined' }) => api.respondToDecisionRoomInvitation(roomId, status),
+    onSuccess: () => roomInvitations.refetch(),
+  });
   const [billingError, setBillingError] = useState('');
   const [billingBusy, setBillingBusy] = useState(false);
   const navigateBilling = async () => {
@@ -336,6 +341,12 @@ export function SpecialistDashboardPage() {
       <Card><CardHeader><CardTitle>Confirmed opportunities</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">{data.matches.length}</p><p className="mt-2 text-sm text-muted-foreground">Only administrator-confirmed matches appear here.</p></CardContent></Card>
     </div>
     {data.profile && <ProfileEditor profile={data.profile} onSaved={() => void refetch()} />}
+    <section className="mt-10"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-serif text-2xl font-bold">Decision-room invitations</h2><p className="mt-1 text-sm text-muted-foreground">Accept only rooms where your documented country, sector or professional experience is relevant.</p></div><Badge variant="outline">{roomInvitations.data?.data.filter(room => room.invitation_status === 'invited').length || 0} pending</Badge></div>
+      {roomInvitations.isLoading && <p className="mt-4 text-sm">Loading room invitations…</p>}
+      {roomInvitations.error && <ErrorMessage message={roomInvitations.error instanceof Error ? roomInvitations.error.message : 'Decision-room invitations could not load.'} />}
+      <div className="mt-4 grid gap-4">{roomInvitations.data?.data.map(room => <Card key={room.id}><CardContent className="pt-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{room.title}</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{room.decision_question}</p><p className="mt-2 text-xs text-muted-foreground">{[...room.countries, ...room.sectors].join(' · ')}</p></div><Badge variant="outline">{pretty(room.invitation_status)}</Badge></div>{room.invitation_status === 'invited' && <div className="mt-5 flex gap-2"><Button disabled={respondToRoom.isPending} onClick={() => respondToRoom.mutate({roomId:room.id,status:'accepted'})}>Accept room</Button><Button variant="outline" disabled={respondToRoom.isPending} onClick={() => respondToRoom.mutate({roomId:room.id,status:'declined'})}>Decline</Button></div>}{room.invitation_status === 'accepted' && <Button asChild className="mt-5" variant="outline"><Link to={room.visibility === 'consented_public' ? `/decision-rooms/${room.slug}` : `/enterprise/decision-rooms/${room.id}`}>Open room</Link></Button>}</CardContent></Card>)}</div>
+      {!roomInvitations.isLoading && roomInvitations.data?.data.length === 0 && <p className="mt-4 rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No decision-room invitations yet.</p>}
+    </section>
     <section className="mt-10"><h2 className="font-serif text-2xl font-bold">Confirmed opportunities</h2>
       {data.matches.length === 0 ? <div className="mt-4 rounded-2xl border border-dashed p-7"><h3 className="font-bold">No confirmed opportunities yet</h3><p className="mt-2 text-sm text-muted-foreground">Matches are reviewed before sharing. Keep your profile current; there is nothing you need to submit until an opportunity appears here.</p></div> : <div className="mt-4 space-y-4">{data.matches.map(match => <Card key={match.id}><CardContent className="pt-6"><div className="flex flex-wrap justify-between gap-3"><h3 className="font-bold">{match.title}</h3><Badge variant="outline">{pretty(match.status)}</Badge></div><p className="mt-2">{match.decision_question}</p><p className="mt-3 text-sm text-muted-foreground">{match.sector} · {displayList(match.countries)} · deadline {match.decision_deadline || 'not specified'}</p>{match.status === 'invited' ? <ProposalComposer matchId={match.id} /> : match.status === 'proposal_submitted' ? <p role="status" className="mt-5 rounded-xl bg-muted p-4 text-sm">Proposal submitted. The Enterprise requester can now review it. You will see any lifecycle change after refreshing this workspace.</p> : <p className="mt-4 text-sm text-muted-foreground">This opportunity is {pretty(match.status).toLowerCase()} and no proposal action is available.</p>}</CardContent></Card>)}</div>}
     </section>

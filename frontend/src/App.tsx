@@ -46,8 +46,6 @@ const BetaLibrary     = lazyWithRetry(() => import('./pages/beta/BetaLibrary').t
 const BetaArticle     = lazyWithRetry(() => import('./pages/beta/BetaArticle').then(m => ({ default: m.BetaArticle })));
 const BetaCountryTeaser = lazyWithRetry(() => import('./pages/beta/BetaCountryTeaser').then(m => ({ default: m.BetaCountryTeaser })));
 const BetaCountryHub  = lazyWithRetry(() => import('./pages/beta/BetaCountryHub').then(m => ({ default: m.BetaCountryHub })));
-const BetaMarketIntel = lazyWithRetry(() => import('./pages/beta/BetaMarketIntel').then(m => ({ default: m.BetaMarketIntel })));
-const BetaGallery     = lazyWithRetry(() => import('./pages/beta/BetaGallery').then(m => ({ default: m.BetaGallery })));
 const BetaAbout       = lazyWithRetry(() => import('./pages/beta/BetaAbout').then(m => ({ default: m.BetaAbout })));
 const BetaNewsletter  = lazyWithRetry(() => import('./pages/beta/BetaNewsletter').then(m => ({ default: m.BetaNewsletter })));
 const BetaMemberAccess = lazyWithRetry(() => import('./pages/beta/BetaMemberAccess').then(m => ({ default: m.BetaMemberAccess })));
@@ -64,7 +62,6 @@ const BetaWorldCup    = lazyWithRetry(() => import('./pages/beta/BetaWorldCup').
 // ── Utility / Account pages ───────────────────────────────────────────────────
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const PremiumSectorTrends = lazyWithRetry(() => import('./pages/beta/PremiumSectorTrends').then(m => ({ default: m.PremiumSectorTrends })));
-const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const PrivacyPage  = lazyWithRetry(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage    = lazyWithRetry(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
@@ -155,6 +152,11 @@ const PageLoader = () => (
   </div>
 );
 
+const LegacyMemberLoginRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/member-access${search}`} replace />;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -167,10 +169,10 @@ const AnimatedRoutes = () => {
           <Route path="/"                element={<PageTransition><BetaLanding /></PageTransition>} />
           <Route path="/about"           element={<PageTransition><BetaAbout /></PageTransition>} />
           <Route path="/membership"      element={<PageTransition><BetaMembership /></PageTransition>} />
-          <Route path="/gallery"         element={<PageTransition><BetaGallery /></PageTransition>} />
+          <Route path="/gallery"         element={<Navigate to="/posts" replace />} />
           <Route path="/posts"           element={<PageTransition><BetaStories /></PageTransition>} />
           <Route path="/posts/:slug"     element={<PageTransition><BetaArticle /></PageTransition>} />
-          <Route path="/supporter-feed"  element={<PageTransition><BetaMarketIntel /></PageTransition>} />
+          <Route path="/supporter-feed"  element={<Navigate to="/intelligence" replace />} />
           <Route path="/newsletter"      element={<PageTransition><BetaNewsletter /></PageTransition>} />
           <Route path="/member-access"   element={<PageTransition><BetaMemberAccess /></PageTransition>} />
 
@@ -182,8 +184,7 @@ const AnimatedRoutes = () => {
           <Route path="/intelligence/reports" element={<PageTransition><BetaReport /></PageTransition>} />
           <Route path="/intelligence/reports/:id" element={<PageTransition><BetaReport /></PageTransition>} />
           <Route path="/intelligence/:view" element={<PageTransition><BetaIntelligence /></PageTransition>} />
-          {/* /intel is a legacy alias, canonical intelligence page is /intelligence.
-              (Supporter Feed lives at /supporter-feed.) Redirect avoids a duplicate route. */}
+          {/* /intel is a legacy alias; the canonical market page is /intelligence. */}
           <Route path="/intel" element={<Navigate to="/intelligence" replace />} />
           <Route path="/sectors/:id/trends" element={<PageTransition><PremiumSectorTrends /></PageTransition>} />
           <Route path="/dashboards/overview" element={<PageTransition><BetaContinentalOverview /></PageTransition>} />
@@ -223,7 +224,7 @@ const AnimatedRoutes = () => {
 
           {/* ── Utility pages ─────────────────────────────────────────── */}
           <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
-          <Route path="/login"    element={<PageTransition><LoginPage /></PageTransition>} />
+          <Route path="/login"    element={<LegacyMemberLoginRedirect />} />
           <Route path="/admin"    element={<PageTransition><AdminPage /></PageTransition>} />
           <Route path="/privacy"  element={<PageTransition><PrivacyPage /></PageTransition>} />
           <Route path="/terms"    element={<PageTransition><TermsPage /></PageTransition>} />

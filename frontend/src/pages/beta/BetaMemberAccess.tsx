@@ -3,11 +3,12 @@ import { Mail, ArrowRight, Lock, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BetaDashboard } from '../../components/beta';
 import { SEO } from '../../components/SEO';
-import { request } from '../../services/api';
+import { request, type ClientTier } from '../../services/api';
 import { KO_FI_URL } from '../../constants/beta';
 import { useMember } from '../../context/MemberContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export const BetaMemberAccess = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export const BetaMemberAccess = () => {
   const otpInputRef = useRef<HTMLInputElement>(null);
 
   const { isMember, memberData, login, logout, isLoading } = useMember();
+  const { login: loginAuth, logout: logoutAuth } = useAuth();
   const visiblePhase = isLoading ? 'checking' : isMember ? 'success' : phase === 'success' ? 'form' : phase;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +78,11 @@ export const BetaMemberAccess = () => {
       setIsSubmitting(false);
       if (res.ok && res.token) {
         login(res.token, { tier: res.tier, name: res.name, expires_in_days: null });
+        loginAuth(res.token, {
+          email: email.toLowerCase().trim(),
+          tier: res.tier as ClientTier,
+          name: res.name,
+        });
         setPhase('success');
         if (safeReturn) navigate(safeReturn, { replace: true });
       } else {
@@ -192,6 +199,7 @@ export const BetaMemberAccess = () => {
               memberData={memberData}
               onLogout={() => {
                 logout();
+                logoutAuth();
                 setPhase('form');
               }}
             />

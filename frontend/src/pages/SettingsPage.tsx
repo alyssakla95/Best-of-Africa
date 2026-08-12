@@ -163,7 +163,7 @@ export const SettingsPage: React.FC = () => {
                     <h1 className="mb-3 text-2xl font-serif font-bold">Sign in to access your settings</h1>
                     <p className="mb-8 text-sm text-white/60">Your account, preferences, and subscription live behind a secure login.</p>
                     <Button asChild className="bg-accent text-navy hover:bg-gold-italic font-bold uppercase tracking-widest px-8">
-                        <Link to="/login">Sign In</Link>
+                        <Link to="/member-access">Sign In</Link>
                     </Button>
                 </div>
             </div>

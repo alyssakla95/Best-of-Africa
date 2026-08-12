@@ -98,7 +98,7 @@ export const BetaSponsorDashboard: React.FC = () => {
         <p className="text-xs font-bold uppercase tracking-[.16em] text-navy/60">Partner authorization required</p>
         <h1 className="mt-3 font-serif text-4xl text-navy">Campaign records are isolated by sponsoring organization.</h1>
         <p className="mt-4 text-base leading-7 text-muted-foreground">Member preview opens subscriber editorial benefits, but it does not expose private partner campaign data. Sign in with the sponsoring organization’s authorized account to retrieve its delivery record.</p>
-        <a href="/login" className="mt-7 inline-flex min-h-12 w-fit items-center justify-center rounded-lg bg-navy px-5 text-sm font-bold text-white">Open secure sign-in</a>
+        <a href="/member-access" className="mt-7 inline-flex min-h-12 w-fit items-center justify-center rounded-lg bg-navy px-5 text-sm font-bold text-white">Open secure sign-in</a>
       </div>
       </>
     );

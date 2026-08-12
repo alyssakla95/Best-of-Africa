@@ -182,15 +182,15 @@ The live status endpoints remain authoritative:
 
 | Surface | Routes | Current boundary |
 | --- | --- | --- |
-| Editorial home and archive | `/`, `/about`, `/posts`, `/posts/:slug`, `/gallery` | Public; article truncation is disabled during stakeholder review |
-| Membership and access | `/membership`, `/member-access`, `/login`, `/settings` | Pricing is public; OTP login requires configured email; account changes require a valid session |
+| Editorial home and archive | `/`, `/about`, `/posts`, `/posts/:slug` | Public; article truncation is disabled during stakeholder review; the former `/gallery` surface resolves to Stories |
+| Membership and access | `/membership`, `/member-access`, `/settings` | `/member-access` is the canonical Reader Member account and OTP entry; the former `/login` URL preserves its query string and resolves there |
 | Briefing and workspace | `/feed`, `/library` | Read-only member views are open in preview; persisted reader state remains session scoped |
 | Country research | `/countries`, `/countries/:code`, `/countries/:code/narratives` | Public in preview; some generated enrichments are returned only when available |
 | Intelligence and reports | `/intelligence`, `/intelligence/reports`, `/intelligence/reports/:id`, `/sectors/:id/trends`, `/dashboards/overview` | Public read-only views; protected or cost-incurring generation remains authenticated |
 | Search and analyst assistance | `/search` and the member chat widget | Retrieval is public within rate limits; analyst actions are rate limited and the widget follows member-preview state |
 | Events, travel and consultation | `/events`, `/travel`, `/request-consultation` | Browsing and intake are public; registration writes are validated and session/origin protected where required |
 | Reader communications | `/newsletter`, notification controls | Subscription records can be created; outbound email is unavailable without a verified sender |
-| Supporter and sponsor reporting | `/supporter-feed`, `/sponsor/dashboard` | Supporter transparency follows preview membership; campaign records require partner authorization |
+| Sponsor reporting | `/sponsor/dashboard` | Campaign records require partner authorization; the former `/supporter-feed` surface resolves to Market Intelligence |
 | Enterprise workflow | `/enterprise`, `/enterprise/apply`, `/enterprise/access`, `/trust` | Offer and application are public; password access is private; qualification records and private notes are administrator only |
 | Specialist marketplace | `/specialists`, `/specialists/interest`, `/specialists/:slug`, `/specialists/join/:token`, `/specialists/sign-in`, `/specialists/dashboard`, `/specialists/requests`, `/specialists/requests/new`, `/specialists/requests/:id` | Interest registration is public and creates no account; public profiles require approval plus a waiver or active subscription; applications require an invitation; dashboards require verified specialist identity; requests require Enterprise tier plus a live administrator access grant |
 | Public knowledge network | `/enterprise/communities`, `/specialists/circles`, plus contextual feeds on reader and intelligence surfaces | Reading is public; submitting, reacting and following require authentication; all contributions and responses require human moderation; specialist circle standing requires separate evidence review |

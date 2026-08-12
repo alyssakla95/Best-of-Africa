@@ -1,20 +1,25 @@
-import { BookOpen, Map, Menu, Newspaper, Search } from 'lucide-react';
+import { Building2, ChartNoAxesCombined, Menu, Newspaper, UsersRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import { journeyForPath, journeysForAudience, type JourneyId } from '@/lib/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export const OPEN_MOBILE_MENU_EVENT = 'boa:open-mobile-menu';
 
 export function MobileNavigationDock() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const currentJourney = journeyForPath(pathname);
 
-  const destinations = [
-    { href: '/feed', label: t('nav.briefing_short', 'Briefing'), Icon: Newspaper, active: pathname.startsWith('/feed') },
-    { href: '/posts', label: t('nav.stories', 'Stories'), Icon: BookOpen, active: pathname.startsWith('/posts') },
-    { href: '/countries', label: t('nav.countries', 'Countries'), Icon: Map, active: pathname.startsWith('/countries') },
-    { href: '/search', label: t('nav.search', 'Search'), Icon: Search, active: pathname.startsWith('/search') },
-  ];
+  const icons = { read: Newspaper, markets: ChartNoAxesCombined, network: UsersRound, enterprise: Building2 } satisfies Record<JourneyId, typeof Newspaper>;
+  const destinations = journeysForAudience(user?.tier).map(journey => ({
+    href: journey.href,
+    label: journey.mobileLabel,
+    Icon: icons[journey.id],
+    active: pathname !== '/' && currentJourney.id === journey.id,
+  }));
 
   return (
     <nav
@@ -43,7 +48,7 @@ export function MobileNavigationDock() {
           aria-label={t('nav.open_menu', 'Open complete menu')}
         >
           <Menu size={20} strokeWidth={1.9} aria-hidden="true" />
-          <span>{t('nav.menu', 'Menu')}</span>
+          <span>{t('nav.menu', 'More')}</span>
         </button>
       </div>
     </nav>

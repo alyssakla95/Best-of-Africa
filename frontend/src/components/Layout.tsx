@@ -9,6 +9,8 @@ import { MobileNavigationDock } from './MobileNavigationDock';
 import { PageReadingGuide } from './PageReadingGuide';
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { hasJourneyForPath, journeyForPath } from '../lib/navigation';
+import { trackJourneyProgress } from '../lib/navigationTelemetry';
 
 const InterfaceTranslator = React.lazy(() => import('./InterfaceTranslator').then(module => ({
     default: module.InterfaceTranslator,
@@ -35,10 +37,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
 
     useEffect(() => {
+        const path = `${location.pathname}${location.search}`;
         api.trackEvent({
             type: 'page_view',
-            path: `${location.pathname}${location.search}`,
+            path,
         });
+        if (hasJourneyForPath(location.pathname)) trackJourneyProgress(journeyForPath(location.pathname).id, path);
     }, [location.pathname, location.search]);
 
     return (

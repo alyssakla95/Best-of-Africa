@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, BookOpenCheck, Compass, Headphones, Mail, RefreshCw, RotateCcw, Users } from 'lucide-react';
+import { Activity, BookOpenCheck, Compass, GitBranch, Headphones, Mail, RefreshCw, RotateCcw, Users } from 'lucide-react';
 import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
 
@@ -28,6 +28,7 @@ export const AdminAudienceTab = () => {
 
   const data = query.data;
   const navigation = data.navigation || { total_selections_30d: 0, distinct_selectors_30d: 0, by_journey: [], destinations: [] };
+  const journeyFunnel = data.journey_funnel || [];
   const cards = [
     { Icon: Users, label: 'Monthly active readers', value: number(data.audience.monthly_active_readers), note: 'Distinct recorded sessions in 30 days' },
     { Icon: Activity, label: 'Weekly active readers', value: number(data.audience.weekly_active_readers), note: 'Distinct recorded sessions in 7 days' },
@@ -86,6 +87,27 @@ export const AdminAudienceTab = () => {
             </table>
           </div>
         ) : <p className="p-6 text-sm text-muted-foreground md:px-8">Journey selections will appear after readers use the newly instrumented navigation.</p>}
+      </section>
+
+      <section className="overflow-hidden rounded-3xl border border-border bg-white">
+        <div className="border-b border-border p-6 md:p-8">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"><GitBranch className="h-4 w-4 text-navy" />Journey funnel evidence</p>
+          <h3 className="mt-2 font-serif text-3xl text-navy">What readers do after choosing a path</h3>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">Each row follows the same hashed session after a recorded navigation selection. Progress means a journey page opened; the final milestone is the specific observed product action shown below.</p>
+        </div>
+        {journeyFunnel.length > 0 ? <div className="grid gap-px bg-border lg:grid-cols-2">
+          {journeyFunnel.map(item => <article key={item.journey} className="bg-white p-6 md:p-7">
+            <div className="flex flex-wrap items-baseline justify-between gap-3"><h4 className="font-serif text-2xl capitalize text-navy">{item.journey}</h4><span className="text-xs font-bold text-navy">{item.milestone_rate_pct}% reached milestone</span></div>
+            <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-navy/[.04] p-3"><p className="font-serif text-2xl text-navy">{number(item.selected_sessions)}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Selected</p></div>
+              <div className="rounded-xl bg-navy/[.04] p-3"><p className="font-serif text-2xl text-navy">{number(item.progressed_sessions)}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Progressed</p></div>
+              <div className="rounded-xl bg-navy/[.04] p-3"><p className="font-serif text-2xl text-navy">{number(item.milestone_sessions)}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Milestone</p></div>
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-navy/10"><div className="h-full rounded-full bg-navy" style={{ width: `${Math.min(100, item.milestone_rate_pct)}%` }} /></div>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground"><strong className="text-navy">Milestone:</strong> {item.milestone_definition}</p>
+          </article>)}
+        </div> : <p className="p-6 text-sm text-muted-foreground md:px-8">Journey funnel measurements will appear after newly instrumented sessions select and use a path.</p>}
+        <p className="border-t border-border bg-navy/[.025] px-6 py-4 text-xs leading-5 text-muted-foreground md:px-8">A product milestone is not evidence of satisfaction, a successful decision, a completed engagement, revenue or real-world impact.</p>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">

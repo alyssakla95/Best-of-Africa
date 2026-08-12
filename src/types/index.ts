@@ -302,7 +302,7 @@ export interface ArticleFilters {
 }
 
 export interface AnalyticsEvent {
-    type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click';
+    type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click' | 'journey_progress' | 'journey_complete';
     article_id?: string;
     resource_id?: string;
     path?: string;

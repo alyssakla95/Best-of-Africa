@@ -285,6 +285,15 @@ export interface AudienceMetrics {
             distinct_sessions: number;
         }>;
     };
+    journey_funnel: Array<{
+        journey: string;
+        selected_sessions: number;
+        progressed_sessions: number;
+        milestone_sessions: number;
+        progress_rate_pct: number;
+        milestone_rate_pct: number;
+        milestone_definition: string;
+    }>;
     daily: Array<{
         date: string;
         active_readers: number;
@@ -1086,7 +1095,7 @@ export const api = {
     // page unload / route change; failures are silently ignored — analytics
     // must never affect the reading experience.
     trackEvent: (event: {
-        type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click';
+        type: 'page_view' | 'briefing_open' | 'article_read' | 'article_share' | 'audio_start' | 'audio_complete' | 'search' | 'click' | 'journey_progress' | 'journey_complete';
         article_id?: string;
         resource_id?: string;
         path?: string;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, FileText } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { api, type GeneratedReportSection } from '../../services/api';
 import { formatReaderDate } from '../../i18n/locale';
 import { useLanguage } from '../../context/LanguageContext';
 import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
+import { trackJourneyCompletion } from '../../lib/navigationTelemetry';
 
 const reportTypeLabel = (type: string, language: string) => language === 'pt' ? ({
   country_brief: 'Síntese nacional',
@@ -96,6 +98,10 @@ export const BetaReport = () => {
     staleTime: 30 * 60 * 1000,
     enabled: Boolean(id),
   });
+
+  useEffect(() => {
+    if (id && reportQuery.data?.data) trackJourneyCompletion('markets', 'structured_report_open', `/intelligence/reports/${id}`);
+  }, [id, reportQuery.data?.data]);
 
   // ── Index: every stored brief as a structured entry ────────────────────────
   if (!id) {

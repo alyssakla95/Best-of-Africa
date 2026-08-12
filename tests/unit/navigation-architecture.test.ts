@@ -62,4 +62,16 @@ describe('unified application navigation', () => {
     expect(nav).toContain("'desktop_menu'");
     expect(nav).toContain("'mobile_menu'");
   });
+
+  it('records session-linked progress and only explicit journey milestones', () => {
+    const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
+    const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');
+    const reports = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaReport.tsx'), 'utf8');
+    const network = readFileSync(join(process.cwd(), 'frontend/src/pages/KnowledgeNetworkPages.tsx'), 'utf8');
+    expect(telemetry).toContain("type: 'journey_progress'");
+    expect(telemetry).toContain("type: 'journey_complete'");
+    expect(layout).toContain('trackJourneyProgress(journeyForPath(location.pathname).id, path)');
+    expect(reports).toContain("trackJourneyCompletion('markets', 'structured_report_open'");
+    expect(network).toContain("trackJourneyCompletion('network', 'review_submission'");
+  });
 });

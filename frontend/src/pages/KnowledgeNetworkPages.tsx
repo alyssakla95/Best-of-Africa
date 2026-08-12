@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { trackJourneyCompletion } from '@/lib/navigationTelemetry';
 
 type Surface = 'enterprise' | 'specialists' | 'readers';
 
@@ -84,6 +85,7 @@ function KnowledgeComposer({ group, onSubmitted }: { group: KnowledgeGroup; onSu
       public_identity_confirmed: form.identity,
     } satisfies KnowledgeContributionInput),
     onSuccess: () => {
+      trackJourneyCompletion('network', 'review_submission', `/circles/${group.slug}`);
       setForm(current => ({ ...current, title: '', body: '', countries: '', sectors: '', sources: '', conflict: '', confirmed: false }));
       onSubmitted();
     },

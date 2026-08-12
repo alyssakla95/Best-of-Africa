@@ -16,7 +16,7 @@ import { callConfiguredAI } from '../lib/ai';
 const router = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 export const ReaderAnalyticsEventSchema = z.object({
-    type: z.enum(['page_view', 'briefing_open', 'article_read', 'article_share', 'audio_start', 'audio_complete', 'search', 'click']),
+    type: z.enum(['page_view', 'briefing_open', 'article_read', 'article_share', 'audio_start', 'audio_complete', 'search', 'click', 'journey_progress', 'journey_complete']),
     article_id: z.string().uuid().optional(),
     resource_id: z.string().trim().min(1).max(200).optional(),
     path: z.string().trim().startsWith('/').max(300).optional(),
@@ -74,7 +74,7 @@ router.post('/events/batch', validate('json', z.object({
 });
 
 router.get('/audience', requireAdmin, async (c) => {
-    const [activity, returning, trend, subscribers, saved, navigation, navigationBreakdown] = await Promise.all([
+    const [activity, returning, trend, subscribers, saved, navigation, navigationBreakdown, journeyFunnel] = await Promise.all([
         c.env.DB.prepare(`
             SELECT
                 COUNT(DISTINCT CASE WHEN created_at >= datetime('now', '-30 days') THEN session_hash END) AS monthly_active_readers,
@@ -144,6 +144,49 @@ router.get('/audience', requireAdmin, async (c) => {
             ORDER BY selections DESC, resource_id, path
             LIMIT 100
         `).all<{ resource_id: string; path: string; selections: number; distinct_sessions: number }>(),
+        c.env.DB.prepare(`
+            WITH selected AS (
+                SELECT session_hash, 'read' AS journey, MIN(created_at) AS selected_at
+                FROM reader_engagement_events
+                WHERE event_type = 'click' AND resource_id LIKE 'journey:%:read' AND created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+                UNION ALL
+                SELECT session_hash, 'markets', MIN(created_at)
+                FROM reader_engagement_events
+                WHERE event_type = 'click' AND resource_id LIKE 'journey:%:markets' AND created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+                UNION ALL
+                SELECT session_hash, 'network', MIN(created_at)
+                FROM reader_engagement_events
+                WHERE event_type = 'click' AND resource_id LIKE 'journey:%:network' AND created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+                UNION ALL
+                SELECT session_hash, 'enterprise', MIN(created_at)
+                FROM reader_engagement_events
+                WHERE event_type = 'click' AND resource_id LIKE 'journey:%:enterprise' AND created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+            )
+            SELECT s.journey, COUNT(*) AS selected_sessions,
+                SUM(CASE WHEN EXISTS (
+                    SELECT 1 FROM reader_engagement_events progress
+                    WHERE progress.session_hash = s.session_hash
+                      AND progress.event_type = 'journey_progress'
+                      AND progress.resource_id = 'journey:' || s.journey || ':page_open'
+                      AND progress.created_at >= s.selected_at
+                ) THEN 1 ELSE 0 END) AS progressed_sessions,
+                SUM(CASE WHEN EXISTS (
+                    SELECT 1 FROM reader_engagement_events milestone
+                    WHERE milestone.session_hash = s.session_hash
+                      AND milestone.created_at >= s.selected_at
+                      AND (
+                        (milestone.event_type = 'journey_complete' AND milestone.resource_id LIKE 'journey:' || s.journey || ':%')
+                        OR (s.journey = 'read' AND ((milestone.event_type = 'article_read' AND milestone.progress_pct >= 75) OR milestone.event_type = 'audio_complete'))
+                      )
+                ) THEN 1 ELSE 0 END) AS milestone_sessions
+            FROM selected s
+            GROUP BY s.journey
+            ORDER BY CASE s.journey WHEN 'read' THEN 1 WHEN 'markets' THEN 2 WHEN 'network' THEN 3 ELSE 4 END
+        `).all<{ journey: string; selected_sessions: number; progressed_sessions: number; milestone_sessions: number }>(),
     ]);
 
     const metric = (key: string) => Number(activity?.[key] || 0);
@@ -198,12 +241,33 @@ router.get('/audience', requireAdmin, async (c) => {
                 };
             }),
         },
+        journey_funnel: ['read', 'markets', 'network', 'enterprise'].map(journey => {
+            const row = (journeyFunnel.results || []).find(item => item.journey === journey);
+            const selectedSessions = Number(row?.selected_sessions || 0);
+            const progressedSessions = Number(row?.progressed_sessions || 0);
+            const milestoneSessions = Number(row?.milestone_sessions || 0);
+            return {
+                journey,
+                selected_sessions: selectedSessions,
+                progressed_sessions: progressedSessions,
+                milestone_sessions: milestoneSessions,
+                progress_rate_pct: selectedSessions ? Math.round(progressedSessions / selectedSessions * 1000) / 10 : 0,
+                milestone_rate_pct: selectedSessions ? Math.round(milestoneSessions / selectedSessions * 1000) / 10 : 0,
+                milestone_definition: {
+                    read: 'Reached at least 75% article depth or completed an audio narration.',
+                    markets: 'Opened a stored structured intelligence report.',
+                    network: 'Submitted a contribution for human review.',
+                    enterprise: 'Submitted a specialist request or created a decision room.',
+                }[journey],
+            };
+        }),
         daily: trend.results || [],
         definitions: {
             active_reader: 'Distinct hashed session with at least one recorded first-party event in the period.',
             returning_reader: 'Distinct hashed session recorded on at least two separate UTC dates in 30 days.',
             high_progress_read: 'Article read event with at least 75% maximum observed scroll depth.',
             journey_selection: 'Recorded selection of a Read, Markets, Network or Enterprise destination in BOA-Story navigation. Counts are observed interactions, not inferred intent or completed tasks.',
+            journey_funnel: 'Session-linked product activity after a recorded journey selection. A milestone records the named in-product action only; it does not establish satisfaction, commercial success, a completed decision or real-world impact.',
             audio_completion: 'Narration playback that reached the media ended event.',
             retention: 'Raw IP addresses and one-way user-agent fingerprints are retained with events for no more than 90 days.',
         },

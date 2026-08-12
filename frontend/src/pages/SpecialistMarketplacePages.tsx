@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, ExternalLink, RotateCcw, Search } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { FormErrorSummary, PageHero, SubmitButton } from '@/components/JourneyUI';
+import { trackJourneyCompletion } from '@/lib/navigationTelemetry';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -418,7 +419,10 @@ export function SpecialistRequestNewPage() {
   const [created, setCreated] = useState('');
   const mutation = useMutation({
     mutationFn: (payload: SpecialistRequestInput) => api.createSpecialistRequest(payload),
-    onSuccess: response => setCreated(response.id),
+    onSuccess: response => {
+      trackJourneyCompletion('enterprise', 'specialist_request_submitted', '/specialists/requests/new');
+      setCreated(response.id);
+    },
   });
   const submit = (event: FormEvent) => {
     event.preventDefault();

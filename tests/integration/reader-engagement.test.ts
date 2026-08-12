@@ -29,6 +29,11 @@ describe('reader engagement evidence', () => {
             resource_id: 'journey:home_gateway:markets',
             path: '/intelligence',
         }).success).toBe(true);
+        expect(ReaderAnalyticsEventSchema.safeParse({
+            type: 'journey_complete',
+            resource_id: 'journey:markets:structured_report_open',
+            path: '/intelligence/reports/report-1',
+        }).success).toBe(true);
     });
 
     it('requires a reader session before recording an event', async () => {
@@ -124,6 +129,8 @@ describe('reader engagement evidence', () => {
         expect(body.distribution.email_open_rate_pct).toBeNull();
         expect(body.navigation).toMatchObject({ total_selections_30d: 0, distinct_selectors_30d: 0 });
         expect(body.navigation.by_journey).toHaveLength(4);
+        expect(body.journey_funnel).toHaveLength(4);
+        expect(body.journey_funnel.every((item: any) => item.milestone_sessions === 0)).toBe(true);
         expect(body.definitions.retention).toContain('90 days');
     });
 
@@ -157,5 +164,31 @@ describe('reader engagement evidence', () => {
         expect(body.navigation.by_journey.find((item: any) => item.journey === 'markets')).toMatchObject({ selections: 4, distinct_sessions: 3 });
         expect(body.navigation.destinations[0]).toMatchObject({ journey: 'markets', source: 'home_gateway', path: '/intelligence' });
         expect(body.definitions.journey_selection).toContain('not inferred intent or completed tasks');
+    });
+
+    it('reports session-linked progress and named milestones without claiming outcomes', async () => {
+        const db = {
+            prepare(sql: string) {
+                return {
+                    first: vi.fn(async () => /total_selections/i.test(sql) ? {
+                        total_selections: 4, distinct_selectors: 4, markets_selections: 4, markets_selectors: 4,
+                    } : {}),
+                    all: vi.fn(async () => {
+                        if (/WITH selected AS/i.test(sql)) return { results: [{ journey: 'markets', selected_sessions: 4, progressed_sessions: 3, milestone_sessions: 2 }] };
+                        return { results: [] };
+                    }),
+                };
+            },
+        } as unknown as D1Database;
+        const response = await app.fetch(new Request('http://localhost/audience', {
+            headers: { 'X-Admin-Key': 'test-admin-key' },
+        }), createMockEnv({ DB: db }));
+        const body = await response.json() as any;
+        const markets = body.journey_funnel.find((item: any) => item.journey === 'markets');
+
+        expect(response.status).toBe(200);
+        expect(markets).toMatchObject({ selected_sessions: 4, progressed_sessions: 3, milestone_sessions: 2, progress_rate_pct: 75, milestone_rate_pct: 50 });
+        expect(markets.milestone_definition).toContain('structured intelligence report');
+        expect(body.definitions.journey_funnel).toContain('does not establish satisfaction');
     });
 });

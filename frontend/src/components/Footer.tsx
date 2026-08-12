@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { KO_FI_URL } from '../constants/beta';
 import { useLanguage } from '../context/LanguageContext';
+import { JOURNEYS } from '@/lib/navigation';
+import { trackJourneySelection } from '@/lib/navigationTelemetry';
 
 const groups = [
   { title: 'Read', links: [['Daily briefing', '/feed'], ['Stories', '/posts'], ['Events', '/events'], ['Newsletter', '/newsletter']] },
@@ -31,11 +33,11 @@ export const Footer: React.FC = () => {
             <a href={KO_FI_URL} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-11 items-center rounded-md border border-white/30 px-4 text-sm font-bold text-white transition-colors hover:bg-white hover:text-navy">{language === 'pt' ? 'Apoiar a cobertura independente' : 'Support independent reporting'}</a>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4 sm:gap-10">
-            {visibleGroups.map(group => (
+            {visibleGroups.map((group, groupIndex) => (
               <div key={group.title}>
                 <h2 className="mb-5 border-b border-white/15 pb-3 text-xs font-bold uppercase tracking-[0.14em] text-white/55">{group.title}</h2>
                 <ul className="space-y-3.5 text-sm text-white/70">
-                  {group.links.map(([label, to]) => <li key={to}><Link to={to} className="transition-colors hover:text-white">{label}</Link></li>)}
+                  {group.links.map(([label, to]) => <li key={to}><Link to={to} onClick={() => trackJourneySelection(JOURNEYS[groupIndex].id, 'footer', to)} className="transition-colors hover:text-white">{label}</Link></li>)}
                 </ul>
               </div>
             ))}

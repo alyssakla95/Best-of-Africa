@@ -61,8 +61,10 @@ describe('reader-facing presentation text', () => {
         expect(landing).toContain('Know what is shaping Africa today.');
         expect(landing).toContain('Open the Briefing');
         expect(landing).toContain('Browse Stories');
-        expect(landing).toContain('Explore Countries');
-        expect(landing).toContain('Open Research');
+        expect(landing).toContain('One platform, four clear paths');
+        expect(landing).toContain('What are you here to do?');
+        expect(landing).toContain('journeys.map');
+        expect(landing).toContain("'home_gateway'");
         expect(landing).toContain('Professional pathways');
         expect(landing).toContain('to="/enterprise"');
         expect(landing).toContain('to="/specialists"');

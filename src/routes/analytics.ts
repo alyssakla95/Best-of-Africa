@@ -74,7 +74,7 @@ router.post('/events/batch', validate('json', z.object({
 });
 
 router.get('/audience', requireAdmin, async (c) => {
-    const [activity, returning, trend, subscribers, saved] = await Promise.all([
+    const [activity, returning, trend, subscribers, saved, navigation, navigationBreakdown] = await Promise.all([
         c.env.DB.prepare(`
             SELECT
                 COUNT(DISTINCT CASE WHEN created_at >= datetime('now', '-30 days') THEN session_hash END) AS monthly_active_readers,
@@ -118,6 +118,32 @@ router.get('/audience', requireAdmin, async (c) => {
             SELECT COUNT(*) AS saves_30d, COUNT(DISTINCT session_id) AS saving_readers_30d
             FROM bookmarks WHERE created_at >= datetime('now', '-30 days')
         `).first<{ saves_30d: number; saving_readers_30d: number }>(),
+        c.env.DB.prepare(`
+            SELECT
+                COUNT(*) AS total_selections,
+                COUNT(DISTINCT session_hash) AS distinct_selectors,
+                SUM(CASE WHEN resource_id LIKE 'journey:%:read' THEN 1 ELSE 0 END) AS read_selections,
+                COUNT(DISTINCT CASE WHEN resource_id LIKE 'journey:%:read' THEN session_hash END) AS read_selectors,
+                SUM(CASE WHEN resource_id LIKE 'journey:%:markets' THEN 1 ELSE 0 END) AS markets_selections,
+                COUNT(DISTINCT CASE WHEN resource_id LIKE 'journey:%:markets' THEN session_hash END) AS markets_selectors,
+                SUM(CASE WHEN resource_id LIKE 'journey:%:network' THEN 1 ELSE 0 END) AS network_selections,
+                COUNT(DISTINCT CASE WHEN resource_id LIKE 'journey:%:network' THEN session_hash END) AS network_selectors,
+                SUM(CASE WHEN resource_id LIKE 'journey:%:enterprise' THEN 1 ELSE 0 END) AS enterprise_selections,
+                COUNT(DISTINCT CASE WHEN resource_id LIKE 'journey:%:enterprise' THEN session_hash END) AS enterprise_selectors
+            FROM reader_engagement_events
+            WHERE event_type = 'click' AND resource_id LIKE 'journey:%'
+              AND created_at >= datetime('now', '-30 days')
+        `).first<Record<string, number>>(),
+        c.env.DB.prepare(`
+            SELECT resource_id, path, COUNT(*) AS selections,
+                   COUNT(DISTINCT session_hash) AS distinct_sessions
+            FROM reader_engagement_events
+            WHERE event_type = 'click' AND resource_id LIKE 'journey:%'
+              AND created_at >= datetime('now', '-30 days')
+            GROUP BY resource_id, path
+            ORDER BY selections DESC, resource_id, path
+            LIMIT 100
+        `).all<{ resource_id: string; path: string; selections: number; distinct_sessions: number }>(),
     ]);
 
     const metric = (key: string) => Number(activity?.[key] || 0);
@@ -153,11 +179,31 @@ router.get('/audience', requireAdmin, async (c) => {
             email_open_rate_pct: null,
             email_open_rate_note: 'Not measurable until verified email delivery and open tracking are active.',
         },
+        navigation: {
+            total_selections_30d: Number(navigation?.total_selections || 0),
+            distinct_selectors_30d: Number(navigation?.distinct_selectors || 0),
+            by_journey: ['read', 'markets', 'network', 'enterprise'].map(journey => ({
+                journey,
+                selections: Number(navigation?.[`${journey}_selections`] || 0),
+                distinct_sessions: Number(navigation?.[`${journey}_selectors`] || 0),
+            })),
+            destinations: (navigationBreakdown.results || []).map(row => {
+                const [, source = 'unknown', journey = 'unknown'] = row.resource_id.split(':');
+                return {
+                    journey,
+                    source,
+                    path: row.path,
+                    selections: Number(row.selections || 0),
+                    distinct_sessions: Number(row.distinct_sessions || 0),
+                };
+            }),
+        },
         daily: trend.results || [],
         definitions: {
             active_reader: 'Distinct hashed session with at least one recorded first-party event in the period.',
             returning_reader: 'Distinct hashed session recorded on at least two separate UTC dates in 30 days.',
             high_progress_read: 'Article read event with at least 75% maximum observed scroll depth.',
+            journey_selection: 'Recorded selection of a Read, Markets, Network or Enterprise destination in BOA-Story navigation. Counts are observed interactions, not inferred intent or completed tasks.',
             audio_completion: 'Narration playback that reached the media ended event.',
             retention: 'Raw IP addresses and one-way user-agent fingerprints are retained with events for no more than 90 days.',
         },

@@ -21,6 +21,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { trackJourneySelection } from '@/lib/navigationTelemetry';
 
 export const NavBar: React.FC = () => {
     const location = useLocation();
@@ -93,7 +94,7 @@ export const NavBar: React.FC = () => {
                                         <DropdownMenuSeparator />
                                         {journey.links.map(link => (
                                             <DropdownMenuItem key={link.href} asChild className="cursor-pointer rounded-lg p-0 focus:bg-navy/5">
-                                                <Link to={link.href} className={cn('block w-full px-3 py-2.5', isNavigationPathActive(location.pathname, link.href) && 'bg-navy/[.06]')}>
+                                                <Link to={link.href} onClick={() => trackJourneySelection(journey.id, 'desktop_menu', link.href)} className={cn('block w-full px-3 py-2.5', isNavigationPathActive(location.pathname, link.href) && 'bg-navy/[.06]')}>
                                                     <span className="block text-sm font-bold text-navy">{link.label}</span>
                                                     <span className="mt-0.5 block text-xs leading-5 text-navy/55">{link.description}</span>
                                                 </Link>
@@ -148,13 +149,13 @@ export const NavBar: React.FC = () => {
                                         <div className="space-y-3">
                                             {journeys.map(journey => (
                                                 <section key={journey.id} className={cn('overflow-hidden rounded-xl border bg-white', currentJourney.id === journey.id && location.pathname !== '/' ? 'border-navy' : 'border-border')}>
-                                                    <Link to={journey.href} onClick={closeMobileMenu} className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-navy/[.03]">
+                                                    <Link to={journey.href} onClick={() => { trackJourneySelection(journey.id, 'mobile_menu', journey.href); closeMobileMenu(); }} className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-navy/[.03]">
                                                         <span><span className="block text-sm font-bold text-navy">{journey.label}</span><span className="mt-1 block text-xs leading-5 text-navy/55">{journey.description}</span></span>
                                                         <span aria-hidden="true" className="mt-0.5 text-navy">→</span>
                                                     </Link>
                                                     <div className="grid grid-cols-2 border-t border-border bg-navy/[.025]">
                                                         {journey.links.map(link => (
-                                                            <Link key={link.href} to={link.href} onClick={closeMobileMenu} className={cn('min-h-12 border-b border-r border-border px-3 py-2.5 text-xs font-bold leading-4 text-navy/70 last:border-b-0 hover:bg-white hover:text-navy', isNavigationPathActive(location.pathname, link.href) && 'bg-navy text-white hover:bg-navy hover:text-white')}>{link.label}</Link>
+                                                            <Link key={link.href} to={link.href} onClick={() => { trackJourneySelection(journey.id, 'mobile_menu', link.href); closeMobileMenu(); }} className={cn('min-h-12 border-b border-r border-border px-3 py-2.5 text-xs font-bold leading-4 text-navy/70 last:border-b-0 hover:bg-white hover:text-navy', isNavigationPathActive(location.pathname, link.href) && 'bg-navy text-white hover:bg-navy hover:text-white')}>{link.label}</Link>
                                                         ))}
                                                     </div>
                                                 </section>

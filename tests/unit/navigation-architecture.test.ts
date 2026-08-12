@@ -51,4 +51,15 @@ describe('unified application navigation', () => {
     expect(memberAccess).toContain('loginAuth(res.token');
     expect(memberAccess).toContain('logoutAuth();');
   });
+
+  it('measures journey choices across the shared navigation without blocking navigation', () => {
+    const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
+    const landing = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaLanding.tsx'), 'utf8');
+    const nav = readFileSync(join(process.cwd(), 'frontend/src/components/NavBar.tsx'), 'utf8');
+    expect(telemetry).toContain("type: 'click'");
+    expect(telemetry).toContain('resource_id: `journey:${source}:${journey}`');
+    expect(landing).toContain("'home_gateway'");
+    expect(nav).toContain("'desktop_menu'");
+    expect(nav).toContain("'mobile_menu'");
+  });
 });

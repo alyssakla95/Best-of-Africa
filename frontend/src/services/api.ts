@@ -269,6 +269,22 @@ export interface AudienceMetrics {
         email_open_rate_pct: number | null;
         email_open_rate_note: string;
     };
+    navigation: {
+        total_selections_30d: number;
+        distinct_selectors_30d: number;
+        by_journey: Array<{
+            journey: string;
+            selections: number;
+            distinct_sessions: number;
+        }>;
+        destinations: Array<{
+            journey: string;
+            source: string;
+            path: string;
+            selections: number;
+            distinct_sessions: number;
+        }>;
+    };
     daily: Array<{
         date: string;
         active_readers: number;

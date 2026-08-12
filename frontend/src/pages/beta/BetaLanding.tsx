@@ -1,4 +1,4 @@
-import { ArrowRight, Headphones, Map, Newspaper, TrendingUp } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, ChartNoAxesCombined, UsersRound } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { SEO } from '../../components/SEO';
@@ -10,6 +10,9 @@ import { heroThumb, stripMarkdown } from '@/lib/utils';
 import { hideFailedEditorialImage, sourcedEditorialImage } from '../../lib/editorialImage';
 import { PhotoCredit } from '../../components/PhotoCredit';
 import { KnowledgeNetworkSection } from '../KnowledgeNetworkPages';
+import { useAuth } from '../../context/AuthContext';
+import { journeysForAudience, type JourneyId } from '@/lib/navigation';
+import { trackJourneySelection } from '@/lib/navigationTelemetry';
 
 const StoryMeta = ({ article }: { article: ArticleListItem }) => (
   <div className="flex items-center gap-3 text-xs text-white/75">
@@ -22,6 +25,9 @@ const StoryMeta = ({ article }: { article: ArticleListItem }) => (
 );
 
 export const BetaLanding = () => {
+  const { user } = useAuth();
+  const journeys = journeysForAudience(user?.tier);
+  const journeyIcons = { read: BookOpen, markets: ChartNoAxesCombined, network: UsersRound, enterprise: Building2 } satisfies Record<JourneyId, typeof BookOpen>;
   const { data } = useQuery({
     queryKey: ['featured-articles'],
     queryFn: api.getFeaturedArticles,
@@ -93,22 +99,25 @@ export const BetaLanding = () => {
         </div>
       </section>
 
-      <section className="border-b border-border bg-white">
-        <div className="page-container grid gap-8 py-10 md:grid-cols-[1fr_auto] md:items-center md:py-12">
+      <section className="border-b border-border bg-white" aria-labelledby="journey-gateway-title">
+        <div className="page-container py-12 md:py-16">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">Go beyond the headline</p>
-            <h2 className="mt-3 font-serif text-3xl text-navy md:text-4xl">Follow the story into country context and research.</h2>
-            <p className="mt-4 text-base leading-8 text-navy/70">
-              Move from current reporting to country records and official market evidence without leaving the reader journey.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy/55">One platform, four clear paths</p>
+            <h2 id="journey-gateway-title" className="mt-3 font-serif text-3xl text-navy md:text-4xl">What are you here to do?</h2>
+            <p className="mt-4 text-base leading-8 text-navy/70">Choose a path once. Related reporting, market evidence, professional exchange and Enterprise work remain connected without competing for attention.</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 md:min-w-[22rem]">
-            <Link to="/countries" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-navy px-5 py-3 text-sm font-semibold text-white">
-              Explore Countries <ArrowRight size={16} />
-            </Link>
-            <Link to="/intelligence" className="inline-flex min-h-12 items-center justify-center rounded-md border border-navy px-5 py-3 text-sm font-semibold text-navy">
-              Open Research
-            </Link>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {journeys.map(journey => {
+              const Icon = journeyIcons[journey.id];
+              return (
+                <Link key={journey.id} to={journey.href} onClick={() => trackJourneySelection(journey.id, 'home_gateway', journey.href)} className="group flex min-h-[14rem] flex-col rounded-xl border border-border bg-white p-5 transition-colors hover:border-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2 sm:p-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-navy text-white"><Icon size={20} aria-hidden="true" /></span>
+                  <h3 className="mt-6 text-lg font-bold text-navy">{journey.label}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-6 text-navy/65">{journey.description}</p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-navy">Enter this path <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" /></span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -154,31 +163,6 @@ export const BetaLanding = () => {
               </p>
             </Link>
           ))}
-        </div>
-      </section>
-
-      <section className="border-y border-border bg-card">
-        <div className="page-container py-14 md:py-16">
-          <div className="max-w-2xl mb-10">
-            <p className="text-accent-ink text-xs font-semibold uppercase tracking-[0.1em] mb-3">The intelligence platform</p>
-            <h2 className="font-serif text-3xl md:text-4xl text-navy mb-4">From signal to continental context.</h2>
-            <p className="text-muted-foreground leading-relaxed">Move from live reporting to country intelligence and continent-wide evidence without switching products.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 border border-border rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
-            {[
-              { Icon: Headphones, title: 'Briefing', copy: 'A concise view of the developments shaping Africa now.', to: '/feed' },
-              { Icon: Newspaper, title: 'Stories', copy: 'Source-attributed reporting with the context behind the headline.', to: '/posts' },
-              { Icon: Map, title: 'Countries', copy: 'Coverage, sectors and context for all 54 nations.', to: '/countries' },
-              { Icon: TrendingUp, title: 'Research', copy: 'Comparable sector measures and official market evidence.', to: '/intelligence' },
-            ].map(({ Icon, title, copy, to }) => (
-              <Link key={title} to={to} className="group p-6 bg-card hover:bg-secondary/60 transition-colors">
-                <Icon size={20} className="text-accent-ink mb-5" />
-                <h3 className="text-base font-semibold text-navy mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-5">{copy}</p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy group-hover:text-accent-ink">Explore <ArrowRight size={14} /></span>
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 

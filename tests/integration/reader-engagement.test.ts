@@ -24,6 +24,11 @@ describe('reader engagement evidence', () => {
             type: 'article_read',
             scroll_depth: 101,
         }).success).toBe(false);
+        expect(ReaderAnalyticsEventSchema.safeParse({
+            type: 'click',
+            resource_id: 'journey:home_gateway:markets',
+            path: '/intelligence',
+        }).success).toBe(true);
     });
 
     it('requires a reader session before recording an event', async () => {
@@ -117,6 +122,40 @@ describe('reader engagement evidence', () => {
             audio_completion_rate_pct: 0,
         });
         expect(body.distribution.email_open_rate_pct).toBeNull();
+        expect(body.navigation).toMatchObject({ total_selections_30d: 0, distinct_selectors_30d: 0 });
+        expect(body.navigation.by_journey).toHaveLength(4);
         expect(body.definitions.retention).toContain('90 days');
+    });
+
+    it('reports observed journey selections without inferring completed tasks', async () => {
+        const db = {
+            prepare(sql: string) {
+                return {
+                    first: vi.fn(async () => {
+                        if (/total_selections/i.test(sql)) return {
+                            total_selections: 9, distinct_selectors: 6,
+                            read_selections: 2, read_selectors: 2,
+                            markets_selections: 4, markets_selectors: 3,
+                            network_selections: 2, network_selectors: 2,
+                            enterprise_selections: 1, enterprise_selectors: 1,
+                        };
+                        return {};
+                    }),
+                    all: vi.fn(async () => /GROUP BY resource_id, path/i.test(sql) ? ({ results: [{
+                        resource_id: 'journey:home_gateway:markets', path: '/intelligence', selections: 4, distinct_sessions: 3,
+                    }] }) : ({ results: [] })),
+                };
+            },
+        } as unknown as D1Database;
+        const response = await app.fetch(new Request('http://localhost/audience', {
+            headers: { 'X-Admin-Key': 'test-admin-key' },
+        }), createMockEnv({ DB: db }));
+        const body = await response.json() as any;
+
+        expect(response.status).toBe(200);
+        expect(body.navigation.total_selections_30d).toBe(9);
+        expect(body.navigation.by_journey.find((item: any) => item.journey === 'markets')).toMatchObject({ selections: 4, distinct_sessions: 3 });
+        expect(body.navigation.destinations[0]).toMatchObject({ journey: 'markets', source: 'home_gateway', path: '/intelligence' });
+        expect(body.definitions.journey_selection).toContain('not inferred intent or completed tasks');
     });
 });

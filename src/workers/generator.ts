@@ -18,12 +18,12 @@ export function resolveEvidenceCountry(
     sourceType: string | null | undefined,
     sourceCountry: string | null | undefined,
 ): string | null {
-    if (identifiedCountry) return identifiedCountry;
     // The World Bank connector applies an exact provider-side country filter.
-    // Preserve that first-party tag only when content classification is empty;
-    // ordinary publisher home countries remain provenance, not story evidence.
+    // That verified scope outranks probabilistic content classification, which
+    // can confuse neighbouring states or another country in a regional project.
+    // Ordinary publisher home countries remain provenance, not story evidence.
     if (sourceType === 'worldbank-api' && sourceCountry) return sourceCountry;
-    return null;
+    return identifiedCountry || null;
 }
 
 
@@ -58,7 +58,9 @@ export async function generateArticleFromQueue(
         // Claim atomically. Recovery can enqueue the same pending row again on a
         // later tick; only one consumer may spend generation capacity on it.
         const claim = await env.DB.prepare(`
-      UPDATE ingested_items SET status = 'processing' WHERE id = ? AND status = 'pending'
+      UPDATE ingested_items
+      SET status = 'processing', processing_started_at = datetime('now')
+      WHERE id = ? AND status = 'pending'
     `).bind(message.ingested_item_id).run();
         if ((claim.meta?.changes || 0) === 0) {
             console.log(`[generator] Skipping already-claimed item: ${message.ingested_item_id}`);
@@ -68,9 +70,11 @@ export async function generateArticleFromQueue(
         const itemData = item as Record<string, any>;
         const evidenceFailure = sourceEvidenceFailure(itemData.content);
         if (evidenceFailure) {
-            await env.DB.prepare(
-                "UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?"
-            ).bind(evidenceFailure, message.ingested_item_id).run();
+            await env.DB.prepare(`
+                UPDATE ingested_items
+                SET status = 'rejected', rejection_reason = ?, processing_started_at = NULL
+                WHERE id = ?
+            `).bind(evidenceFailure, message.ingested_item_id).run();
             console.warn(`[generator] ${evidenceFailure}`);
             return;
         }
@@ -115,9 +119,11 @@ export async function generateArticleFromQueue(
             tier4Total30d: Number(coverage?.tier4_30d || 0),
         });
         if (admissionFailure) {
-            await env.DB.prepare(
-                "UPDATE ingested_items SET status = 'rejected', rejection_reason = ? WHERE id = ?"
-            ).bind(admissionFailure, message.ingested_item_id).run();
+            await env.DB.prepare(`
+                UPDATE ingested_items
+                SET status = 'rejected', rejection_reason = ?, processing_started_at = NULL
+                WHERE id = ?
+            `).bind(admissionFailure, message.ingested_item_id).run();
             console.log(`[generator] ${admissionFailure}`);
             return;
         }
@@ -190,7 +196,9 @@ export async function generateArticleFromQueue(
 
         // Mark as completed
         await env.DB.prepare(`
-            UPDATE ingested_items SET status = 'completed', article_id = ? WHERE id = ?
+            UPDATE ingested_items
+            SET status = 'completed', article_id = ?, processing_started_at = NULL
+            WHERE id = ?
         `).bind(articleId, message.ingested_item_id).run();
 
         console.log(`Successfully generated article pending editorial audit: ${articleId} from item: ${message.ingested_item_id}`);
@@ -216,7 +224,7 @@ export async function generateArticleFromQueue(
 
         await env.DB.prepare(`
             UPDATE ingested_items
-            SET status = ?, rejection_reason = ?
+            SET status = ?, rejection_reason = ?, processing_started_at = NULL
             WHERE id = ?
         `).bind(
             terminal ? 'rejected' : 'pending',
@@ -289,6 +297,25 @@ export async function recoverPendingItems(env: Env, limit = 10): Promise<number>
             return 0;
         }
     } catch { /* KV unavailable — proceed */ }
+
+    // A consumer can disappear after claiming an item but before completing it.
+    // Reclaim only claims older than the same 15-minute recovery boundary; rows
+    // created before claim timestamps existed use created_at as a safe fallback.
+    const reclaimed = await env.DB.prepare(`
+        UPDATE ingested_items
+        SET status = 'pending', processing_started_at = NULL,
+            rejection_reason = COALESCE(rejection_reason, 'Recovered stale processing claim')
+        WHERE status = 'processing'
+          AND article_id IS NULL
+          AND (
+            processing_started_at < datetime('now', '-15 minutes')
+            OR (processing_started_at IS NULL AND created_at < datetime('now', '-15 minutes'))
+          )
+    `).run();
+    const reclaimedCount = Number(reclaimed.meta?.changes || 0);
+    if (reclaimedCount) {
+        console.log(`[generator] Reclaimed ${reclaimedCount} stale processing item(s).`);
+    }
 
     const stranded = await env.DB.prepare(`
         SELECT id, source_id

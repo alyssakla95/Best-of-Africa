@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { resolveEvidenceCountry } from '../../src/workers/generator';
 
 describe('generation country evidence', () => {
-    it('uses a provider-filtered country only when content classification is empty', () => {
+    it('gives exact provider-filtered evidence precedence over probabilistic classification', () => {
         expect(resolveEvidenceCountry(null, 'worldbank-api', 'GM')).toBe('GM');
-        expect(resolveEvidenceCountry('TG', 'worldbank-api', 'GM')).toBe('TG');
+        expect(resolveEvidenceCountry('TG', 'worldbank-api', 'GM')).toBe('GM');
         expect(resolveEvidenceCountry(null, 'rss', 'NG')).toBeNull();
+        expect(resolveEvidenceCountry('TG', 'rss', 'NG')).toBe('TG');
     });
 });

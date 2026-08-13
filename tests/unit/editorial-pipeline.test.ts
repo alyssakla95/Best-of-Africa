@@ -61,4 +61,18 @@ describe('generated article publication boundary', () => {
         expect(migration).toContain('idx_ingested_items_article_id');
         expect(migration).toContain('ON ingested_items(article_id)');
     });
+
+    it('timestamps generation claims and safely recovers abandoned work', () => {
+        const generator = read('src/workers/generator.ts');
+        expect(generator).toContain("SET status = 'processing', processing_started_at = datetime('now')");
+        expect(generator).toContain("processing_started_at < datetime('now', '-15 minutes')");
+        expect(generator).toContain("processing_started_at IS NULL AND created_at < datetime('now', '-15 minutes')");
+        expect(generator).toContain("Recovered stale processing claim");
+        expect(generator).toContain("processing_started_at = NULL");
+
+        const migration = read('migrations/0074_ingestion_processing_claims.sql');
+        expect(migration).toContain('ADD COLUMN processing_started_at TEXT');
+        expect(migration).toContain('idx_ingested_items_processing_claim');
+        expect(migration).toContain("WHERE status = 'processing' AND article_id IS NULL");
+    });
 });

@@ -36,6 +36,7 @@ describe('generated article publication boundary', () => {
         expect(moderation).toContain('COALESCE(a.refinement_count, 0) < ${MAX_AUTOMATED_REFINEMENTS}');
         expect(moderation).toContain('a.last_audited_at <= datetime(\'now\', \'-${STALE_MODERATION_RECOVERY_HOURS} hours\')');
         expect(moderation).toContain(`recent.published_at >= datetime('now', '-30 days')`);
+        expect(moderation).toContain(`a.country_code IS NOT NULL AND NOT EXISTS`);
         expect(moderation).toContain(`status = 'pending_audit'`);
         expect(moderation).toContain(`moderation_status IN ('pending', 'flagged', 'needs_review')`);
         expect(moderation).toContain(`moderation_notes = ?, last_audited_at = NULL`);

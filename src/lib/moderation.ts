@@ -229,7 +229,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
           )
           AND i.content IS NOT NULL
         ORDER BY
-          CASE WHEN NOT EXISTS (
+          CASE WHEN a.country_code IS NOT NULL AND NOT EXISTS (
               SELECT 1 FROM articles recent
               WHERE recent.status = 'published'
                 AND recent.country_code = a.country_code

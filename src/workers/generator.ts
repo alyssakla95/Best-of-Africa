@@ -19,11 +19,10 @@ export function resolveEvidenceCountry(
     sourceCountry: string | null | undefined,
 ): string | null {
     // Provider country lanes can include regional and cross-border material,
-    // so story-level classification must outrank feed scope. Preserve the lane
-    // only when the content classifier found no country at all.
-    if (identifiedCountry) return identifiedCountry;
-    if (sourceType === 'worldbank-api' && sourceCountry) return sourceCountry;
-    return null;
+    // so feed scope is provenance, never a substitute for story evidence.
+    void sourceType;
+    void sourceCountry;
+    return identifiedCountry || null;
 }
 
 

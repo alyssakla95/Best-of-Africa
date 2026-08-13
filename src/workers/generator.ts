@@ -18,12 +18,12 @@ export function resolveEvidenceCountry(
     sourceType: string | null | undefined,
     sourceCountry: string | null | undefined,
 ): string | null {
-    // The World Bank connector applies an exact provider-side country filter.
-    // That verified scope outranks probabilistic content classification, which
-    // can confuse neighbouring states or another country in a regional project.
-    // Ordinary publisher home countries remain provenance, not story evidence.
+    // Provider country lanes can include regional and cross-border material,
+    // so story-level classification must outrank feed scope. Preserve the lane
+    // only when the content classifier found no country at all.
+    if (identifiedCountry) return identifiedCountry;
     if (sourceType === 'worldbank-api' && sourceCountry) return sourceCountry;
-    return identifiedCountry || null;
+    return null;
 }
 
 

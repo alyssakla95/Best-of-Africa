@@ -1616,6 +1616,9 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Search saved items': 'Pesquisar elementos guardados',
   'Source image unavailable': 'Imagem da fonte indisponível',
   'Editorial generation status check failed': 'A verificação do serviço editorial falhou',
+  'The source-grounded publication and repair queue is above its operating threshold.':
+    'A fila de publicação e reparação baseada nas fontes excede o limiar operacional.',
+  'Editorial publication queue check failed': 'A verificação da fila de publicação editorial falhou',
   'Historical sector assignments are still being checked against their article evidence.':
     'As classificações sectoriais históricas ainda estão a ser verificadas face aos dados dos respectivos artigos.',
   'Sector assignment audit check failed': 'A verificação das classificações sectoriais falhou',

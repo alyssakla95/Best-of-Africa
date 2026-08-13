@@ -26,6 +26,22 @@ export interface ModerationResult {
     technicalFailure?: boolean;
 }
 
+export const MAX_AUTOMATED_REFINEMENTS = 2;
+export const STALE_MODERATION_RECOVERY_HOURS = 6;
+
+/**
+ * Failed editorial decisions are never approved by age alone. A stale record
+ * may only re-enter the source-grounded audit while a bounded rewrite remains
+ * available; exhausted records stay quarantined for human review.
+ */
+export function isRecoverableModerationState(
+    status: string,
+    refinementCount: number | null | undefined,
+): boolean {
+    return (status === 'flagged' || status === 'needs_review')
+        && Number(refinementCount || 0) < MAX_AUTOMATED_REFINEMENTS;
+}
+
 /**
  * Checks article content for factual accuracy, tone alignment, and source credibility
  */
@@ -185,6 +201,7 @@ interface PendingAuditArticle {
     ai_social_post: string | null;
     subtitle: string | null;
     refinement_count: number | null;
+    moderation_status: string;
 }
 
 /**
@@ -195,24 +212,44 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
     const rows = await env.DB.prepare(`
         SELECT a.id, a.slug, a.title, a.subtitle, a.summary, a.content, a.ai_investor_brief,
                a.source_url, a.source_title, a.country_code, a.sector_id,
-               a.hero_image_url, a.ai_social_post, a.refinement_count, s.name AS sector_name,
+               a.hero_image_url, a.ai_social_post, a.refinement_count, a.moderation_status,
+               s.name AS sector_name,
                i.content AS source_content
         FROM articles a
         LEFT JOIN sectors s ON s.id = a.sector_id
         LEFT JOIN ingested_items i ON i.article_id = a.id
         WHERE a.status = 'pending_audit'
-          AND a.moderation_status = 'pending'
-          AND a.last_audited_at IS NULL
+          AND (
+              (a.moderation_status = 'pending' AND a.last_audited_at IS NULL)
+              OR (
+                  a.moderation_status IN ('flagged', 'needs_review')
+                  AND COALESCE(a.refinement_count, 0) < ${MAX_AUTOMATED_REFINEMENTS}
+                  AND a.last_audited_at <= datetime('now', '-${STALE_MODERATION_RECOVERY_HOURS} hours')
+              )
+          )
           AND i.content IS NOT NULL
-        ORDER BY LENGTH(COALESCE(i.content, '')) DESC, a.created_at ASC
+        ORDER BY
+          CASE WHEN NOT EXISTS (
+              SELECT 1 FROM articles recent
+              WHERE recent.status = 'published'
+                AND recent.country_code = a.country_code
+                AND recent.published_at >= datetime('now', '-30 days')
+          ) THEN 0 ELSE 1 END,
+          CASE WHEN a.moderation_status = 'pending' THEN 0 ELSE 1 END,
+          COALESCE(a.last_audited_at, a.created_at) ASC,
+          LENGTH(COALESCE(i.content, '')) DESC
         LIMIT ?
     `).bind(Math.max(1, Math.min(limit, 5))).all<PendingAuditArticle>();
 
     let published = 0;
     for (const article of rows.results || []) {
-        await env.DB.prepare(
-            "UPDATE articles SET moderation_status = 'reviewing', updated_at = datetime('now') WHERE id = ? AND moderation_status = 'pending'"
-        ).bind(article.id).run();
+        const claim = await env.DB.prepare(`
+            UPDATE articles
+            SET moderation_status = 'reviewing', updated_at = datetime('now')
+            WHERE id = ? AND status = 'pending_audit'
+              AND moderation_status IN ('pending', 'flagged', 'needs_review')
+        `).bind(article.id).run();
+        if ((claim.meta?.changes || 0) === 0) continue;
 
         const moderation = await checkContentIntegrity(
             env,
@@ -245,7 +282,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
         }, moderation);
 
         if (failure) {
-            if ((article.refinement_count || 0) < 2 && article.source_content) {
+            if ((article.refinement_count || 0) < MAX_AUTOMATED_REFINEMENTS && article.source_content) {
                 try {
                     const repaired = await repairArticleFromAudit(
                         env,

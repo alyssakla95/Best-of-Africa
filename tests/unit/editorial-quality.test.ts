@@ -4,7 +4,12 @@ import {
     MIN_SOURCE_EVIDENCE_CHARS,
     sourceEvidenceFailure,
 } from '../../src/lib/editorial-quality';
-import { automaticPublicationFailure, type ModerationResult } from '../../src/lib/moderation';
+import {
+    automaticPublicationFailure,
+    isRecoverableModerationState,
+    MAX_AUTOMATED_REFINEMENTS,
+    type ModerationResult,
+} from '../../src/lib/moderation';
 
 describe('editorial publication gate', () => {
     const passing = {
@@ -74,5 +79,17 @@ describe('source evidence generation gate', () => {
 
     it('accepts a substantive ingested source record', () => {
         expect(sourceEvidenceFailure('e'.repeat(MIN_SOURCE_EVIDENCE_CHARS))).toBeNull();
+    });
+});
+
+describe('stale moderation recovery boundary', () => {
+    it.each(['flagged', 'needs_review'])('allows %s only while a rewrite remains', status => {
+        expect(isRecoverableModerationState(status, 0)).toBe(true);
+        expect(isRecoverableModerationState(status, MAX_AUTOMATED_REFINEMENTS - 1)).toBe(true);
+        expect(isRecoverableModerationState(status, MAX_AUTOMATED_REFINEMENTS)).toBe(false);
+    });
+
+    it.each(['pending', 'reviewing', 'approved'])('does not treat %s as a stale failure', status => {
+        expect(isRecoverableModerationState(status, 0)).toBe(false);
     });
 });

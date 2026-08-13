@@ -25,8 +25,25 @@ describe('generated article publication boundary', () => {
         expect(moderation).toContain('repairArticleFromAudit');
         expect(moderation).toContain('max_tokens: 4000');
         expect(moderation).toContain('maxItems: 6');
-        expect(moderation).toContain('(article.refinement_count || 0) < 2');
+        expect(moderation).toContain('(article.refinement_count || 0) < MAX_AUTOMATED_REFINEMENTS');
         expect(moderation).toContain("moderation_status = 'pending'");
         expect(moderation).toContain('last_audited_at = NULL');
+    });
+
+    it('recovers stale failed drafts without weakening or endlessly repeating the audit', () => {
+        const moderation = read('src/lib/moderation.ts');
+        expect(moderation).toContain(`a.moderation_status IN ('flagged', 'needs_review')`);
+        expect(moderation).toContain('COALESCE(a.refinement_count, 0) < ${MAX_AUTOMATED_REFINEMENTS}');
+        expect(moderation).toContain('a.last_audited_at <= datetime(\'now\', \'-${STALE_MODERATION_RECOVERY_HOURS} hours\')');
+        expect(moderation).toContain(`recent.published_at >= datetime('now', '-30 days')`);
+        expect(moderation).toContain(`status = 'pending_audit'`);
+        expect(moderation).toContain(`moderation_status IN ('pending', 'flagged', 'needs_review')`);
+    });
+
+    it('reports recoverable and exhausted editorial queues in deep health', () => {
+        const system = read('src/routes/system.ts');
+        expect(system).toContain(`name: 'editorial_publication_queue'`);
+        expect(system).toContain('recoverableCountriesWithoutRecentEvidence');
+        expect(system).toContain('exhaustedForHumanReview');
     });
 });

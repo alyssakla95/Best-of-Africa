@@ -347,6 +347,63 @@ router.get('/health/deep', async (c) => {
         });
     }
 
+    // Publication throughput is distinct from ingestion throughput. Surface
+    // drafts that can still be repaired separately from exhausted quarantine
+    // records so operators can see whether evidence is moving to readers.
+    const editorialQueueStart = Date.now();
+    try {
+        const queue = await c.env.DB.prepare(`
+            SELECT
+                SUM(CASE WHEN moderation_status = 'pending' AND last_audited_at IS NULL THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
+                          AND COALESCE(refinement_count, 0) < 2
+                          AND last_audited_at <= datetime('now', '-6 hours')
+                         THEN 1 ELSE 0 END) AS recoverable,
+                SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
+                          AND COALESCE(refinement_count, 0) >= 2
+                         THEN 1 ELSE 0 END) AS exhausted,
+                COUNT(DISTINCT CASE WHEN moderation_status IN ('flagged', 'needs_review')
+                          AND COALESCE(refinement_count, 0) < 2
+                          AND last_audited_at <= datetime('now', '-6 hours')
+                          AND NOT EXISTS (
+                              SELECT 1 FROM articles recent
+                              WHERE recent.status = 'published'
+                                AND recent.country_code = articles.country_code
+                                AND recent.published_at >= datetime('now', '-30 days')
+                          ) THEN country_code END) AS recoverable_missing_countries,
+                MIN(CASE WHEN moderation_status IN ('flagged', 'needs_review')
+                          AND COALESCE(refinement_count, 0) < 2
+                         THEN last_audited_at END) AS oldest_recoverable_audit
+            FROM articles
+            WHERE status = 'pending_audit'
+        `).first<Record<string, string | number | null>>();
+        const pending = Number(queue?.pending || 0);
+        const recoverable = Number(queue?.recoverable || 0);
+        checks.push({
+            name: 'editorial_publication_queue',
+            status: pending + recoverable <= 12 ? 'healthy' : 'degraded',
+            responseTimeMs: Date.now() - editorialQueueStart,
+            message: pending + recoverable <= 12
+                ? undefined
+                : 'The source-grounded publication and repair queue is above its operating threshold.',
+            details: {
+                pending,
+                recoverable,
+                exhaustedForHumanReview: Number(queue?.exhausted || 0),
+                recoverableCountriesWithoutRecentEvidence: Number(queue?.recoverable_missing_countries || 0),
+                oldestRecoverableAudit: queue?.oldest_recoverable_audit,
+                recoveryPolicy: 'Stale failed drafts may receive at most two source-grounded rewrites; no record is approved by age or retry count.',
+            },
+        });
+    } catch (error) {
+        checks.push({
+            name: 'editorial_publication_queue',
+            status: 'unhealthy',
+            responseTimeMs: Date.now() - editorialQueueStart,
+            message: error instanceof Error ? error.message : 'Editorial publication queue check failed',
+        });
+    }
+
     // Sector labels affect coverage ledgers and related-story navigation. Track
     // the historical re-audit explicitly so an unreviewed taxonomy cannot look
     // like finished market evidence.

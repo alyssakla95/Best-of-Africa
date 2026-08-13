@@ -38,6 +38,7 @@ describe('generated article publication boundary', () => {
         expect(moderation).toContain(`recent.published_at >= datetime('now', '-30 days')`);
         expect(moderation).toContain(`status = 'pending_audit'`);
         expect(moderation).toContain(`moderation_status IN ('pending', 'flagged', 'needs_review')`);
+        expect(moderation).toContain(`moderation_notes = ?, last_audited_at = NULL`);
     });
 
     it('reports recoverable and exhausted editorial queues in deep health', () => {

@@ -263,7 +263,8 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
             await env.DB.prepare(`
                 UPDATE articles
                 SET moderation_status = 'pending', moderation_score = ?,
-                    moderation_notes = ?, updated_at = datetime('now')
+                    moderation_notes = ?, last_audited_at = NULL,
+                    updated_at = datetime('now')
                 WHERE id = ?
             `).bind(
                 moderation.score,

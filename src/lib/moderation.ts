@@ -6,7 +6,7 @@ import {
     MIN_PUBLISHABLE_INVESTOR_BRIEF_WORDS,
     repairArticleFromAudit,
 } from './ai';
-import { editorialApprovalFailure } from './editorial-quality';
+import { editorialApprovalFailure, MIN_SOURCE_EVIDENCE_CHARS } from './editorial-quality';
 import { indexArticle } from './vectorize';
 import { onArticlePublished } from './alerts';
 import { autoPostArticle } from './social';
@@ -227,7 +227,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
                   AND a.last_audited_at <= datetime('now', '-${STALE_MODERATION_RECOVERY_HOURS} hours')
               )
           )
-          AND i.content IS NOT NULL
+          AND LENGTH(TRIM(COALESCE(i.content, ''))) >= ${MIN_SOURCE_EVIDENCE_CHARS}
         ORDER BY
           CASE WHEN a.country_code IS NOT NULL AND NOT EXISTS (
               SELECT 1 FROM articles recent

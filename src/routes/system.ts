@@ -358,6 +358,11 @@ router.get('/health/deep', async (c) => {
                 SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
                           AND COALESCE(refinement_count, 0) < 2
                           AND last_audited_at <= datetime('now', '-6 hours')
+                          AND EXISTS (
+                              SELECT 1 FROM ingested_items evidence
+                              WHERE evidence.article_id = articles.id
+                                AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+                          )
                          THEN 1 ELSE 0 END) AS recoverable,
                 SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
                           AND COALESCE(refinement_count, 0) >= 2
@@ -365,6 +370,11 @@ router.get('/health/deep', async (c) => {
                 COUNT(DISTINCT CASE WHEN moderation_status IN ('flagged', 'needs_review')
                           AND COALESCE(refinement_count, 0) < 2
                           AND last_audited_at <= datetime('now', '-6 hours')
+                          AND EXISTS (
+                              SELECT 1 FROM ingested_items evidence
+                              WHERE evidence.article_id = articles.id
+                                AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+                          )
                           AND NOT EXISTS (
                               SELECT 1 FROM articles recent
                               WHERE recent.status = 'published'
@@ -373,7 +383,19 @@ router.get('/health/deep', async (c) => {
                           ) THEN country_code END) AS recoverable_missing_countries,
                 MIN(CASE WHEN moderation_status IN ('flagged', 'needs_review')
                           AND COALESCE(refinement_count, 0) < 2
-                         THEN last_audited_at END) AS oldest_recoverable_audit
+                          AND EXISTS (
+                              SELECT 1 FROM ingested_items evidence
+                              WHERE evidence.article_id = articles.id
+                                AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+                          )
+                         THEN last_audited_at END) AS oldest_recoverable_audit,
+                SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
+                          AND COALESCE(refinement_count, 0) < 2
+                          AND NOT EXISTS (
+                              SELECT 1 FROM ingested_items evidence
+                              WHERE evidence.article_id = articles.id
+                                AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+                          ) THEN 1 ELSE 0 END) AS reacquisition_required
             FROM articles
             WHERE status = 'pending_audit'
         `).first<Record<string, string | number | null>>();
@@ -390,9 +412,10 @@ router.get('/health/deep', async (c) => {
                 pending,
                 recoverable,
                 exhaustedForHumanReview: Number(queue?.exhausted || 0),
+                reacquisitionRequired: Number(queue?.reacquisition_required || 0),
                 recoverableCountriesWithoutRecentEvidence: Number(queue?.recoverable_missing_countries || 0),
                 oldestRecoverableAudit: queue?.oldest_recoverable_audit,
-                recoveryPolicy: 'Stale failed drafts may receive at most two source-grounded rewrites; no record is approved by age or retry count.',
+                recoveryPolicy: 'Only drafts backed by at least 3,000 source characters can enter bounded rewriting. Thin-source records are preserved for substantive reacquisition, and no record is approved by age or retry count.',
             },
         });
     } catch (error) {

@@ -37,6 +37,7 @@ describe('generated article publication boundary', () => {
         expect(moderation).toContain('a.last_audited_at <= datetime(\'now\', \'-${STALE_MODERATION_RECOVERY_HOURS} hours\')');
         expect(moderation).toContain(`recent.published_at >= datetime('now', '-30 days')`);
         expect(moderation).toContain(`a.country_code IS NOT NULL AND NOT EXISTS`);
+        expect(moderation).toContain('LENGTH(TRIM(COALESCE(i.content, \'\'))) >= ${MIN_SOURCE_EVIDENCE_CHARS}');
         expect(moderation).toContain(`status = 'pending_audit'`);
         expect(moderation).toContain(`moderation_status IN ('pending', 'flagged', 'needs_review')`);
         expect(moderation).toContain(`moderation_notes = ?, last_audited_at = NULL`);
@@ -47,5 +48,6 @@ describe('generated article publication boundary', () => {
         expect(system).toContain(`name: 'editorial_publication_queue'`);
         expect(system).toContain('recoverableCountriesWithoutRecentEvidence');
         expect(system).toContain('exhaustedForHumanReview');
+        expect(system).toContain('reacquisitionRequired');
     });
 });

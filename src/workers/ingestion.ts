@@ -762,17 +762,32 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     const SOURCES_PER_RUN = 6;
     const SOURCE_CANDIDATE_POOL = 36;
     const sourcesResult = await env.DB.prepare(`
-    WITH recent_country AS (
+    WITH viable_recent AS (
+      SELECT a.country_code, a.source_title
+      FROM articles a
+      WHERE COALESCE(a.published_at, a.created_at) >= datetime('now', '-30 days')
+        AND (
+          a.status = 'published'
+          OR (
+            a.status = 'pending_audit'
+            AND EXISTS (
+              SELECT 1 FROM ingested_items evidence
+              WHERE evidence.article_id = a.id
+                AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+            )
+            AND (
+              a.moderation_status IN ('pending', 'reviewing')
+              OR (a.moderation_status IN ('flagged', 'needs_review') AND COALESCE(a.refinement_count, 0) < 2)
+            )
+          )
+        )
+    ), recent_country AS (
       SELECT country_code, COUNT(*) AS recent_count
-      FROM articles
-      WHERE status IN ('published', 'pending_audit')
-        AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+      FROM viable_recent
       GROUP BY country_code
     ), recent_source AS (
       SELECT LOWER(COALESCE(source_title, '')) AS source_name, COUNT(*) AS recent_count
-      FROM articles
-      WHERE status IN ('published', 'pending_audit')
-        AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+      FROM viable_recent
       GROUP BY LOWER(COALESCE(source_title, ''))
     )
     SELECT sources.id, sources.name, sources.type, sources.url, sources.country_code,
@@ -815,8 +830,22 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
         SELECT c.name, COUNT(a.id) AS recent_count
         FROM countries c
         LEFT JOIN articles a ON a.country_code = c.code
-          AND a.status IN ('published', 'pending_audit')
           AND a.created_at >= datetime('now', '-30 days')
+          AND (
+            a.status = 'published'
+            OR (
+              a.status = 'pending_audit'
+              AND EXISTS (
+                SELECT 1 FROM ingested_items evidence
+                WHERE evidence.article_id = a.id
+                  AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+              )
+              AND (
+                a.moderation_status IN ('pending', 'reviewing')
+                OR (a.moderation_status IN ('flagged', 'needs_review') AND COALESCE(a.refinement_count, 0) < 2)
+              )
+            )
+          )
         GROUP BY c.code, c.name
         ORDER BY recent_count ASC, c.name ASC
     `).all<CoverageCountry>();
@@ -1015,8 +1044,22 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
             // PRIORITY TARGETING: Query underserved countries first
             const underservedQuery = await env.DB.prepare(`
                 SELECT c.code, c.name, c.region,
-                       SUM(CASE WHEN a.status IN ('published', 'pending_audit')
-                                 AND a.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS article_count
+                       SUM(CASE WHEN a.created_at >= datetime('now', '-30 days')
+                                 AND (
+                                   a.status = 'published'
+                                   OR (
+                                     a.status = 'pending_audit'
+                                     AND EXISTS (
+                                       SELECT 1 FROM ingested_items evidence
+                                       WHERE evidence.article_id = a.id
+                                         AND LENGTH(TRIM(COALESCE(evidence.content, ''))) >= 3000
+                                     )
+                                     AND (
+                                       a.moderation_status IN ('pending', 'reviewing')
+                                       OR (a.moderation_status IN ('flagged', 'needs_review') AND COALESCE(a.refinement_count, 0) < 2)
+                                     )
+                                   )
+                                 ) THEN 1 ELSE 0 END) AS article_count
                        , d.last_attempted_at, COALESCE(d.attempt_count, 0) AS attempt_count
                 FROM countries c
                 LEFT JOIN articles a ON a.country_code = c.code

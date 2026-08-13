@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { describe, it, expect, vi } from 'vitest';
-import { discoveryCountryExpression, discoveryLocale, discoverySourcesForCountry, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, parseHTMLListing, selectDiscoveryTargets } from '../../src/workers/ingestion';
+import { discoveryCountryExpression, discoveryLocale, discoverySourcesForCountry, extractParagraphEvidence, isAfricanContent, isMarketEvidence, mentionsTargetCountry, parseHTMLListing, selectAcquisitionSources, selectDiscoveryTargets, type AcquisitionSourceCandidate } from '../../src/workers/ingestion';
 
 describe('isAfricanContent', () => {
     describe('plain African coverage passes', () => {
@@ -121,6 +121,34 @@ describe('mentionsTargetCountry', () => {
 });
 
 describe('underserved-country discovery', () => {
+    it('reserves acquisition capacity for country deficits and authoritative broad sources', () => {
+        const source = (values: Partial<AcquisitionSourceCandidate> & Pick<AcquisitionSourceCandidate, 'id' | 'name' | 'url'>): AcquisitionSourceCandidate => ({
+            type: 'rss', country_code: null, last_fetched_at: null,
+            country_recent_count: 0, source_recent_count: 0, ...values,
+        });
+        const selected = selectAcquisitionSources([
+            source({ id: 'ng', name: 'World Bank Nigeria', url: 'https://worldbank.org/ng', type: 'worldbank-api', country_code: 'NG', country_recent_count: 20 }),
+            source({ id: 'ao', name: 'World Bank Angola', url: 'https://worldbank.org/ao', type: 'worldbank-api', country_code: 'AO', country_recent_count: 0 }),
+            source({ id: 'bw', name: 'World Bank Botswana', url: 'https://worldbank.org/bw', type: 'worldbank-api', country_code: 'BW', country_recent_count: 1 }),
+            source({ id: 'reuters', name: 'Reuters', url: 'https://reuters.com/africa', source_recent_count: 3 }),
+            source({ id: 'bbc', name: 'BBC Africa', url: 'https://bbc.com/africa', source_recent_count: 5 }),
+            source({ id: 'national', name: 'BusinessDay Nigeria', url: 'https://businessday.ng/feed', source_recent_count: 0 }),
+            source({ id: 'unknown', name: 'Unknown Blog', url: 'https://unknown.test/feed' }),
+        ], 4);
+
+        expect(selected.map(item => item.id)).toEqual(['ao', 'bw', 'reuters', 'bbc']);
+    });
+
+    it('fills all acquisition slots from the available lane without unknown sources', () => {
+        const broad = [
+            { id: 'reuters', name: 'Reuters', type: 'rss', url: 'https://reuters.com', country_code: null, last_fetched_at: null, country_recent_count: 0, source_recent_count: 2 },
+            { id: 'ap', name: 'Associated Press', type: 'rss', url: 'https://apnews.com', country_code: null, last_fetched_at: null, country_recent_count: 0, source_recent_count: 1 },
+            { id: 'unknown', name: 'Unknown Blog', type: 'rss', url: 'https://unknown.test', country_code: null, last_fetched_at: null, country_recent_count: 0, source_recent_count: 0 },
+        ] satisfies AcquisitionSourceCandidate[];
+        expect(selectAcquisitionSources(broad, 3).map(item => item.id)).toEqual(['ap', 'reuters']);
+        expect(selectAcquisitionSources(broad, 0)).toEqual([]);
+    });
+
     it('builds alias-aware single-country search expressions', () => {
         expect(discoveryCountryExpression("C\u00f4te d'Ivoire")).toContain('ivory coast');
         expect(discoveryCountryExpression('Cabo Verde')).toContain('cape verde');

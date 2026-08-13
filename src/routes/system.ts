@@ -424,6 +424,25 @@ router.get('/health/deep', async (c) => {
                    SUM(CASE WHEN source_quality_tier = 3 THEN 1 ELSE 0 END) AS tier3_count,
                    SUM(CASE WHEN source_quality_tier = 2 THEN 1 ELSE 0 END) AS tier2_count,
                    (SELECT COUNT(*) FROM discovery_source_catalog WHERE is_active = 1) AS approved_discovery_domains,
+                   (SELECT COUNT(*) FROM countries target
+                    WHERE NOT EXISTS (
+                      SELECT 1 FROM articles evidence
+                      WHERE evidence.country_code = target.code
+                        AND evidence.status = 'published'
+                        AND evidence.published_at >= datetime('now', '-30 days')
+                    )) AS countries_without_recent_evidence,
+                   (SELECT COUNT(*) FROM ingested_items blocked
+                    WHERE blocked.status = 'rejected'
+                      AND blocked.created_at >= datetime('now', '-24 hours')
+                      AND blocked.rejection_reason LIKE 'rolling country balance:%') AS country_balance_blocks_24h,
+                   (SELECT COUNT(*) FROM ingested_items blocked
+                    WHERE blocked.status = 'rejected'
+                      AND blocked.created_at >= datetime('now', '-24 hours')
+                      AND blocked.rejection_reason LIKE 'rolling source balance:%') AS source_balance_blocks_24h,
+                   (SELECT COUNT(*) FROM ingested_items blocked
+                    WHERE blocked.status = 'rejected'
+                      AND blocked.created_at >= datetime('now', '-24 hours')
+                      AND blocked.rejection_reason LIKE 'source quality mix:%') AS quality_mix_blocks_24h,
                    (SELECT name FROM country_counts) AS top_country,
                    COALESCE((SELECT n FROM country_counts), 0) AS top_country_count,
                    (SELECT name FROM source_counts) AS top_publisher,
@@ -469,6 +488,15 @@ router.get('/health/deep', async (c) => {
                 primaryOrGlobalShare: Number(tier4Share.toFixed(3)),
                 establishedSpecialistShare: Number((total ? Number(diversity?.tier3_count || 0) / total : 0).toFixed(3)),
                 verifiedNationalShare: Number(tier2Share.toFixed(3)),
+                unresolvedDeficits: {
+                    countriesWithoutRecentEvidence: Number(diversity?.countries_without_recent_evidence || 0),
+                },
+                balancingActions24h: {
+                    countryConcentrationBlocked: Number(diversity?.country_balance_blocks_24h || 0),
+                    publisherConcentrationBlocked: Number(diversity?.source_balance_blocks_24h || 0),
+                    sourceQualityMixBlocked: Number(diversity?.quality_mix_blocks_24h || 0),
+                },
+                acquisitionPolicy: 'Each fixed-source run reserves fetch capacity for underserved exact-country lanes and underrepresented authoritative cross-market publishers. Publication remains subject to independent country, publisher and source-tier caps.',
                 healthyThresholds: {
                     minimumCountries: 54,
                     minimumRegions: 5,

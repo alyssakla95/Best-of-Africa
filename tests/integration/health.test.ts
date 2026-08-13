@@ -59,6 +59,15 @@ describe('Health Check Endpoints', () => {
             expect(checkNames).toContain('editorial_generation');
             expect(checkNames).toContain('durable_objects');
 
+            const diversity = body.checks.find((check: { name: string }) => check.name === 'coverage_diversity');
+            expect(diversity.details.unresolvedDeficits).toHaveProperty('countriesWithoutRecentEvidence');
+            expect(diversity.details.balancingActions24h).toMatchObject({
+                countryConcentrationBlocked: expect.any(Number),
+                publisherConcentrationBlocked: expect.any(Number),
+                sourceQualityMixBlocked: expect.any(Number),
+            });
+            expect(diversity.details.acquisitionPolicy).toContain('underserved exact-country lanes');
+
             // Verify check structure
             for (const check of body.checks) {
                 expect(check.name).toBeDefined();

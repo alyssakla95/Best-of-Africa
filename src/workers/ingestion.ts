@@ -537,6 +537,46 @@ interface CoverageCountry {
     recent_count: number;
 }
 
+export interface AcquisitionSourceCandidate {
+    id: string;
+    name: string;
+    type: string;
+    url: string;
+    country_code: string | null;
+    country_name?: string | null;
+    sector_id?: string | null;
+    last_fetched_at: string | null;
+    country_recent_count: number;
+    source_recent_count: number;
+}
+
+/** Allocate scarce fetch slots to both underserved country lanes and broad authoritative sources. */
+export function selectAcquisitionSources(candidates: AcquisitionSourceCandidate[], limit: number): AcquisitionSourceCandidate[] {
+    if (limit <= 0) return [];
+    const eligible = candidates.filter(candidate => sourceQualityProfile(candidate.name, candidate.url, 'fixed').tier >= 2);
+    const oldestFirst = (a: AcquisitionSourceCandidate, b: AcquisitionSourceCandidate) =>
+        String(a.last_fetched_at || '1970-01-01').localeCompare(String(b.last_fetched_at || '1970-01-01'))
+        || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+    const countryLanes = eligible.filter(candidate => candidate.country_code).sort((a, b) =>
+        Number(a.country_recent_count || 0) - Number(b.country_recent_count || 0)
+        || Number(a.source_recent_count || 0) - Number(b.source_recent_count || 0)
+        || sourceQualityProfile(b.name, b.url, 'fixed').tier - sourceQualityProfile(a.name, a.url, 'fixed').tier
+        || oldestFirst(a, b));
+    const broadLanes = eligible.filter(candidate => !candidate.country_code).sort((a, b) =>
+        sourceQualityProfile(b.name, b.url, 'fixed').tier - sourceQualityProfile(a.name, a.url, 'fixed').tier
+        || Number(a.source_recent_count || 0) - Number(b.source_recent_count || 0)
+        || oldestFirst(a, b));
+    const countryQuota = broadLanes.length ? Math.ceil(limit / 2) : limit;
+    const broadQuota = countryLanes.length ? Math.floor(limit / 2) : limit;
+    const selected = [...countryLanes.slice(0, countryQuota), ...broadLanes.slice(0, broadQuota)];
+    const selectedIds = new Set(selected.map(candidate => candidate.id));
+    const remainder = [...countryLanes, ...broadLanes].filter(candidate => !selectedIds.has(candidate.id)).sort((a, b) =>
+        Math.min(Number(a.country_recent_count || 0), Number(a.source_recent_count || 0))
+        - Math.min(Number(b.country_recent_count || 0), Number(b.source_recent_count || 0))
+        || oldestFirst(a, b));
+    return [...selected, ...remainder].slice(0, limit);
+}
+
 export interface DiscoveryCountry {
     code: string;
     name: string;
@@ -720,12 +760,30 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
     // subrequest / binding-call limits (which previously failed with
     // "Too many subrequests" when all ~82 sources were fetched at once).
     const SOURCES_PER_RUN = 6;
+    const SOURCE_CANDIDATE_POOL = 36;
     const sourcesResult = await env.DB.prepare(`
+    WITH recent_country AS (
+      SELECT country_code, COUNT(*) AS recent_count
+      FROM articles
+      WHERE status IN ('published', 'pending_audit')
+        AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+      GROUP BY country_code
+    ), recent_source AS (
+      SELECT LOWER(COALESCE(source_title, '')) AS source_name, COUNT(*) AS recent_count
+      FROM articles
+      WHERE status IN ('published', 'pending_audit')
+        AND COALESCE(published_at, created_at) >= datetime('now', '-30 days')
+      GROUP BY LOWER(COALESCE(source_title, ''))
+    )
     SELECT sources.id, sources.name, sources.type, sources.url, sources.country_code,
-           sources.sector_id, countries.name AS country_name
+           sources.sector_id, countries.name AS country_name, sources.last_fetched_at,
+           COALESCE(recent_country.recent_count, 0) AS country_recent_count,
+           COALESCE(recent_source.recent_count, 0) AS source_recent_count
     FROM sources
     LEFT JOIN countries ON countries.code = sources.country_code
     LEFT JOIN source_acquisition_yield acq ON acq.source_id = sources.id
+    LEFT JOIN recent_country ON recent_country.country_code = sources.country_code
+    LEFT JOIN recent_source ON recent_source.source_name = LOWER(sources.name)
     WHERE sources.is_active = 1
       AND (sources.last_fetched_at IS NULL OR sources.last_fetched_at <= datetime('now', '-' || COALESCE(sources.fetch_interval_minutes, 60) || ' minutes'))
       AND (
@@ -738,28 +796,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
         WHERE s2.is_active = 1 AND s2.url = sources.url
         ORDER BY s2.created_at ASC, s2.id ASC LIMIT 1
       )
-    ORDER BY
-      CASE
-        WHEN sources.type = 'worldbank-api' THEN 0
-        WHEN sources.name IN (
-          'UN Economic Commission for Africa', 'African Union', 'UN News Africa', 'World Trade Organization',
-          'African Development Bank Group', 'African Development Bank News', 'World Bank Africa News',
-          'International Monetary Fund News', 'UN Trade and Development News', 'International Finance Corporation Africa',
-          'International Energy Agency Africa', 'International Renewable Energy Agency News', 'FAO Africa News',
-          'Economic Community of West African States', 'Southern African Development Community',
-          'East African Community', 'Common Market for Eastern and Southern Africa'
-        ) THEN 0
-        WHEN sources.name IN ('BBC Africa', 'Associated Press Africa', 'Financial Times Africa', 'The Economist Africa', 'The Guardian Africa',
-                      'France 24 Africa', 'Deutsche Welle Africa', 'Al Jazeera', 'The Africa Report',
-                      'African Business', 'The Conversation Africa', 'Semafor Africa', 'Daily Maverick', 'TechCabal') THEN 1
-        WHEN sources.name LIKE 'AllAfrica%' THEN 3
-        ELSE 2
-      END,
-      sources.last_fetched_at ASC
+    ORDER BY sources.last_fetched_at ASC, sources.id ASC
     LIMIT ?
-  `).bind(SOURCES_PER_RUN).all();
+  `).bind(SOURCE_CANDIDATE_POOL).all<AcquisitionSourceCandidate>();
 
-    const sources = sourcesResult.results || [];
+    const sources = selectAcquisitionSources(sourcesResult.results || [], SOURCES_PER_RUN);
     const BATCH_SIZE = 6; // Process in parallel within the run
 
     // Per-invocation budgets (shared across fixed-source + discovery tasks) to

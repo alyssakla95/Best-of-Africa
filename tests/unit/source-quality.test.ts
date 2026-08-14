@@ -28,13 +28,18 @@ describe('source quality and coverage admission', () => {
         ]));
     });
 
-    it('uses productive first-party feeds and disables the empty direct SADC connector', () => {
+    it('uses productive first-party feeds and recovers ECOWAS after its Worker response becomes usable', () => {
         const migration = readFileSync('migrations/0060_productive_regional_feeds.sql', 'utf8');
         const ecowasMigration = readFileSync('migrations/0061_disable_unproductive_ecowas_direct.sql', 'utf8');
+        const ecowasRecovery = readFileSync('migrations/0085_reactivate_productive_ecowas_feed.sql', 'utf8');
         expect(migration).toContain('https://www.ecowas.int/feed/');
         expect(migration).toContain('https://www.comesa.int/feed/');
         expect(migration).toMatch(/is_active\s*=\s*0[\s\S]*primary-sadc-news/);
         expect(ecowasMigration).toMatch(/is_active\s*=\s*0[\s\S]*primary-ecowas-news/);
+        expect(ecowasRecovery).toContain('https://www.ecowas.int/feed/');
+        expect(ecowasRecovery).toMatch(/is_active\s*=\s*1[\s\S]*primary-ecowas-news/);
+        expect(ecowasRecovery).toContain('consecutive_zero_qualified = 0');
+        expect(ecowasRecovery).toContain("last_fetched_at = datetime('now', '-2 days')");
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('ecowas.int');
     });
 

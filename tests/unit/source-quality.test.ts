@@ -37,6 +37,14 @@ describe('source quality and coverage admission', () => {
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('ecowas.int');
     });
 
+    it('uses the official AfDB feed that carries full article evidence', () => {
+        const migration = readFileSync('migrations/0075_afdb_full_evidence_feed.sql', 'utf8');
+        expect(migration).toContain("type = 'rss'");
+        expect(migration).toContain('https://www.afdb.org/en/rss.xml');
+        expect(migration).toContain('last_fetched_at = NULL');
+        expect(migration).toContain("id = 'primary-afdb-news'");
+    });
+
     it('caps rolling country and publisher concentration', () => {
         expect(coverageAdmissionFailure({ total30d: 300, country30d: 159, source30d: 10, countryCode: 'NG', sourceName: 'Reuters', qualityTier: 4 }))
             .toContain('rolling country balance');

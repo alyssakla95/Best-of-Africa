@@ -78,7 +78,8 @@ describe('generated article publication boundary', () => {
 
     it('distinguishes scheduled source checks from productive acquisition', () => {
         const system = read('src/routes/system.ts');
-        expect(system).toContain('COALESCE(y.last_fetched_at, s.last_fetched_at) AS last_checked_at');
+        expect(system).toContain('WHEN y.last_fetched_at IS NULL OR s.last_fetched_at > y.last_fetched_at');
+        expect(system).toContain('THEN s.last_fetched_at ELSE y.last_fetched_at');
         expect(system).toContain('y.last_fetched_at AS last_acquisition_at');
         expect(system).toContain('isRecent(row.last_checked_at, cutoff24h)');
         expect(system).toContain('isRecent(row.last_acquisition_at, cutoff24h)');

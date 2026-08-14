@@ -606,7 +606,10 @@ router.get('/health/deep', async (c) => {
     try {
         const acquisition = await c.env.DB.prepare(`
             SELECT s.name, s.url,
-                   COALESCE(y.last_fetched_at, s.last_fetched_at) AS last_checked_at,
+                   CASE
+                     WHEN y.last_fetched_at IS NULL OR s.last_fetched_at > y.last_fetched_at
+                     THEN s.last_fetched_at ELSE y.last_fetched_at
+                   END AS last_checked_at,
                    y.last_fetched_at AS last_acquisition_at, y.last_qualified_found,
                    y.last_productive_at, y.last_error, y.total_queued
             FROM sources s

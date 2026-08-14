@@ -41,6 +41,7 @@ describe('source quality and coverage admission', () => {
         const migration = readFileSync('migrations/0075_afdb_full_evidence_feed.sql', 'utf8');
         const cooldown = readFileSync('migrations/0076_reset_afdb_acquisition_cooldown.sql', 'utf8');
         const retry = readFileSync('migrations/0077_retry_afdb_with_feed_headers.sql', 'utf8');
+        const disabled = readFileSync('migrations/0078_disable_worker_blocked_afdb_feed.sql', 'utf8');
         expect(migration).toContain("type = 'rss'");
         expect(migration).toContain('https://www.afdb.org/en/rss.xml');
         expect(migration).toContain('last_fetched_at = NULL');
@@ -50,6 +51,9 @@ describe('source quality and coverage admission', () => {
         expect(cooldown).toContain("source_id = 'primary-afdb-news'");
         expect(retry).toContain("last_fetched_at = datetime('now', '-2 days')");
         expect(retry).toContain("source_id = 'primary-afdb-news'");
+        expect(disabled).toContain('is_active = 0');
+        expect(disabled).toContain("id = 'primary-afdb-news'");
+        expect(TRUSTED_DISCOVERY_DOMAINS).toContain('afdb.org');
     });
 
     it('caps rolling country and publisher concentration', () => {

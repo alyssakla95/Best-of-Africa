@@ -219,6 +219,17 @@ describe('extractParagraphEvidence', () => {
         expect(evidence).toContain('Second substantive paragraph');
         expect(evidence).not.toContain('Short');
     });
+
+    it('excludes embedded page code, templates and comments from source evidence', () => {
+        const html = `
+            <style>.card::before { content: '<p>Stylesheet text must never become article evidence.</p>'; }</style>
+            <script>const markup = '<p>Script text must never become article evidence.</p>';</script>
+            <template><p>Template text must never become article evidence.</p></template>
+            <!-- <p>Comment text must never become article evidence.</p> -->
+            <article><p>The visible article paragraph contains verified trade and investment evidence.</p></article>`;
+        const evidence = extractParagraphEvidence(html);
+        expect(evidence).toBe('The visible article paragraph contains verified trade and investment evidence.');
+    });
 });
 
 describe('official institutional listing extraction', () => {

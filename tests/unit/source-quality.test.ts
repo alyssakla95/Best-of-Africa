@@ -5,6 +5,7 @@ import { coverageAdmissionFailure, diversifyCoveragePage, diversifyCoverageRows,
 describe('source quality and coverage admission', () => {
     it('distinguishes authoritative, established, national and aggregator sources', () => {
         expect(sourceQualityProfile('Reuters', 'https://reuters.com/world/africa', 'discovery').tier).toBe(4);
+        expect(sourceQualityProfile('Radio France Internationale', 'https://www.rfi.fr/fr/economie/rss', 'fixed').tier).toBe(3);
         expect(sourceQualityProfile('The Africa Report', null, 'discovery').tier).toBe(3);
         expect(sourceQualityProfile('Economic Community of West African States', 'https://ecowas.int/news', 'discovery').tier).toBe(4);
         expect(sourceQualityProfile('Ghana Business News', null, 'discovery').tier).toBe(2);

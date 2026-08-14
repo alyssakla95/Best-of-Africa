@@ -467,7 +467,14 @@ const decodeBasicEntities = (value: string) => value
     .replace(/&#39;/g, "'");
 
 export function extractParagraphEvidence(html: string): string {
-    return Array.from(html.matchAll(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/gi))
+    // Complex publisher pages commonly embed HTML fragments inside scripts,
+    // styles and templates. Strip those containers before paragraph matching
+    // so page code can never become source evidence.
+    const visibleHtml = html
+        .replace(/<(?:script|style|noscript|template)(?:\s[^>]*)?>[\s\S]*?<\/(?:script|style|noscript|template)>/gi, ' ')
+        .replace(/<!--([\s\S]*?)-->/g, ' ');
+
+    return Array.from(visibleHtml.matchAll(/<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/gi))
         .map(match => decodeBasicEntities(match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()))
         .filter(paragraph => paragraph.length >= 30)
         .join('\n\n')

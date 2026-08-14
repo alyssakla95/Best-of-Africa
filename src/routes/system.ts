@@ -355,6 +355,9 @@ router.get('/health/deep', async (c) => {
         const queue = await c.env.DB.prepare(`
             SELECT
                 SUM(CASE WHEN moderation_status = 'pending' AND last_audited_at IS NULL THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN moderation_status = 'reviewing'
+                          AND updated_at <= datetime('now', '-15 minutes')
+                         THEN 1 ELSE 0 END) AS stale_reviewing,
                 SUM(CASE WHEN moderation_status IN ('flagged', 'needs_review')
                           AND COALESCE(refinement_count, 0) < 2
                           AND last_audited_at <= datetime('now', '-6 hours')
@@ -401,16 +404,18 @@ router.get('/health/deep', async (c) => {
         `).first<Record<string, string | number | null>>();
         const pending = Number(queue?.pending || 0);
         const recoverable = Number(queue?.recoverable || 0);
+        const staleReviewing = Number(queue?.stale_reviewing || 0);
         checks.push({
             name: 'editorial_publication_queue',
-            status: pending + recoverable <= 12 ? 'healthy' : 'degraded',
+            status: pending + recoverable + staleReviewing <= 12 ? 'healthy' : 'degraded',
             responseTimeMs: Date.now() - editorialQueueStart,
-            message: pending + recoverable <= 12
+            message: pending + recoverable + staleReviewing <= 12
                 ? undefined
                 : 'The source-grounded publication and repair queue is above its operating threshold.',
             details: {
                 pending,
                 recoverable,
+                staleReviewing,
                 exhaustedForHumanReview: Number(queue?.exhausted || 0),
                 reacquisitionRequired: Number(queue?.reacquisition_required || 0),
                 recoverableCountriesWithoutRecentEvidence: Number(queue?.recoverable_missing_countries || 0),

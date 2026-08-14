@@ -28,6 +28,7 @@ export interface ModerationResult {
 
 export const MAX_AUTOMATED_REFINEMENTS = 2;
 export const STALE_MODERATION_RECOVERY_HOURS = 6;
+export const STALE_REVIEWING_RECOVERY_MINUTES = 15;
 
 /**
  * Failed editorial decisions are never approved by age alone. A stale record
@@ -222,6 +223,10 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
           AND (
               (a.moderation_status = 'pending' AND a.last_audited_at IS NULL)
               OR (
+                  a.moderation_status = 'reviewing'
+                  AND a.updated_at <= datetime('now', '-${STALE_REVIEWING_RECOVERY_MINUTES} minutes')
+              )
+              OR (
                   a.moderation_status IN ('flagged', 'needs_review')
                   AND COALESCE(a.refinement_count, 0) < ${MAX_AUTOMATED_REFINEMENTS}
                   AND a.last_audited_at <= datetime('now', '-${STALE_MODERATION_RECOVERY_HOURS} hours')
@@ -247,7 +252,7 @@ export async function auditPendingArticles(env: Env, limit = 1): Promise<{ revie
             UPDATE articles
             SET moderation_status = 'reviewing', updated_at = datetime('now')
             WHERE id = ? AND status = 'pending_audit'
-              AND moderation_status IN ('pending', 'flagged', 'needs_review')
+              AND moderation_status IN ('pending', 'reviewing', 'flagged', 'needs_review')
         `).bind(article.id).run();
         if ((claim.meta?.changes || 0) === 0) continue;
 

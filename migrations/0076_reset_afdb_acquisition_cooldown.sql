@@ -8,5 +8,5 @@ SET consecutive_zero_qualified = 0,
     last_duplicates_found = 0,
     last_queued = 0,
     last_error = NULL,
-    last_fetched_at = NULL
+    last_fetched_at = datetime('now', '-2 days')
 WHERE source_id = 'primary-afdb-news';

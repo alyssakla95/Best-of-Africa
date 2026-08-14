@@ -45,7 +45,7 @@ describe('source quality and coverage admission', () => {
         expect(migration).toContain('last_fetched_at = NULL');
         expect(migration).toContain("id = 'primary-afdb-news'");
         expect(cooldown).toContain('consecutive_zero_qualified = 0');
-        expect(cooldown).toContain('last_fetched_at = NULL');
+        expect(cooldown).toContain("last_fetched_at = datetime('now', '-2 days')");
         expect(cooldown).toContain("source_id = 'primary-afdb-news'");
     });
 

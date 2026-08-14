@@ -365,12 +365,18 @@ export function discoverySourcesForCountry<T extends { domain: string }>(sources
 export async function parseRSS(url: string): Promise<RSSItem[]> {
     try {
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'BestOfAfrica/1.0' },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; BOA-Story/1.0; +https://alyssa-boa-web.pages.dev)',
+                'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
+            },
         });
 
-        if (!response.ok) return [];
+        if (!response.ok) throw new Error(`RSS fetch returned HTTP ${response.status}`);
 
         const xml = await response.text();
+        if (!/<(?:rss|feed|rdf:RDF)\b/i.test(xml)) {
+            throw new Error(`RSS endpoint returned non-feed content (${response.headers.get('content-type') || 'unknown type'})`);
+        }
         const items: RSSItem[] = [];
 
         // Simple regex-based parsing (production would use proper XML parser)
@@ -444,7 +450,7 @@ export async function parseRSS(url: string): Promise<RSSItem[]> {
         return items.slice(0, 50); // Limit per source
     } catch (error) {
         console.error(`Failed to parse RSS ${url}:`, error);
-        return [];
+        throw error;
     }
 }
 

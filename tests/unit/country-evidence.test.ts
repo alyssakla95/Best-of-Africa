@@ -212,6 +212,17 @@ describe('country evidence integrity', () => {
         });
     });
 
+    it('reports blocked or non-feed RSS responses instead of recording false empty success', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('Access denied', { status: 403 })));
+        await expect(parseRSS('https://publisher.example/blocked')).rejects.toThrow('HTTP 403');
+
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>challenge</html>', {
+            status: 200,
+            headers: { 'content-type': 'text/html' },
+        })));
+        await expect(parseRSS('https://publisher.example/not-a-feed')).rejects.toThrow('non-feed content');
+    });
+
     it('extracts unique same-publisher articles from a direct HTML listing', async () => {
         vi.stubGlobal('fetch', vi.fn(async () => new Response(`
             <a href="/article/kenya-trade-123"><h2>Kenya opens a regional trade corridor</h2></a>

@@ -40,6 +40,7 @@ describe('source quality and coverage admission', () => {
     it('uses the official AfDB feed that carries full article evidence', () => {
         const migration = readFileSync('migrations/0075_afdb_full_evidence_feed.sql', 'utf8');
         const cooldown = readFileSync('migrations/0076_reset_afdb_acquisition_cooldown.sql', 'utf8');
+        const retry = readFileSync('migrations/0077_retry_afdb_with_feed_headers.sql', 'utf8');
         expect(migration).toContain("type = 'rss'");
         expect(migration).toContain('https://www.afdb.org/en/rss.xml');
         expect(migration).toContain('last_fetched_at = NULL');
@@ -47,6 +48,8 @@ describe('source quality and coverage admission', () => {
         expect(cooldown).toContain('consecutive_zero_qualified = 0');
         expect(cooldown).toContain("last_fetched_at = datetime('now', '-2 days')");
         expect(cooldown).toContain("source_id = 'primary-afdb-news'");
+        expect(retry).toContain("last_fetched_at = datetime('now', '-2 days')");
+        expect(retry).toContain("source_id = 'primary-afdb-news'");
     });
 
     it('caps rolling country and publisher concentration', () => {

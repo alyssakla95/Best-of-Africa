@@ -523,7 +523,7 @@ type SectorAuditRow = {
     title: string;
     summary: string | null;
     content: string | null;
-    sector_id: string;
+    sector_id: string | null;
 };
 
 const AUDITABLE_SECTORS = new Set([...SECTOR_IDS, 'general']);
@@ -544,8 +544,6 @@ export async function auditHistoricalSectorAssignments(
         SELECT id, title, summary, content, sector_id
         FROM articles INDEXED BY idx_articles_sector_review_queue
         WHERE status = 'published'
-          AND sector_id IS NOT NULL
-          AND sector_id != ''
           AND sector_reviewed_at IS NULL
         ORDER BY published_at DESC, id ASC
         LIMIT ?
@@ -615,7 +613,8 @@ export async function auditHistoricalSectorAssignments(
                     needsReview += 1;
                     statements.push(env.DB.prepare(`
                         UPDATE articles
-                        SET sector_assignment_method = 'needs_editorial_review',
+                        SET sector_id = COALESCE(NULLIF(sector_id, ''), 'general'),
+                            sector_assignment_method = 'needs_editorial_review',
                             sector_assignment_confidence = 0,
                             sector_reviewed_at = datetime('now')
                         WHERE id = ?

@@ -438,27 +438,30 @@ router.get('/health/deep', async (c) => {
     const sectorAuditStart = Date.now();
     try {
         const audit = await c.env.DB.prepare(`
-            SELECT COUNT(*) AS assigned,
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN sector_id IS NOT NULL AND sector_id != '' THEN 1 ELSE 0 END) AS assigned,
                    SUM(CASE WHEN sector_reviewed_at IS NOT NULL THEN 1 ELSE 0 END) AS reviewed,
                    SUM(CASE WHEN sector_assignment_confidence >= 0.82 THEN 1 ELSE 0 END) AS qualified,
                    SUM(CASE WHEN sector_assignment_method = 'needs_editorial_review' THEN 1 ELSE 0 END) AS needs_review,
                    SUM(CASE WHEN sector_assignment_method IN ('keyword_evidence_review', 'deep_editorial_review') THEN 1 ELSE 0 END) AS evidence_reviewed,
                    SUM(CASE WHEN sector_assignment_previous IS NOT NULL THEN 1 ELSE 0 END) AS corrected
             FROM articles
-            WHERE status = 'published' AND sector_id IS NOT NULL AND sector_id != ''
+            WHERE status = 'published'
         `).first<Record<string, number | null>>();
+        const total = Number(audit?.total || 0);
         const assigned = Number(audit?.assigned || 0);
         const reviewed = Number(audit?.reviewed || 0);
-        const complete = assigned === 0 || reviewed >= assigned;
+        const complete = total === 0 || (assigned >= total && reviewed >= total);
         checks.push({
             name: 'sector_assignment_audit',
             status: complete ? 'healthy' : 'degraded',
             responseTimeMs: Date.now() - sectorAuditStart,
             message: complete ? undefined : 'Historical sector assignments are still being checked against their article evidence.',
             details: {
+                total,
                 assigned,
                 reviewed,
-                pending: Math.max(0, assigned - reviewed),
+                pending: Math.max(0, total - reviewed),
                 qualified: Number(audit?.qualified || 0),
                 needsEditorialReview: Number(audit?.needs_review || 0),
                 evidenceReviewed: Number(audit?.evidence_reviewed || 0),

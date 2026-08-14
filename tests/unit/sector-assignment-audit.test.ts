@@ -34,6 +34,13 @@ describe('historical sector assignment audit', () => {
                 content: 'Agriculture cooperatives will improve crop yields and farmer access to processing.',
                 sector_id: 'agriculture',
             },
+            {
+                id: 'missing-assignment',
+                title: 'Zimbabwe strengthens agricultural import and export inspections',
+                summary: 'The food-safety programme supports agricultural trade controls.',
+                content: 'Agriculture officials strengthened crop, food and farming import-export inspections.',
+                sector_id: null,
+            },
         ];
         const db = {
             prepare(sql: string) {
@@ -54,9 +61,10 @@ describe('historical sector assignment audit', () => {
 
         const result = await auditHistoricalSectorAssignments({ DB: db } as Env, 12);
 
-        expect(result).toEqual({ checked: 2, qualified: 2, corrected: 1, needsReview: 0 });
-        expect(updates).toHaveLength(2);
+        expect(result).toEqual({ checked: 3, qualified: 3, corrected: 2, needsReview: 0 });
+        expect(updates).toHaveLength(3);
         expect(updates).toContainEqual(expect.arrayContaining(['energy', 'energy', 'clear-correction']));
         expect(updates).toContainEqual(expect.arrayContaining(['agriculture', 'agriculture', 'clear-confirmation']));
+        expect(updates).toContainEqual(expect.arrayContaining(['agriculture', 'agriculture', 'missing-assignment']));
     });
 });

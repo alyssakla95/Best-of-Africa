@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isCountryEvidenceStale, refreshCountryEvidence, worldBankTradeFallback, type CountryEvidenceSnapshot } from '../../src/lib/country-evidence';
 import { aggregateTradeTotal, getTradeBalance } from '../../src/lib/trade-data';
 import { publisherNameForArticle, publisherNameForStoredArticle } from '../../src/lib/source-attribution';
-import { fetchWorldBankOfficialContent, parseHTMLListing, parseRSS, rankCandidatesForCoverage, unseenCandidates, worldBankCountryName } from '../../src/workers/ingestion';
+import { fetchIFCAfricaPressroom, fetchWorldBankOfficialContent, parseHTMLListing, parseRSS, rankCandidatesForCoverage, unseenCandidates, worldBankCountryName } from '../../src/workers/ingestion';
 import { createMockEnv } from '../mocks/env';
 import { getCountryEconomicProfile } from '../../src/lib/economics';
 
@@ -278,6 +278,37 @@ describe('country evidence integrity', () => {
         });
         expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).filter)
             .toContain("countries/any(c: c eq 'Uganda')");
+    });
+
+    it('discovers and reads current Africa press releases from IFC first-party services', async () => {
+        const now = new Date('2026-08-13T12:00:00.000Z');
+        const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+            const url = String(input);
+            if (url.includes('/pressroom?regions=Africa')) {
+                return new Response('<advance-search subKey="public-key" url="https://webapi.worldbank.org/aemsite/ifc/search">Loading</advance-search>', { status: 200 });
+            }
+            return new Response(JSON.stringify({
+                value: [{
+                    title: 'IFC expands digital commerce infrastructure across Africa',
+                    pagePublishPath: '/en/pressroom/2026/ifc-expands-digital-commerce-infrastructure-across-africa',
+                    contentDate: '2026-08-12T00:00:00Z',
+                    description: 'The programme will finance small businesses in Kenya, Senegal and Ghana.',
+                }],
+            }), { status: 200 });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const items = await fetchIFCAfricaPressroom('https://www.ifc.org/en/pressroom?regions=Africa', now);
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: 'IFC expands digital commerce infrastructure across Africa',
+            publisherName: 'International Finance Corporation',
+            pubDate: '2026-08-12T00:00:00.000Z',
+        });
+        expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
+            'Ocp-Apim-Subscription-Key': 'public-key',
+        });
+        expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)).filter).toContain("regions eq 'Africa'");
     });
 
     it('uses provider country aliases and reaches fresh items beyond duplicate feed leaders', () => {

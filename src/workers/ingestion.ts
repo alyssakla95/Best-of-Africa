@@ -133,6 +133,15 @@ interface WorldBankContentResult {
     damThumbnailPath?: string;
 }
 
+interface IFCPressroomResult {
+    title?: string;
+    pagePublishPath?: string;
+    contentDate?: string;
+    description?: string;
+    bodyContent?: string;
+    s7ThumbnailPath?: string;
+}
+
 const WORLD_BANK_CONTENT_API = 'https://webapi.worldbank.org/aemsite/everything/search';
 const WORLD_BANK_COUNTRY_NAMES: Record<string, string> = {
     CI: "Cote d'Ivoire",
@@ -210,6 +219,79 @@ export async function fetchWorldBankOfficialContent(
         console.error(`Failed to fetch World Bank evidence for ${countryName}:`, error);
         return [];
     }
+}
+
+/**
+ * Read current Africa press releases from IFC's first-party pressroom index.
+ * The public subscription key and endpoint are discovered from IFC's own page
+ * on every run, avoiding a private secret or a brittle copied credential.
+ */
+export async function fetchIFCAfricaPressroom(
+    listingUrl: string,
+    now = new Date(),
+): Promise<RSSItem[]> {
+    const pageResponse = await fetch(listingUrl, {
+        headers: {
+            'Accept': 'text/html,application/xhtml+xml',
+            'User-Agent': 'BestOfAfrica/1.0 (African Market Intelligence Platform)',
+        },
+    });
+    if (!pageResponse.ok) throw new Error(`IFC pressroom returned HTTP ${pageResponse.status}`);
+
+    const page = await pageResponse.text();
+    const subscriptionKey = page.match(/<advance-search\b[^>]*\bsubKey=["']([^"']+)["']/i)?.[1];
+    const endpointValue = page.match(/<advance-search\b[^>]*\burl=["']([^"']+)["']/i)?.[1];
+    if (!subscriptionKey || !endpointValue) throw new Error('IFC pressroom search configuration was not found');
+
+    const endpoint = new URL(decodeBasicEntities(endpointValue), listingUrl);
+    if (endpoint.protocol !== 'https:' || endpoint.hostname !== 'webapi.worldbank.org') {
+        throw new Error('IFC pressroom search endpoint was not trusted');
+    }
+
+    const response = await fetch(endpoint.toString(), {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Ocp-Apim-Subscription-Key': subscriptionKey,
+            'User-Agent': 'BestOfAfrica/1.0 (African Market Intelligence Platform)',
+        },
+        body: JSON.stringify({
+            search: '*',
+            facets: ['contentDate,sort:value,count:10000', 'countries,sort:value,count:10000', 'regions,sort:value,count:10000'],
+            filter: "(regions/any(regions: regions eq 'Africa')) and contentType eq 'Press Release'",
+            count: true,
+            top: 30,
+            skip: 0,
+            orderby: 'contentDate desc',
+            searchFields: 'title',
+        }),
+    });
+    if (!response.ok) throw new Error(`IFC pressroom API returned HTTP ${response.status}`);
+
+    const payload = await response.json() as { value?: IFCPressroomResult[] };
+    const earliest = now.getTime() - 120 * 24 * 60 * 60 * 1000;
+    return (payload.value || [])
+        .filter(result => {
+            const timestamp = Date.parse(result.contentDate || '');
+            return Boolean(result.title && result.pagePublishPath)
+                && Number.isFinite(timestamp)
+                && timestamp <= now.getTime()
+                && timestamp >= earliest;
+        })
+        .map(result => {
+            const link = new URL(result.pagePublishPath!, 'https://www.ifc.org').toString();
+            return {
+                title: decodeBasicEntities(result.title!.replace(/<[^>]*>/g, '').trim()),
+                link,
+                description: decodeBasicEntities((result.description || result.bodyContent || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()),
+                pubDate: new Date(result.contentDate!).toISOString(),
+                imageUrl: normalizeEditorialImageUrl(result.s7ThumbnailPath || null, link),
+                imageCredit: 'International Finance Corporation',
+                publisherName: 'International Finance Corporation',
+                publisherUrl: 'https://www.ifc.org/',
+            };
+        });
 }
 
 export function unseenCandidates<T extends { url: string }>(items: T[], existingUrls: Set<string>): T[] {
@@ -948,6 +1030,11 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         }));
                     } else if (s.type === 'worldbank-api' && s.country_code && s.country_name) {
                         const officialItems = await fetchWorldBankOfficialContent(s.country_code, s.country_name);
+                        items = officialItems.map(item => ({
+                            title: item.title, url: item.link, content: item.description, publishedAt: item.pubDate, imageUrl: item.imageUrl, imageCredit: item.imageCredit, publisherName: item.publisherName, publisherUrl: item.publisherUrl,
+                        }));
+                    } else if (s.type === 'ifc-api') {
+                        const officialItems = await fetchIFCAfricaPressroom(s.url);
                         items = officialItems.map(item => ({
                             title: item.title, url: item.link, content: item.description, publishedAt: item.pubDate, imageUrl: item.imageUrl, imageCredit: item.imageCredit, publisherName: item.publisherName, publisherUrl: item.publisherUrl,
                         }));

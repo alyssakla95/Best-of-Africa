@@ -75,4 +75,13 @@ describe('generated article publication boundary', () => {
         expect(migration).toContain('idx_ingested_items_processing_claim');
         expect(migration).toContain("WHERE status = 'processing' AND article_id IS NULL");
     });
+
+    it('distinguishes scheduled source checks from productive acquisition', () => {
+        const system = read('src/routes/system.ts');
+        expect(system).toContain('COALESCE(y.last_fetched_at, s.last_fetched_at) AS last_checked_at');
+        expect(system).toContain('y.last_fetched_at AS last_acquisition_at');
+        expect(system).toContain('isRecent(row.last_checked_at, cutoff24h)');
+        expect(system).toContain('isRecent(row.last_acquisition_at, cutoff24h)');
+        expect(system).toContain('isRecent(row.last_productive_at, cutoff30d)');
+    });
 });

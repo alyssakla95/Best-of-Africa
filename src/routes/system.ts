@@ -605,7 +605,9 @@ router.get('/health/deep', async (c) => {
     const acquisitionStart = Date.now();
     try {
         const acquisition = await c.env.DB.prepare(`
-            SELECT s.name, s.url, y.last_fetched_at, y.last_qualified_found,
+            SELECT s.name, s.url,
+                   COALESCE(y.last_fetched_at, s.last_fetched_at) AS last_checked_at,
+                   y.last_fetched_at AS last_acquisition_at, y.last_qualified_found,
                    y.last_productive_at, y.last_error, y.total_queued
             FROM sources s
             LEFT JOIN source_acquisition_yield y ON y.source_id = s.id
@@ -624,8 +626,13 @@ router.get('/health/deep', async (c) => {
             const timestamp = typeof value === 'string' ? Date.parse(value.endsWith('Z') ? value : `${value}Z`) : NaN;
             return Number.isFinite(timestamp) && timestamp >= cutoff;
         };
-        const measuredSources = acquisitionRows.filter(row => row.last_fetched_at).length;
-        const measured24h = acquisitionRows.filter(row => isRecent(row.last_fetched_at, cutoff24h)).length;
+        // A source can be inspected and deliberately paused before a network
+        // fetch when the national-source mix is already above its ceiling.
+        // That is current scheduler evidence, not missing telemetry. Productive
+        // thresholds below still rely exclusively on real queued acquisition.
+        const measuredSources = acquisitionRows.filter(row => row.last_checked_at).length;
+        const measured24h = acquisitionRows.filter(row => isRecent(row.last_checked_at, cutoff24h)).length;
+        const acquired24h = acquisitionRows.filter(row => isRecent(row.last_acquisition_at, cutoff24h)).length;
         const qualifyingLatest = acquisitionRows.filter(row => Number(row.last_qualified_found || 0) > 0).length;
         const productiveRows = acquisitionRows.filter(row => isRecent(row.last_productive_at, cutoff30d));
         const productive30d = productiveRows.length;
@@ -648,6 +655,7 @@ router.get('/health/deep', async (c) => {
                 activeSources,
                 measuredSources,
                 measured24h,
+                acquired24h,
                 qualifyingLatest,
                 productive30d,
                 primaryProductive30d,

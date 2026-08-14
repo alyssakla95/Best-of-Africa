@@ -231,7 +231,7 @@ describe('country evidence integrity', () => {
             <a href="/pressroom/2026/rwanda-investment-789"><h2>Rwanda investment programme reaches financial close</h2></a>
             <a href="https://outside.example/article/unrelated">Outside article must be excluded</a>
             <a href="/hub/africa">Africa hub navigation</a>
-        `, { status: 200 })));
+        `, { status: 200, headers: { 'content-type': 'text/html' } })));
         const items = await parseHTMLListing('https://publisher.example/hub/africa');
         expect(items).toHaveLength(3);
         expect(items[0]).toMatchObject({
@@ -247,13 +247,24 @@ describe('country evidence integrity', () => {
             <a href="https://www.fao.org:443/africa/news-stories/news-detail/ghana-food-market-investment/en">
                 Ghana food-market investment expands regional processing
             </a>
-        `, { status: 200 })));
+        `, { status: 200, headers: { 'content-type': 'text/html' } })));
         const items = await parseHTMLListing('https://www.fao.org/africa/news-stories/news/GetContent/1/en/');
         expect(items).toHaveLength(1);
         expect(items[0]).toMatchObject({
             title: 'Ghana food-market investment expands regional processing',
             link: 'https://www.fao.org/africa/news-stories/news-detail/ghana-food-market-investment/en',
         });
+    });
+
+    it('reports blocked HTML listings instead of recording false empty success', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('Access denied', { status: 403 })));
+        await expect(parseHTMLListing('https://publisher.example/news')).rejects.toThrow('HTTP 403');
+
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('{"items":[]}', {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+        })));
+        await expect(parseHTMLListing('https://publisher.example/news')).rejects.toThrow('non-HTML content');
     });
 
     it('reads recent country evidence from the World Bank official content API', async () => {

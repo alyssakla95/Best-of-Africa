@@ -572,7 +572,12 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
                 'Accept': 'text/html,application/xhtml+xml',
             },
         });
-        if (!response.ok) return [];
+        if (!response.ok) throw new Error(`Publisher listing returned HTTP ${response.status}`);
+
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType && !/(?:text\/html|application\/xhtml\+xml)/i.test(contentType)) {
+            throw new Error(`Publisher listing returned non-HTML content (${contentType})`);
+        }
 
         const html = await response.text();
         const base = new URL(url);
@@ -623,7 +628,7 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
         return items.slice(0, 100);
     } catch (error) {
         console.error(`Failed to parse publisher listing ${url}:`, error);
-        return [];
+        throw error;
     }
 }
 

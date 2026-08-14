@@ -33,6 +33,17 @@ describe('editorial image provenance', () => {
     expect(extractPublisherImage(html, 'https://news.example.com/story').imageUrl).toBeNull();
   });
 
+  it('rejects publisher-hosted artwork explicitly labelled as generated', () => {
+    const html = `
+      <meta property="og:image" content="https://publisher.example/media/feature.png">
+      <p>Credit: AI-generated illustration.</p>
+    `;
+    expect(extractPublisherImage(html, 'https://publisher.example/story')).toEqual({
+      imageUrl: null,
+      imageCredit: null,
+    });
+  });
+
   it('retains an explicit photographer credit and otherwise acknowledges the publisher host', () => {
     expect(publisherCredit('https://www.reuters.com/world/africa/story', '  Amina Diallo / Reuters  '))
       .toBe('Amina Diallo / Reuters');

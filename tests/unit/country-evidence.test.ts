@@ -242,6 +242,20 @@ describe('country evidence integrity', () => {
         expect(items.map(item => item.link)).toContain('https://publisher.example/pressroom/2026/rwanda-investment-789');
     });
 
+    it('extracts official FAO news-detail links from its server-rendered content endpoint', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(`
+            <a href="https://www.fao.org:443/africa/news-stories/news-detail/ghana-food-market-investment/en">
+                Ghana food-market investment expands regional processing
+            </a>
+        `, { status: 200 })));
+        const items = await parseHTMLListing('https://www.fao.org/africa/news-stories/news/GetContent/1/en/');
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: 'Ghana food-market investment expands regional processing',
+            link: 'https://www.fao.org/africa/news-stories/news-detail/ghana-food-market-investment/en',
+        });
+    });
+
     it('reads recent country evidence from the World Bank official content API', async () => {
         const now = new Date('2026-08-09T12:00:00.000Z');
         const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({

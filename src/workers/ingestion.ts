@@ -591,7 +591,7 @@ export async function parseHTMLListing(url: string): Promise<RSSItem[]> {
             } catch {
                 continue;
             }
-            const isArticlePath = /\/(?:article|articles|news|latest-news|pressroom|press-release|press-releases|news-and-events)\//i.test(resolved.pathname)
+            const isArticlePath = /\/(?:article|articles|news|news-detail|latest-news|pressroom|press-release|press-releases|news-and-events)\//i.test(resolved.pathname)
                 || (permitsRootArticles
                     && resolved.pathname.split('/').filter(Boolean).length === 1
                     && resolved.pathname.length >= 12);

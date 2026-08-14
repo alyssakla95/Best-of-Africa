@@ -52,6 +52,16 @@ export function extractPublisherImage(html: string, articleUrl: string): { image
         return patterns.map(pattern => html.match(pattern)?.[1]).find(Boolean) || null;
     };
 
+    // A publisher-hosted URL is not sufficient proof that an image is
+    // photographic. Honour explicit captions/credits that identify generated
+    // artwork and reject the image before it reaches reader-facing records.
+    const visibleImageCredit = html
+        .replace(/<(?:script|style|noscript|template)(?:\s[^>]*)?>[\s\S]*?<\/(?:script|style|noscript|template)>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ');
+    const publisherLabelsGeneratedArtwork = /\b(?:credit|image|illustration)\s*:\s*(?:an?\s+)?(?:AI[- ]generated|generated\s+(?:with|by)\s+AI)\b/i.test(visibleImageCredit);
+    if (publisherLabelsGeneratedArtwork) return { imageUrl: null, imageCredit: null };
+
     const imageUrl = normalizeEditorialImageUrl(
         meta('og:image:secure_url') || meta('og:image') || meta('twitter:image'),
         articleUrl,

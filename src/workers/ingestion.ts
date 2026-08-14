@@ -1080,10 +1080,6 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
 
                         // Strict Africa relevance gate (applies even to country-coded
                         // sources — a regional outlet can still run off-topic wire stories).
-                        processed++;
-                        fixedItemBudget--;
-                        acceptedFromSource++;
-
                         let fullContent = item.content;
                         let imageUrl = item.imageUrl;
                         let imageCredit = item.imageCredit;
@@ -1096,6 +1092,16 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                                 imageCredit ||= scraped.imageCredit;
                             } catch (e) { /* Ignore */ }
                         }
+
+                        // Do not spend the source's single queue slot on evidence
+                        // the generator must reject. Continue through the ranked
+                        // candidates so a later full-text record can be admitted
+                        // without weakening the 3,000-character audit floor.
+                        if (fullContent.replace(/\s+/g, ' ').trim().length < 3000) continue;
+
+                        processed++;
+                        fixedItemBudget--;
+                        acceptedFromSource++;
 
                         const itemId = crypto.randomUUID();
                         await env.DB.prepare(`

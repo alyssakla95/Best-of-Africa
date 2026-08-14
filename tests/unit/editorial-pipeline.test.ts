@@ -60,6 +60,9 @@ describe('generated article publication boundary', () => {
         expect(ingestion).toContain('LENGTH(TRIM(COALESCE(evidence.content, \'\'))) >= 3000');
         expect(ingestion).toContain('a.moderation_status IN (\'pending\', \'reviewing\')');
         expect(ingestion).toContain('COALESCE(a.refinement_count, 0) < 2');
+        const evidenceGate = "if (fullContent.replace(/\\s+/g, ' ').trim().length < 3000) continue;";
+        expect(ingestion).toContain(evidenceGate);
+        expect(ingestion.indexOf(evidenceGate)).toBeLessThan(ingestion.indexOf('acceptedFromSource++;'));
         const migration = read('migrations/0073_ingested_article_evidence_index.sql');
         expect(migration).toContain('idx_ingested_items_article_id');
         expect(migration).toContain('ON ingested_items(article_id)');

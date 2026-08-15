@@ -602,7 +602,7 @@ const COUNTRY_TERMS: Array<[string, string, number]> = [
     ['CF', 'central african republic', 3],
     ['TD', 'chad', 2], ['TD', 'chadian', 1],
     ['CD', 'democratic republic of the congo', 4], ['CD', 'dr congo', 3], ['CD', 'drc', 3], ['CD', 'kinshasa', 2],
-    ['CG', 'republic of the congo', 4], ['CG', 'congo-brazzaville', 3], ['CG', 'brazzaville', 2],
+    ['CG', 'republic of the congo', 4], ['CG', 'republic of congo', 4], ['CG', 'congo republic', 4], ['CG', 'congo-brazzaville', 3], ['CG', 'brazzaville', 2],
     // Bare "Congo" is ambiguous; default to DR Congo (far more populous / common in news).
     ['CD', 'congo', 1],
     ['GA', 'gabon', 2], ['GA', 'gabonese', 1],

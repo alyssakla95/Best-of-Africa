@@ -1099,11 +1099,17 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                         // without weakening the 3,000-character audit floor.
                         if (fullContent.replace(/\s+/g, ' ').trim().length < 3000) continue;
 
+                        const itemId = crypto.randomUUID();
+                        const claim = await env.DB.prepare(`
+                            INSERT OR IGNORE INTO ingestion_url_claims (external_id, ingested_item_id)
+                            VALUES (?, ?)
+                        `).bind(item.url, itemId).run();
+                        if ((claim.meta?.changes || 0) === 0) continue;
+
                         processed++;
                         fixedItemBudget--;
                         acceptedFromSource++;
 
-                        const itemId = crypto.randomUUID();
                         await env.DB.prepare(`
                             INSERT INTO ingested_items (id, source_id, external_id, title, content, url, published_at, image_url, image_credit, image_source_url, publisher_name, publisher_url, status)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
@@ -1298,7 +1304,15 @@ export async function ingestNews(env: Env): Promise<{ processed: number; queued:
                             }
                         }
 
+                        if (fullContent.replace(/\s+/g, ' ').trim().length < 3000) continue;
+
                         const itemId = crypto.randomUUID();
+                        const claim = await env.DB.prepare(`
+                            INSERT OR IGNORE INTO ingestion_url_claims (external_id, ingested_item_id)
+                            VALUES (?, ?)
+                        `).bind(item.link, itemId).run();
+                        if ((claim.meta?.changes || 0) === 0) continue;
+
                         await env.DB.prepare(`
                             INSERT INTO ingested_items (id, source_id, external_id, title, content, url, published_at, image_url, image_credit, image_source_url, publisher_name, publisher_url, status)
                             VALUES (?, 'google-news-aggregator', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')

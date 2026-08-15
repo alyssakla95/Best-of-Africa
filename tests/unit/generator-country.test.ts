@@ -21,4 +21,11 @@ describe('generation country evidence', () => {
             'The programme concerns businesses in Kinshasa and DR Congo.',
         )).toBe('CD');
     });
+
+    it('does not confuse the Gulf of Guinea region with Guinea', () => {
+        expect(matchCountryByName(
+            'World Bank expands jobs programme in the northern Gulf of Guinea',
+            'The cross-border programme covers several coastal states in the Gulf of Guinea.',
+        )).toBeNull();
+    });
 });

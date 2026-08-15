@@ -63,6 +63,8 @@ describe('generated article publication boundary', () => {
         const evidenceGate = "if (fullContent.replace(/\\s+/g, ' ').trim().length < 3000) continue;";
         expect(ingestion).toContain(evidenceGate);
         expect(ingestion.indexOf(evidenceGate)).toBeLessThan(ingestion.indexOf('acceptedFromSource++;'));
+        expect(ingestion.match(/INSERT OR IGNORE INTO ingestion_url_claims/g)).toHaveLength(2);
+        expect(ingestion.match(/if \(\(claim\.meta\?\.changes \|\| 0\) === 0\) continue;/g)).toHaveLength(2);
         const migration = read('migrations/0073_ingested_article_evidence_index.sql');
         expect(migration).toContain('idx_ingested_items_article_id');
         expect(migration).toContain('ON ingested_items(article_id)');

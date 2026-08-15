@@ -634,8 +634,13 @@ const COUNTRY_MATCH_MIN_MARGIN = 2;  // winner must lead the next country by thi
  * countries are too close to call (caller falls back to the model / continental).
  */
 export function matchCountryByName(title: string, content: string): string | null {
-    const titleL = ` ${(title || '').toLowerCase()} `;
-    const bodyL = ` ${(content || '').toLowerCase()} `;
+    // Geographic regions are not countries. In particular, "Gulf of Guinea"
+    // otherwise gives GN a false score in multi-country coastal programmes.
+    const countryEvidenceText = (value: string) => value
+        .toLowerCase()
+        .replace(/\bgulf of guinea\b/g, ' ');
+    const titleL = ` ${countryEvidenceText(title || '')} `;
+    const bodyL = ` ${countryEvidenceText(content || '')} `;
     const scores: Record<string, number> = {};
 
     for (const [code, term, weight] of COUNTRY_TERMS) {

@@ -13,6 +13,7 @@ import { translatePortugueseInterfaceText } from '../../i18n/pt-PT-1945';
 import { readerCountryName } from '../../i18n/pt-country-data';
 import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
 import { ContextualDecisionRooms } from '@/components/decision-rooms/DecisionRoomDiscovery';
+import { RouteViewSwitcher } from '@/components/RouteViewSwitcher';
 
 const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
 const compact = (value: number) => new Intl.NumberFormat(activeLocale(), { notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
@@ -37,6 +38,13 @@ export const BetaIntelligence = () => {
   const countryName = (code: string, name: string) => readerCountryName(code, name, language);
   const { view: requestedView = 'overview' } = useParams<{ view?: string }>();
   const view = ['overview', 'sectors', 'workspace', 'methodology'].includes(requestedView) ? requestedView : 'overview';
+  const viewOptions = [
+    { value: 'overview', label: 'Performance matrix', href: '/intelligence/overview' },
+    { value: 'sectors', label: 'Sector dossiers', href: '/intelligence/sectors' },
+    { value: 'workspace', label: 'Decision workspace', href: '/intelligence/workspace' },
+    { value: 'methodology', label: 'Methodology', href: '/intelligence/methodology' },
+    { value: 'reports', label: 'Briefing reports', href: '/intelligence/reports' },
+  ];
   const query = useQuery({
     queryKey: ['sector-market-performance', 'market-v2'],
     queryFn: () => api.getSectorPerformance('investor'),
@@ -96,12 +104,7 @@ export const BetaIntelligence = () => {
 
     <IntelligenceTrustPanel updatedAt={performance?.retrieved_at} sourceLabel={performance?.source_name || 'World Bank World Development Indicators'} refreshStatus={performance?.official_data_refresh}/>
 
-    <nav className="sticky top-[4.5rem] z-30 border-b border-navy/15 bg-white/95 backdrop-blur-md lg:top-16" aria-label="Market intelligence sections">
-      <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
-        {[['overview','Performance matrix'],['sectors','Sector dossiers'],['workspace','Decision workspace'],['methodology','Methodology']].map(([slug,label]) => <Link key={slug} to={`/intelligence/${slug}`} aria-current={view === slug ? 'page' : undefined} className={`shrink-0 rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${view === slug ? 'bg-navy text-white' : 'text-navy/70 hover:bg-navy/5 hover:text-navy'}`}>{label}</Link>)}
-        <Link to="/intelligence/reports" className="shrink-0 rounded-md px-4 py-2.5 text-sm font-bold text-navy/70 transition-colors hover:bg-navy/5 hover:text-navy">Briefing reports</Link>
-      </div>
-    </nav>
+    <RouteViewSwitcher value={view} options={viewOptions} label='Market intelligence sections' />
 
     <div className="mx-auto mt-10 w-full max-w-[1400px] px-5 sm:px-6 md:mt-14 lg:px-8">
       <main className="page-stack min-w-0">

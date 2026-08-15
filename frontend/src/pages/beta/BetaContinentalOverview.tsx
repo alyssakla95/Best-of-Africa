@@ -15,6 +15,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { readerCountryName } from '../../i18n/pt-country-data';
 import { ContextualKnowledgeFeed } from '../KnowledgeNetworkPages';
 import { ContextualDecisionRooms } from '@/components/decision-rooms/DecisionRoomDiscovery';
+import { RouteViewSwitcher } from '@/components/RouteViewSwitcher';
 
 const activeLocale = () => typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
 const compact = (value: number, digits = 1) => new Intl.NumberFormat(activeLocale(), {
@@ -42,6 +43,12 @@ export const BetaContinentalOverview: React.FC = () => {
   const { view: requestedView = 'overview' } = useParams<{ view?: string }>();
   const { playTrack } = useAudio();
   const view = ['overview', 'regions', 'sectors', 'countries'].includes(requestedView) ? requestedView : 'overview';
+  const viewOptions = [
+    { value: 'overview', label: 'Continental record', href: '/dashboards/overview' },
+    { value: 'regions', label: 'Regional comparison', href: '/dashboards/regions' },
+    { value: 'sectors', label: 'Sector performance', href: '/dashboards/sectors' },
+    { value: 'countries', label: 'Country workspace', href: '/dashboards/countries' },
+  ];
   const query = useQuery({
     queryKey: ['continental-economic-overview', 'economy-v1'],
     queryFn: api.getContinentalOverview,
@@ -103,11 +110,7 @@ export const BetaContinentalOverview: React.FC = () => {
 
     <IntelligenceTrustPanel updatedAt={data.retrieved_at} sourceLabel={data.source_name} refreshStatus={data.official_data_refresh}/>
 
-    <nav className="sticky top-[4.5rem] z-30 border-b border-navy/15 bg-white/95 backdrop-blur-md lg:top-16" aria-label="Continental dashboard sections">
-      <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
-        {[['overview','Continental record'],['regions','Regional comparison'],['sectors','Sector performance'],['countries','Country workspace']].map(([slug,label]) => <Link key={slug} to={`/dashboards/${slug}`} aria-current={view === slug ? 'page' : undefined} className={`shrink-0 rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${view === slug ? 'bg-navy text-white' : 'text-navy/70 hover:bg-navy/5 hover:text-navy'}`}>{label}</Link>)}
-      </div>
-    </nav>
+    <RouteViewSwitcher value={view} options={viewOptions} label='Continental dashboard sections' />
 
     <div className="mx-auto mt-10 w-full max-w-[1400px] px-5 sm:px-6 md:mt-14 lg:px-8">
       <main className="page-stack min-w-0">

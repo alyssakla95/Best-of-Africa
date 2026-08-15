@@ -144,11 +144,11 @@ export function ScrollToTopButton() {
             onClick={() => setOpen(value => !value)}
             aria-expanded={open}
             aria-controls="page-section-menu"
-            className="relative inline-flex min-h-11 min-w-0 max-w-[min(17rem,calc(100vw-5.5rem))] items-center gap-2 overflow-hidden rounded-full border border-navy/15 bg-white px-3.5 text-xs font-bold text-navy shadow-[0_12px_35px_-16px_rgba(15,31,61,0.55)] hover:border-navy/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy"
+            aria-label="Sections on this page"
+            className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-navy/15 bg-white p-0 text-xs font-bold text-navy shadow-[0_12px_35px_-16px_rgba(15,31,61,0.55)] hover:border-navy/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy sm:w-auto sm:max-w-[17rem] sm:justify-start sm:gap-2 sm:px-3.5"
           >
             <span className="absolute inset-x-0 bottom-0 h-0.5 bg-navy/10" aria-hidden="true"><span className="block h-full bg-navy" style={{ width: `${progress}%` }} /></span>
             <List size={16} aria-hidden="true" />
-            <span className="truncate sm:hidden">Sections</span>
             <span className="hidden max-w-[13rem] truncate sm:inline">{sections.find(section => section.id === activeSection)?.label || 'On this page'}</span>
           </button>
         )}

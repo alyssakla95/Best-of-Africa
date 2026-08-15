@@ -78,6 +78,23 @@ describe('unified application navigation', () => {
     expect(nav).toContain('You never need to understand the whole platform at once.');
   });
 
+  it('uses compact route switching and progressive disclosure on analytical pages', () => {
+    const switcher = readFileSync(join(process.cwd(), 'frontend/src/components/RouteViewSwitcher.tsx'), 'utf8');
+    const intelligence = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaIntelligence.tsx'), 'utf8');
+    const continental = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaContinentalOverview.tsx'), 'utf8');
+    const guide = readFileSync(join(process.cwd(), 'frontend/src/components/PageReadingGuide.tsx'), 'utf8');
+    const longPageNav = readFileSync(join(process.cwd(), 'frontend/src/components/ScrollToTopButton.tsx'), 'utf8');
+
+    expect(switcher).toContain('sm:hidden');
+    expect(switcher).toContain('hidden gap-1 overflow-x-auto sm:flex');
+    expect(intelligence).toContain('<RouteViewSwitcher');
+    expect(continental).toContain('<RouteViewSwitcher');
+    expect(guide).toContain('return <details');
+    expect(guide).toContain('<summary');
+    expect(longPageNav).toContain('aria-label="Sections on this page"');
+    expect(longPageNav).toContain('h-11 w-11');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

@@ -188,12 +188,12 @@ export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: str
     ? subject.includes('sector') ? 'este guia sectorial' : subject.includes('continental') ? 'este panorama continental' : 'este painel'
     : subject;
   const primer = analyticalPrimer(subject);
-  return <section className="page-section overflow-hidden rounded-2xl border border-navy/15 bg-white" aria-labelledby="data-reading-guide-title">
-    <div className="border-b border-border bg-navy/[.035] px-5 py-6 md:px-8 md:py-7">
+  return <details className="group page-section overflow-hidden rounded-2xl border border-navy/15 bg-white" aria-labelledby="data-reading-guide-title">
+    <summary className="cursor-pointer bg-navy/[.035] px-5 py-5 marker:text-navy md:px-8 md:py-6">
       <p className="text-xs font-bold uppercase tracking-[.08em] text-navy/60">Start here · no specialist background required</p>
       <h2 id="data-reading-guide-title" className="mt-2 font-serif text-3xl text-navy md:text-4xl">{language === 'pt' ? `Como ler ${subjectLabel}` : `How to read ${subjectLabel}`}</h2>
-      <p className="mt-4 readable-copy">{text('Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.')}</p>
-    </div>
+      <p className="mt-3 readable-copy">{text('Read evidence in layers: definition, value, comparison, coverage, time period and limitation. This stops a large number, positive movement or high ranking from being mistaken for a complete conclusion.')}</p>
+    </summary>
     <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
       {[
         ['1', 'Definition', 'What exactly is measured, and what part of the economy or sector does it represent?'],
@@ -217,5 +217,5 @@ export function DataReadingGuide({ subject = 'this dashboard' }: { subject?: str
         ['Percentage point (pp)', 'The direct difference between percentages: 10% to 12% is +2 pp, not +2%.'],
       ].map(([term,meaning]) => <div key={term}><dt className="text-sm font-bold text-navy">{text(term)}</dt><dd className="mt-1 text-xs leading-5 text-muted-foreground">{text(meaning)}</dd></div>)}
     </dl>
-  </section>;
+  </details>;
 }

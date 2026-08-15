@@ -137,6 +137,15 @@ describe('unified application navigation', () => {
     expect(network).toContain('hidden gap-2 overflow-x-auto pb-3 [scrollbar-width:none] sm:flex');
   });
 
+  it('exposes every Stories sector without phone-only swiping', () => {
+    const stories = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaStories.tsx'), 'utf8');
+
+    expect(stories).toContain('id="stories-sector-filter"');
+    expect(stories).toContain("t('stories.sector_filter', 'Filter stories by sector')");
+    expect(stories).toContain('mb-8 hidden gap-2 pb-2 sm:flex sm:flex-wrap');
+    expect(stories).not.toContain('mobile-scroll-strip -mx-4 mb-8');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

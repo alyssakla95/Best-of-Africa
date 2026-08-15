@@ -327,21 +327,29 @@ export const BetaStories = () => {
 
         {/* Category Filter Tabs, hidden in search mode */}
         {!isSearchMode && sectorTabs.length > 1 && (
-          <div className="mobile-scroll-strip -mx-4 mb-8 gap-2 px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0 md:mb-10">
-            {sectorTabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                  activeFilter === tab.id
-                    ? 'bg-accent text-navy border-accent'
-                    : 'border-primary/10 text-primary/65 hover:border-primary/30 hover:text-primary'
-                }`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="mb-8 sm:hidden">
+              <label htmlFor="stories-sector-filter" className="sr-only">{t('stories.sector_filter', 'Filter stories by sector')}</label>
+              <select id="stories-sector-filter" className="min-h-12 w-full rounded-xl border border-border bg-white px-4 text-sm font-bold text-navy" value={activeFilter} onChange={event => setActiveFilter(event.target.value)}>
+                {sectorTabs.map(tab => <option key={tab.id} value={tab.id}>{tab.name}</option>)}
+              </select>
+            </div>
+            <div className="mb-8 hidden gap-2 pb-2 sm:flex sm:flex-wrap md:mb-10">
+              {sectorTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                    activeFilter === tab.id
+                      ? 'bg-accent text-navy border-accent'
+                      : 'border-primary/10 text-primary/65 hover:border-primary/30 hover:text-primary'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Search result count */}

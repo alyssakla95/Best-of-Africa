@@ -43,6 +43,16 @@ describe('source quality and coverage admission', () => {
         expect(TRUSTED_DISCOVERY_DOMAINS).toContain('ecowas.int');
     });
 
+    it('repairs current publisher feeds and removes dead direct connectors from active capacity', () => {
+        const repair = readFileSync('migrations/0089_repair_active_source_endpoints.sql', 'utf8');
+        expect(repair).toContain('https://www.businessdailyafrica.com/bd/rss.xml');
+        expect(repair).toContain('https://continent.substack.com/feed');
+        expect(repair).toContain("source_id IN ('s-business-daily-ke', 's-the-continent')");
+        expect(repair).toMatch(/is_active\s*=\s*0[\s\S]*primary-unctad-news[\s\S]*s-cnbc-africa/);
+        expect(sourceQualityProfile('Business Daily Africa', 'https://www.businessdailyafrica.com/bd/rss.xml', 'fixed').tier).toBe(3);
+        expect(sourceQualityProfile('The Continent', 'https://continent.substack.com/feed', 'fixed').tier).toBe(3);
+    });
+
     it('uses the official AfDB feed that carries full article evidence', () => {
         const migration = readFileSync('migrations/0075_afdb_full_evidence_feed.sql', 'utf8');
         const cooldown = readFileSync('migrations/0076_reset_afdb_acquisition_cooldown.sql', 'utf8');

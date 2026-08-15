@@ -84,6 +84,7 @@ describe('unified application navigation', () => {
     const continental = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaContinentalOverview.tsx'), 'utf8');
     const guide = readFileSync(join(process.cwd(), 'frontend/src/components/PageReadingGuide.tsx'), 'utf8');
     const longPageNav = readFileSync(join(process.cwd(), 'frontend/src/components/ScrollToTopButton.tsx'), 'utf8');
+    const workspace = readFileSync(join(process.cwd(), 'frontend/src/components/intelligence/DecisionWorkspace.tsx'), 'utf8');
 
     expect(switcher).toContain('sm:hidden');
     expect(switcher).toContain('hidden gap-1 overflow-x-auto sm:flex');
@@ -93,6 +94,9 @@ describe('unified application navigation', () => {
     expect(guide).toContain('<summary');
     expect(longPageNav).toContain('aria-label="Sections on this page"');
     expect(longPageNav).toContain('h-11 w-11');
+    expect(workspace).toContain('decisionRows.map(([area,status,evidence,next]) => <details');
+    expect(workspace).toContain('groupedMacroIndicators.map((group,index) => <details');
+    expect(workspace).toContain('open={index === 0}');
   });
 
   it('records session-linked progress and only explicit journey milestones', () => {

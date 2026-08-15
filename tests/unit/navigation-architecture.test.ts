@@ -114,6 +114,21 @@ describe('unified application navigation', () => {
     expect(specialists).toContain('id="directory"');
   });
 
+  it('condenses decision-room evidence and workflow progress on phones', () => {
+    const rooms = readFileSync(join(process.cwd(), 'frontend/src/pages/DecisionRoomPages.tsx'), 'utf8');
+    const specialists = readFileSync(join(process.cwd(), 'frontend/src/pages/SpecialistMarketplacePages.tsx'), 'utf8');
+    const progress = readFileSync(join(process.cwd(), 'frontend/src/components/ResponsiveProgressTimeline.tsx'), 'utf8');
+
+    expect(rooms).toContain('id="decision-room-status"');
+    expect(rooms).toContain('className="hidden gap-2 overflow-x-auto pb-3 sm:flex"');
+    expect(rooms).toContain('function RoomItemGroup');
+    expect(rooms).toContain('<details className="overflow-hidden rounded-2xl');
+    expect(specialists).toContain('<ResponsiveProgressTimeline items={lifecycle}');
+    expect(specialists).toContain('<ResponsiveProgressTimeline items={requestStages.map(pretty)}');
+    expect(progress).toContain('sm:hidden');
+    expect(progress).toContain('mt-8 hidden gap-2 sm:grid');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

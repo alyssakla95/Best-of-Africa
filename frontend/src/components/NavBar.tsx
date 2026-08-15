@@ -28,20 +28,28 @@ export const NavBar: React.FC = () => {
     const { t } = useLanguage();
     const { isAuthenticated, user } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-    const [scrolled, setScrolled] = React.useState(false);
     const currentJourney = journeyForPath(location.pathname);
+    const [mobileJourneyId, setMobileJourneyId] = React.useState(currentJourney.id);
+    const [scrolled, setScrolled] = React.useState(false);
     const journeys = React.useMemo(() => journeysForAudience(user?.tier), [user?.tier]);
+    const selectedMobileJourney = journeys.find(journey => journey.id === mobileJourneyId) || journeys[0];
 
     React.useEffect(() => {
-        const frame = window.requestAnimationFrame(() => setMobileMenuOpen(false));
+        const frame = window.requestAnimationFrame(() => {
+            setMobileMenuOpen(false);
+            setMobileJourneyId(currentJourney.id);
+        });
         return () => window.cancelAnimationFrame(frame);
-    }, [location.pathname]);
+    }, [currentJourney.id, location.pathname]);
 
     React.useEffect(() => {
-        const openMenu = () => setMobileMenuOpen(true);
+        const openMenu = () => {
+            setMobileJourneyId(currentJourney.id);
+            setMobileMenuOpen(true);
+        };
         window.addEventListener(OPEN_MOBILE_MENU_EVENT, openMenu);
         return () => window.removeEventListener(OPEN_MOBILE_MENU_EVENT, openMenu);
-    }, []);
+    }, [currentJourney.id]);
 
     React.useEffect(() => {
         const update = () => setScrolled(window.scrollY > 12);
@@ -142,24 +150,36 @@ export const NavBar: React.FC = () => {
                                         <SheetTitle className="flex items-center gap-3 font-serif text-2xl font-black tracking-tight text-navy">
                                             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-navy text-lg text-white">B</span>Explore BOA-Story
                                         </SheetTitle>
-                                        <p className="text-sm leading-6 text-navy/60">Choose what you are here to do. Every service sits within one of four clear paths.</p>
+                                        <p className="text-sm leading-6 text-navy/60">Choose one space, then one destination. You never need to understand the whole platform at once.</p>
                                         <div className="mt-3 flex flex-wrap items-center gap-3"><LanguageSelector /><DensityToggle /></div>
                                     </SheetHeader>
                                     <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-                                        <div className="space-y-3">
-                                            {journeys.map(journey => (
-                                                <section key={journey.id} className={cn('overflow-hidden rounded-xl border bg-white', currentJourney.id === journey.id && location.pathname !== '/' ? 'border-navy' : 'border-border')}>
-                                                    <Link to={journey.href} onClick={() => { trackJourneySelection(journey.id, 'mobile_menu', journey.href); closeMobileMenu(); }} className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-navy/[.03]">
-                                                        <span><span className="block text-sm font-bold text-navy">{journey.label}</span><span className="mt-1 block text-xs leading-5 text-navy/55">{journey.description}</span></span>
-                                                        <span aria-hidden="true" className="mt-0.5 text-navy">→</span>
-                                                    </Link>
-                                                    <div className="grid grid-cols-2 border-t border-border bg-navy/[.025]">
-                                                        {journey.links.map(link => (
-                                                            <Link key={link.href} to={link.href} onClick={() => { trackJourneySelection(journey.id, 'mobile_menu', link.href); closeMobileMenu(); }} className={cn('min-h-12 border-b border-r border-border px-3 py-2.5 text-xs font-bold leading-4 text-navy/70 last:border-b-0 hover:bg-white hover:text-navy', isNavigationPathActive(location.pathname, link.href) && 'bg-navy text-white hover:bg-navy hover:text-white')}>{link.label}</Link>
-                                                        ))}
+                                        <div>
+                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-navy/50">Choose a space</p>
+                                            <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="BOA-Story spaces">
+                                                {journeys.map(journey => {
+                                                    const selected = selectedMobileJourney.id === journey.id;
+                                                    return <button key={journey.id} type="button" role="tab" aria-selected={selected} onClick={() => setMobileJourneyId(journey.id)} className={cn('min-h-12 rounded-lg border px-3 py-2 text-left text-sm font-bold transition-colors', selected ? 'border-navy bg-navy text-white' : 'border-border bg-white text-navy hover:border-navy/40 hover:bg-navy/[.03]')}>{journey.label}</button>;
+                                                })}
+                                            </div>
+
+                                            <section role="tabpanel" className="mt-5 overflow-hidden rounded-xl border border-navy/20 bg-white">
+                                                <div className="border-b border-border bg-navy/[.035] px-4 py-4">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <span><span className="block text-base font-bold text-navy">{selectedMobileJourney.label}</span><span className="mt-1 block text-xs leading-5 text-navy/60">{selectedMobileJourney.description}</span></span>
+                                                        <Link to={selectedMobileJourney.href} onClick={() => { trackJourneySelection(selectedMobileJourney.id, 'mobile_menu', selectedMobileJourney.href); closeMobileMenu(); }} className="shrink-0 rounded-md border border-navy/20 bg-white px-3 py-2 text-xs font-bold text-navy">Open</Link>
                                                     </div>
-                                                </section>
-                                            ))}
+                                                </div>
+                                                <nav aria-label={`${selectedMobileJourney.label} destinations`} className="divide-y divide-border">
+                                                    {selectedMobileJourney.links.map(link => {
+                                                        const active = isNavigationPathActive(location.pathname, link.href);
+                                                        return <Link key={link.href} to={link.href} onClick={() => { trackJourneySelection(selectedMobileJourney.id, 'mobile_menu', link.href); closeMobileMenu(); }} className={cn('flex min-h-[4.25rem] items-center justify-between gap-4 px-4 py-3 hover:bg-navy/[.03]', active && 'bg-navy text-white hover:bg-navy')}>
+                                                            <span><span className="block text-sm font-bold">{link.label}</span><span className={cn('mt-0.5 block text-xs leading-5', active ? 'text-white/70' : 'text-navy/55')}>{link.description}</span></span>
+                                                            <span aria-hidden="true" className="shrink-0">→</span>
+                                                        </Link>;
+                                                    })}
+                                                </nav>
+                                            </section>
                                         </div>
 
                                         <div className="mt-6 border-t border-border pt-5">

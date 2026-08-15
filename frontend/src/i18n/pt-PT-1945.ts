@@ -3839,6 +3839,12 @@ const PORTUGUESE_INTERFACE_FRAGMENTS: Readonly<Record<string, string>> = {
   'Market intelligence': 'Inteligência de mercado',
   'Country profiles': 'Perfis nacionais',
   'Explore BOA-Story': 'Explorar a BOA-Story',
+  'Explore destinations': 'Explorar destinos',
+  'Explore 1 destinations': 'Explorar destinos',
+  'Choose one space, then one destination. You never need to understand the whole platform at once.': 'Escolha um espa\u00e7o e, depois, um destino. N\u00e3o precisa de compreender toda a plataforma de uma s\u00f3 vez.',
+  'Choose a space': 'Escolha um espa\u00e7o',
+  'BOA-Story spaces': 'Espa\u00e7os da BOA-Story',
+  'Work': 'Trabalho',
   'Choose what you are here to do. Every service sits within one of four clear paths.': 'Escolha o que pretende fazer. Cada serviço integra um de quatro percursos claros.',
   'More from BOA': 'Mais da BOA',
   'Your account': 'A sua conta',
@@ -3910,6 +3916,7 @@ const NORMALISED_PORTUGUESE_INTERFACE_PHRASES = new Map<string, string>([
 
 const translatePortugueseDynamicInterfaceText = (value: string): string | undefined => {
   let match: RegExpMatchArray | null;
+  if ((match = value.match(/^Explore (.+) destinations$/i))) return 'Explorar destinos de ' + match[1];
   if ((match = value.match(/^(.+) is establishing a steward-led BOA presence connected to reviewed African evidence, specialist interpretation and voluntary member participation\.$/i))) {
     return `${match[1]} está a estabelecer uma presença na BOA conduzida pelos seus responsáveis e ligada a elementos africanos revistos, interpretação especializada e participação voluntária dos membros.`;
   }

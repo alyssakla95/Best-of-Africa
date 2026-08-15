@@ -136,8 +136,8 @@ export function PageReadingGuide() {
 
   return <section className="border-b border-border bg-white" aria-label="Plain-language page guide">
     <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-      <button type="button" onClick={() => setManualState({ path: pathname, open: !open })} aria-expanded={open} aria-controls="plain-language-page-guide" className="flex min-h-14 w-full items-center justify-between gap-4 py-3 text-left text-sm text-navy">
-        <span className="flex min-w-0 items-start gap-3"><BookOpen size={19} className="mt-0.5 shrink-0"/><span><strong className="block sm:inline">{guide.label}</strong><span className="hidden sm:inline">: </span><span className="block text-muted-foreground sm:inline">{guide.title}</span></span></span>
+      <button type="button" onClick={() => setManualState({ path: pathname, open: !open })} aria-expanded={open} aria-controls="plain-language-page-guide" className="flex min-h-11 w-full items-center justify-between gap-3 py-2 text-left text-sm text-navy sm:min-h-14 sm:gap-4 sm:py-3">
+        <span className="flex min-w-0 items-center gap-2.5 sm:items-start sm:gap-3"><BookOpen size={18} className="shrink-0 sm:mt-0.5"/><span><strong>{guide.label}</strong><span className="hidden sm:inline">: </span><span className="hidden text-muted-foreground sm:inline">{guide.title}</span></span></span>
         <span className="flex shrink-0 items-center gap-2 font-semibold"><span className="hidden md:inline">{open ? 'Hide guide' : 'Open guide'}</span><ChevronDown size={18} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true"/></span>
       </button>
       {open && <div id="plain-language-page-guide" className="border-t border-border py-6 md:py-8">

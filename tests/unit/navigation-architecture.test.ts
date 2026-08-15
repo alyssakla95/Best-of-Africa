@@ -63,6 +63,21 @@ describe('unified application navigation', () => {
     expect(nav).toContain("'mobile_menu'");
   });
 
+  it('consolidates persistent mobile navigation without removing product routes', () => {
+    const dock = readFileSync(join(process.cwd(), 'frontend/src/components/MobileNavigationDock.tsx'), 'utf8');
+    const breadcrumbs = readFileSync(join(process.cwd(), 'frontend/src/components/Breadcrumbs.tsx'), 'utf8');
+    const nav = readFileSync(join(process.cwd(), 'frontend/src/components/NavBar.tsx'), 'utf8');
+    expect(dock).toContain("label: 'Work'");
+    expect(dock).toContain('grid-cols-4');
+    expect(dock).toContain("currentJourney.id === 'network' || currentJourney.id === 'enterprise'");
+    expect(breadcrumbs).toContain('sm:hidden');
+    expect(breadcrumbs).toContain('OPEN_MOBILE_MENU_EVENT');
+    expect(breadcrumbs).toContain('sm:flex');
+    expect(nav).toContain('selectedMobileJourney.links.map');
+    expect(nav).toContain('role="tablist"');
+    expect(nav).toContain('You never need to understand the whole platform at once.');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

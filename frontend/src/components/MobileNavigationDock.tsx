@@ -1,8 +1,8 @@
-import { Building2, ChartNoAxesCombined, Menu, Newspaper, UsersRound } from 'lucide-react';
+import { ChartNoAxesCombined, Menu, Newspaper, UsersRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
-import { journeyForPath, journeysForAudience, type JourneyId } from '@/lib/navigation';
+import { journeyForPath, journeysForAudience } from '@/lib/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { trackJourneySelection } from '@/lib/navigationTelemetry';
 
@@ -13,22 +13,25 @@ export function MobileNavigationDock() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const currentJourney = journeyForPath(pathname);
+  const journeys = journeysForAudience(user?.tier);
 
-  const icons = { read: Newspaper, markets: ChartNoAxesCombined, network: UsersRound, enterprise: Building2 } satisfies Record<JourneyId, typeof Newspaper>;
-  const destinations = journeysForAudience(user?.tier).map(journey => ({
-    journey: journey.id,
-    href: journey.href,
-    label: journey.mobileLabel,
-    Icon: icons[journey.id],
-    active: pathname !== '/' && currentJourney.id === journey.id,
-  }));
+  const read = journeys.find(journey => journey.id === 'read')!;
+  const markets = journeys.find(journey => journey.id === 'markets')!;
+  const network = journeys.find(journey => journey.id === 'network')!;
+  const enterprise = journeys.find(journey => journey.id === 'enterprise')!;
+  const workJourney = user?.tier === 'enterprise' || currentJourney.id === 'enterprise' ? enterprise : network;
+  const destinations = [
+    { journey: read.id, href: read.href, label: read.mobileLabel, Icon: Newspaper, active: pathname !== '/' && currentJourney.id === 'read' },
+    { journey: markets.id, href: markets.href, label: markets.mobileLabel, Icon: ChartNoAxesCombined, active: currentJourney.id === 'markets' },
+    { journey: workJourney.id, href: workJourney.href, label: 'Work', Icon: UsersRound, active: currentJourney.id === 'network' || currentJourney.id === 'enterprise' },
+  ];
 
   return (
     <nav
       aria-label="Primary mobile navigation"
       className="mobile-navigation-dock fixed inset-x-0 bottom-0 z-40 border-t border-navy/20 bg-white/[0.98] px-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5">
+      <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
         {destinations.map(({ journey, href, label, Icon, active }) => (
           <Link
             key={href}

@@ -90,4 +90,15 @@ describe('reader-facing presentation text', () => {
         expect(serviceWorker).toContain('self.skipWaiting()');
         expect(serviceWorker).toContain('self.clients.claim()');
     });
+
+    it('uses a shared comprehension-first reading rhythm without adding copy', () => {
+        const css = readFileSync('frontend/src/index.css', 'utf8');
+
+        expect(css).toContain('text-wrap: pretty;');
+        expect(css).toContain('max-width: 72ch;');
+        expect(css).toContain('font-variant-numeric: tabular-nums;');
+        expect(css).toContain('overflow-wrap: break-word; hyphens: auto;');
+        expect(css).toContain('.editorial-content:not(.editorial-content-compact)');
+        expect(css).not.toContain('main p, main li { overflow-wrap: anywhere; }');
+    });
 });

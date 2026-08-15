@@ -214,7 +214,7 @@ body {
   /* Prevent uppercase labels from becoming difficult to scan after their
      tracking was tuned for much smaller type. */
   :is(.uppercase, [class*="uppercase"])[class*="tracking-"] {
-    letter-spacing: 0.07em;
+    letter-spacing: 0.055em;
   }
 
   .readable-copy {
@@ -364,6 +364,77 @@ body {
     min-width: 0;
     background: #FFFFFF;
     color: #0F1F3D;
+  }
+
+  /* Preserve the copy while giving headings, paragraphs and data labels a
+     consistent reading rhythm. These rules do not add or hide information. */
+  .route-canvas :is(h1, h2, h3, h4) {
+    text-wrap: balance;
+  }
+
+  .route-canvas :is(p, li, dd) {
+    text-wrap: pretty;
+  }
+
+  .route-canvas :is(header, section, article, aside) > p {
+    max-width: 72ch;
+  }
+
+  .route-canvas .text-center > p {
+    margin-inline: auto;
+  }
+
+  .route-canvas :is(p, li, dd):not([class*='leading-']):not(.leading-none) {
+    line-height: 1.65;
+  }
+
+  .route-canvas h1.font-serif,
+  .route-canvas h1[class*='font-serif'] {
+    line-height: 1.04 !important;
+    letter-spacing: -0.025em !important;
+  }
+
+  .route-canvas h2.font-serif,
+  .route-canvas h2[class*='font-serif'] {
+    line-height: 1.12 !important;
+  }
+
+  .route-canvas h3.font-serif,
+  .route-canvas h3[class*='font-serif'] {
+    line-height: 1.18 !important;
+  }
+
+  .route-canvas h1[class*='text-[clamp'] {
+    font-size: clamp(2.5rem, 6vw, 5.25rem) !important;
+  }
+
+  .route-canvas :is(
+    [class*='text-navy/50'],
+    [class*='text-navy/55'],
+    [class*='text-navy/60']
+  ) {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  .route-canvas :is(table, [class*='tabular-nums']) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .route-canvas table :is(th, td) {
+    text-wrap: pretty;
+  }
+
+  .route-canvas :is(button, [role='button']):not([aria-label]) {
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .route-canvas button {
+    min-height: 2.75rem;
+  }
+
+  .route-canvas :is(input, select, textarea) {
+    line-height: 1.45;
   }
 
   .route-canvas :is(.max-w-6xl, .max-w-7xl) {
@@ -883,7 +954,7 @@ body {
     .responsive-data-table td::before {
       content: attr(data-label);
       color: hsl(var(--muted-foreground));
-      font-size: 0.65rem;
+      font-size: 0.75rem;
       font-weight: 750;
       letter-spacing: 0.07em;
       line-height: 1.4;
@@ -1026,10 +1097,10 @@ img[src^="/images/"],
 @media (max-width: 639px) {
   .site-header { background: #FFFFFF !important; backdrop-filter: none !important; }
   main { min-width: 0; }
-  main h1 { font-size: clamp(2.25rem, 11vw, 3rem) !important; line-height: 1.02 !important; }
-  main h2 { font-size: clamp(1.65rem, 8vw, 2.25rem) !important; line-height: 1.12 !important; }
-  main h3 { font-size: clamp(1.25rem, 6vw, 1.65rem) !important; }
-  main p, main li { overflow-wrap: anywhere; }
+  main h1 { font-size: clamp(2.25rem, 11vw, 3rem) !important; line-height: 1.08 !important; }
+  main h2 { font-size: clamp(1.65rem, 8vw, 2.25rem) !important; line-height: 1.16 !important; }
+  main h3 { font-size: clamp(1.25rem, 6vw, 1.65rem) !important; line-height: 1.22 !important; }
+  main p, main li, main dd { overflow-wrap: break-word; hyphens: auto; }
   main [class~="p-8"], main [class~="p-10"] { padding: 1.25rem !important; }
   main [class~="px-8"], main [class~="px-10"] { padding-inline: 1.25rem !important; }
   main [class~="py-8"], main [class~="py-10"] { padding-block: 1.5rem !important; }
@@ -1040,7 +1111,7 @@ img[src^="/images/"],
   .dashboard-shell > .page-stack { margin-top: 1.5rem; }
   .dashboard-shell .responsive-data-table { margin-inline: -0.25rem; }
   .dashboard-shell .recharts-wrapper { font-size: 0.72rem; }
-  .editorial-content { font-size: 1rem; }
+  .editorial-content:not(.editorial-content-compact) { font-size: 1.0625rem; }
   .editorial-content p { line-height: 1.72; }
 }
 

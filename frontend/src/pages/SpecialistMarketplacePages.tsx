@@ -54,8 +54,7 @@ export function SpecialistsDirectoryPage() {
       <p className="text-xs font-bold uppercase tracking-widest text-primary">Specialist Marketplace</p>
       <h1 className="mt-3 font-serif text-4xl font-bold md:text-6xl">Find practical African market expertise.</h1>
       <p className="mt-5 text-lg text-muted-foreground">Profiles are screened for marketplace access. Screening is not an endorsement or a substitute for your own due diligence.</p>
-      <div className="mt-6 flex flex-wrap gap-3"><Button asChild variant="outline"><Link to="/specialists/interest">Express interest in joining</Link></Button><Button asChild variant="ghost"><Link to="/specialists/sign-in">Specialist sign in</Link></Button></div>
-      <div className="mt-4"><Button asChild><Link to="/specialists/circles">Explore knowledge circles</Link></Button></div>
+      <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap"><Button asChild><a href="#directory">Browse specialists</a></Button><Button asChild variant="outline"><Link to="/specialists/circles">Explore knowledge circles</Link></Button><Button asChild variant="ghost"><Link to="/specialists/interest">Express interest in joining</Link></Button><Button asChild variant="ghost"><Link to="/specialists/sign-in">Specialist sign in</Link></Button></div>
     </header>
     <section className="mt-8 grid gap-3 md:grid-cols-3" aria-labelledby="verification-hierarchy">
       <h2 id="verification-hierarchy" className="sr-only">Specialist verification hierarchy</h2>
@@ -65,7 +64,7 @@ export function SpecialistsDirectoryPage() {
       <div className="flex flex-wrap items-end justify-between gap-5"><div className="max-w-3xl"><p className="text-xs font-bold uppercase tracking-widest text-navy/55">Public professional knowledge</p><h2 id="specialist-knowledge-network" className="mt-3 font-serif text-3xl text-navy md:text-4xl">Regional, sector and professional circles.</h2><p className="mt-4 text-sm leading-7 text-navy/65">The marketplace is also a moderated knowledge network. Readers can follow reviewed explanations and questions while private Enterprise engagements remain separate.</p></div><Button asChild variant="outline"><Link to="/specialists/circles">Open all circles</Link></Button></div>
       <div className="mt-8"><KnowledgeNetworkSection surface="specialists" compact /></div>
     </section>
-    <section className="mt-8 rounded-2xl border p-4" aria-labelledby="directory-filters">
+    <section id="directory" className="mt-8 scroll-mt-36 rounded-2xl border p-4" aria-labelledby="directory-filters">
       <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="directory-filters" className="font-bold">Narrow the directory</h2><Button type="button" variant="ghost" size="sm" onClick={reset} disabled={!activeFilters.length}><RotateCcw size={14} className="mr-2" />Reset all</Button></div>
       <div className="mt-4 grid gap-3 md:grid-cols-4">
         {Object.keys(filters).map(key => <div key={key}>

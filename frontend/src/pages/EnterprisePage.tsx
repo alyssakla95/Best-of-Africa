@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
+import { ResponsivePageNav } from '@/components/ResponsivePageNav';
 import { useLanguage } from '@/context/LanguageContext';
 import { KnowledgeNetworkSection } from './KnowledgeNetworkPages';
 
@@ -184,19 +185,10 @@ export const EnterprisePage = () => {
       </div>
     </section>
 
-    <nav aria-label="Enterprise page sections" className="sticky top-[4.5rem] z-30 border-b border-border bg-white/95 backdrop-blur lg:top-[4.75rem]">
-      <div className="page-container flex gap-2 overflow-x-auto py-3 [scrollbar-width:none]">
-        {sectionLinks.map(([label, id]) => (
-          <a
-            key={id}
-            href={`#${id}`}
-            className="whitespace-nowrap rounded-lg border border-border px-4 py-2 text-xs font-bold text-navy transition-colors hover:border-navy hover:bg-navy hover:text-white"
-          >
-            {label}
-          </a>
-        ))}
-      </div>
-    </nav>
+    <ResponsivePageNav
+      label="Explore enterprise"
+      items={sectionLinks.map(([label, id]) => ({ label, href: `#${id}` }))}
+    />
 
     <section id="fit" className="scroll-mt-40 border-b border-border">
       <div className="page-container grid gap-10 py-14 md:py-20 lg:grid-cols-[.8fr_1.2fr]">

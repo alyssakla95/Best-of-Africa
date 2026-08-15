@@ -72,6 +72,10 @@ export function applyPortuguese1945Orthography(value: string): string {
  * to explicit translation keys.
  */
 export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
+  'Browse specialists': 'Consultar especialistas',
+  'Explore enterprise': 'Explorar a área empresarial',
+  'Explore enterprise communities': 'Explorar comunidades empresariais',
+  'Explore specialist circles': 'Explorar círculos de especialistas',
   'Specialists': 'Especialistas',
   'Specialist Directory': 'Directório de especialistas',
   'Specialist Marketplace': 'Mercado de especialistas',

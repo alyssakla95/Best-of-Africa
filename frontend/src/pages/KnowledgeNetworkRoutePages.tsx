@@ -1,13 +1,20 @@
 import { ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
+import { ResponsivePageNav } from '@/components/ResponsivePageNav';
 import { KnowledgeNetworkSection } from './KnowledgeNetworkPages';
 
 function KnowledgePage({ surface }: { surface: 'enterprise' | 'specialists' }) {
   const enterprise = surface === 'enterprise';
   return <div className="bg-[#f7f8fa] text-navy"><SEO title={enterprise ? 'Enterprise Decision Communities' : 'African Specialist Knowledge Circles'} description="Moderated, evidence-linked questions and perspectives from BOA-Story readers, Enterprise participants and screened specialists." />
     <section className="border-b border-white/15 bg-navy text-white"><div className="page-container py-16 md:py-24"><p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">{enterprise ? 'Enterprise decision communities' : 'Specialist knowledge network'}</p><h1 className="mt-5 max-w-5xl font-serif text-[clamp(2.8rem,6vw,5.5rem)] leading-[1.02] text-white">{enterprise ? 'Bring market questions into a documented professional community.' : 'Make specialist knowledge visible, useful and accountable.'}</h1><p className="mt-7 max-w-3xl text-lg leading-8 text-white/70">Follow explicit regional, sector, professional and decision groups. Read reviewed contributions, ask bounded questions and trace what is evidence, interpretation or professional experience.</p><div className="mt-8 flex flex-wrap gap-3"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm"><ShieldCheck size={16} /> Human review before publication</span><span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm"><Users size={16} /> Role and evidence labels</span></div></div></section>
-    <nav className="sticky top-[4.5rem] z-30 border-b border-border bg-white/95 backdrop-blur lg:top-[4.75rem]"><div className="page-container flex gap-2 overflow-x-auto py-3"><Link className="rounded-xl border border-border px-4 py-2 text-sm font-bold" to={enterprise ? '/enterprise' : '/specialists'}>{enterprise ? 'Enterprise overview' : 'Specialist directory'}</Link><Link className="rounded-xl border border-border px-4 py-2 text-sm font-bold" to="/decision-rooms">Decision rooms</Link><Link className="rounded-xl border border-border px-4 py-2 text-sm font-bold" to="/community-transition">Bring an existing community</Link><a className="rounded-xl bg-navy px-4 py-2 text-sm font-bold text-white" href="#groups">Knowledge groups</a><a className="rounded-xl border border-border px-4 py-2 text-sm font-bold" href="#standards">Contribution standards</a></div></nav>
+    <ResponsivePageNav label={enterprise ? 'Explore enterprise communities' : 'Explore specialist circles'} items={[
+      { label: enterprise ? 'Enterprise overview' : 'Specialist directory', href: enterprise ? '/enterprise' : '/specialists' },
+      { label: 'Decision rooms', href: '/decision-rooms' },
+      { label: 'Bring an existing community', href: '/community-transition' },
+      { label: 'Knowledge groups', href: '#groups', current: true },
+      { label: 'Contribution standards', href: '#standards' },
+    ]} />
     <main><section id="groups" className="page-container scroll-mt-40 py-14 md:py-20"><KnowledgeNetworkSection surface={surface} /></section><section id="standards" className="border-t border-border bg-white"><div className="page-container grid gap-6 py-14 md:grid-cols-3 md:py-20">{[['Public knowledge', 'Approved contributions may be read throughout BOA-Story and connected to relevant countries, sectors and intelligence pages.'], ['Private decisions', 'Enterprise requests, commercial details and private workspace discussions never enter the public feed automatically.'], ['Measured standing', 'Payment, popularity and follower counts never purchase screening or verification standing.']].map(([title, copy]) => <div key={title} className="rounded-2xl border border-border p-6"><h2 className="text-xl font-bold text-navy">{title}</h2><p className="mt-3 text-sm leading-7 text-navy/65">{copy}</p></div>)}</div></section></main>
   </div>;
 }

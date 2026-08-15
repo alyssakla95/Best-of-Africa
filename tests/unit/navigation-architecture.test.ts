@@ -99,6 +99,21 @@ describe('unified application navigation', () => {
     expect(workspace).toContain('open={index === 0}');
   });
 
+  it('keeps enterprise and specialist navigation task-first on phones', () => {
+    const responsiveNav = readFileSync(join(process.cwd(), 'frontend/src/components/ResponsivePageNav.tsx'), 'utf8');
+    const enterprise = readFileSync(join(process.cwd(), 'frontend/src/pages/EnterprisePage.tsx'), 'utf8');
+    const communities = readFileSync(join(process.cwd(), 'frontend/src/pages/KnowledgeNetworkRoutePages.tsx'), 'utf8');
+    const specialists = readFileSync(join(process.cwd(), 'frontend/src/pages/SpecialistMarketplacePages.tsx'), 'utf8');
+
+    expect(responsiveNav).toContain('sm:hidden');
+    expect(responsiveNav).toContain('<details');
+    expect(responsiveNav).toContain('hidden gap-2 overflow-x-auto');
+    expect(enterprise).toContain('<ResponsivePageNav');
+    expect(communities).toContain('<ResponsivePageNav');
+    expect(specialists).toContain('<a href="#directory">Browse specialists</a>');
+    expect(specialists).toContain('id="directory"');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

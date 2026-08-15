@@ -21,14 +21,14 @@ export function MobileNavigationDock() {
   const enterprise = journeys.find(journey => journey.id === 'enterprise')!;
   const workJourney = user?.tier === 'enterprise' || currentJourney.id === 'enterprise' ? enterprise : network;
   const destinations = [
-    { journey: read.id, href: read.href, label: read.mobileLabel, Icon: Newspaper, active: pathname !== '/' && currentJourney.id === 'read' },
-    { journey: markets.id, href: markets.href, label: markets.mobileLabel, Icon: ChartNoAxesCombined, active: currentJourney.id === 'markets' },
-    { journey: workJourney.id, href: workJourney.href, label: 'Work', Icon: UsersRound, active: currentJourney.id === 'network' || currentJourney.id === 'enterprise' },
+    { journey: read.id, href: read.href, label: t('group.read', read.mobileLabel), Icon: Newspaper, active: pathname !== '/' && currentJourney.id === 'read' },
+    { journey: markets.id, href: markets.href, label: t('group.intelligence', markets.mobileLabel), Icon: ChartNoAxesCombined, active: currentJourney.id === 'markets' },
+    { journey: workJourney.id, href: workJourney.href, label: t('nav.work', 'Work'), Icon: UsersRound, active: currentJourney.id === 'network' || currentJourney.id === 'enterprise' },
   ];
 
   return (
     <nav
-      aria-label="Primary mobile navigation"
+      aria-label={t('nav.mobile_primary', 'Primary mobile navigation')}
       className="mobile-navigation-dock fixed inset-x-0 bottom-0 z-40 border-t border-navy/20 bg-white/[0.98] px-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl lg:hidden"
     >
       <div className="mx-auto grid max-w-md grid-cols-4 gap-1">

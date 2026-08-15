@@ -67,7 +67,10 @@ describe('unified application navigation', () => {
     const dock = readFileSync(join(process.cwd(), 'frontend/src/components/MobileNavigationDock.tsx'), 'utf8');
     const breadcrumbs = readFileSync(join(process.cwd(), 'frontend/src/components/Breadcrumbs.tsx'), 'utf8');
     const nav = readFileSync(join(process.cwd(), 'frontend/src/components/NavBar.tsx'), 'utf8');
-    expect(dock).toContain("label: 'Work'");
+    expect(dock).toContain("label: t('nav.work', 'Work')");
+    expect(dock).toContain("t('group.read', read.mobileLabel)");
+    expect(dock).toContain("t('group.intelligence', markets.mobileLabel)");
+    expect(dock).toContain("t('nav.mobile_primary', 'Primary mobile navigation')");
     expect(dock).toContain('grid-cols-4');
     expect(dock).toContain("currentJourney.id === 'network' || currentJourney.id === 'enterprise'");
     expect(breadcrumbs).toContain('sm:hidden');
@@ -76,6 +79,22 @@ describe('unified application navigation', () => {
     expect(nav).toContain('selectedMobileJourney.links.map');
     expect(nav).toContain('role="tablist"');
     expect(nav).toContain('You never need to understand the whole platform at once.');
+  });
+
+  it('codes persistent long-page controls for every interface language', () => {
+    const controls = readFileSync(join(process.cwd(), 'frontend/src/components/ScrollToTopButton.tsx'), 'utf8');
+    const dictionary = readFileSync(join(process.cwd(), 'frontend/src/i18n/dict.ts'), 'utf8');
+
+    expect(dictionary.match(/'nav\.work'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.mobile_primary'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.sections'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.on_this_page'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.close_sections'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.return_top'/g)).toHaveLength(7);
+    expect(dictionary.match(/'nav\.menu_top'/g)).toHaveLength(7);
+    expect(controls).toContain("t('nav.sections', 'Sections on this page')");
+    expect(controls).toContain("t('nav.return_top', 'Return to the main menu and top of page')");
+    expect(controls).toContain("t('nav.menu_top', 'Menu & top')");
   });
 
   it('uses compact route switching and progressive disclosure on analytical pages', () => {
@@ -92,7 +111,7 @@ describe('unified application navigation', () => {
     expect(continental).toContain('<RouteViewSwitcher');
     expect(guide).toContain('return <details');
     expect(guide).toContain('<summary');
-    expect(longPageNav).toContain('aria-label="Sections on this page"');
+    expect(longPageNav).toContain("aria-label={t('nav.sections', 'Sections on this page')}");
     expect(longPageNav).toContain('h-11 w-11');
     expect(workspace).toContain('decisionRows.map(([area,status,evidence,next]) => <details');
     expect(workspace).toContain('groupedMacroIndicators.map((group,index) => <details');

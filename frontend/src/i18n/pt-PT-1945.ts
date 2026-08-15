@@ -72,6 +72,14 @@ export function applyPortuguese1945Orthography(value: string): string {
  * to explicit translation keys.
  */
 export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
+  'All groups': 'Todos os grupos',
+  'Knowledge groups': 'Grupos de conhecimento',
+  'Enterprise groups': 'Grupos empresariais',
+  'Regional circles': 'Círculos regionais',
+  'Sector circles': 'Círculos sectoriais',
+  'Professional circles': 'Círculos profissionais',
+  'Language circles': 'Círculos linguísticos',
+  'Decision circles': 'Círculos de decisão',
   'Browse specialists': 'Consultar especialistas',
   'Explore enterprise': 'Explorar a área empresarial',
   'Explore enterprise communities': 'Explorar comunidades empresariais',

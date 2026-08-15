@@ -129,6 +129,14 @@ describe('unified application navigation', () => {
     expect(progress).toContain('mt-8 hidden gap-2 sm:grid');
   });
 
+  it('exposes every knowledge-circle category without phone-only swiping', () => {
+    const network = readFileSync(join(process.cwd(), 'frontend/src/pages/KnowledgeNetworkPages.tsx'), 'utf8');
+
+    expect(network).toContain('id="knowledge-group-type"');
+    expect(network).toContain('<option value="all">All groups</option>');
+    expect(network).toContain('hidden gap-2 overflow-x-auto pb-3 [scrollbar-width:none] sm:flex');
+  });
+
   it('records session-linked progress and only explicit journey milestones', () => {
     const telemetry = readFileSync(join(process.cwd(), 'frontend/src/lib/navigationTelemetry.ts'), 'utf8');
     const layout = readFileSync(join(process.cwd(), 'frontend/src/components/Layout.tsx'), 'utf8');

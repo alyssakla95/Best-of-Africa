@@ -540,13 +540,22 @@ export async function parseRSS(url: string): Promise<RSSItem[]> {
 // Full Content Scraper
 // Fetches and extracts main content from article URLs
 // ───────────────────────────────────────────────────────────────────────────────
+const decodeNumericEntity = (match: string, raw: string, radix: number): string => {
+    const codePoint = Number.parseInt(raw, radix);
+    return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : match;
+};
+
 const decodeBasicEntities = (value: string) => value
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (match, raw: string) => decodeNumericEntity(match, raw, 16))
+    .replace(/&#([0-9]+);/g, (match, raw: string) => decodeNumericEntity(match, raw, 10));
 
 export function extractParagraphEvidence(html: string): string {
     // Complex publisher pages commonly embed HTML fragments inside scripts,

@@ -212,6 +212,15 @@ describe('country evidence integrity', () => {
         });
     });
 
+    it('decodes publisher apostrophes and numeric entities in RSS text', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(`<?xml version="1.0"?><rss><channel><item><title>Tanzania&amp;apos;s trade grows &#x2014; exporters add &#39;value&#39;</title><link>https://publisher.example/story</link><description>Farmers&amp;apos; exports reached &#8364;2 million.</description><pubDate>Fri, 14 Aug 2026 16:45:00 +0000</pubDate></item></channel></rss>`, { status: 200 })));
+        const items = await parseRSS('https://publisher.example/feed');
+        expect(items[0]).toMatchObject({
+            title: "Tanzania's trade grows — exporters add 'value'",
+            description: "Farmers' exports reached €2 million.",
+        });
+    });
+
     it('reports blocked or non-feed RSS responses instead of recording false empty success', async () => {
         vi.stubGlobal('fetch', vi.fn(async () => new Response('Access denied', { status: 403 })));
         await expect(parseRSS('https://publisher.example/blocked')).rejects.toThrow('HTTP 403');

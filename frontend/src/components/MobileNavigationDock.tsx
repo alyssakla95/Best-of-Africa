@@ -1,4 +1,4 @@
-import { ChartNoAxesCombined, Menu, Newspaper, UsersRound } from 'lucide-react';
+import { Building2, ChartNoAxesCombined, Newspaper, UsersRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
@@ -19,11 +19,11 @@ export function MobileNavigationDock() {
   const markets = journeys.find(journey => journey.id === 'markets')!;
   const network = journeys.find(journey => journey.id === 'network')!;
   const enterprise = journeys.find(journey => journey.id === 'enterprise')!;
-  const workJourney = user?.tier === 'enterprise' || currentJourney.id === 'enterprise' ? enterprise : network;
   const destinations = [
-    { journey: read.id, href: read.href, label: t('group.read', read.mobileLabel), Icon: Newspaper, active: pathname !== '/' && currentJourney.id === 'read' },
-    { journey: markets.id, href: markets.href, label: t('group.intelligence', markets.mobileLabel), Icon: ChartNoAxesCombined, active: currentJourney.id === 'markets' },
-    { journey: workJourney.id, href: workJourney.href, label: t('nav.work', 'Work'), Icon: UsersRound, active: currentJourney.id === 'network' || currentJourney.id === 'enterprise' },
+    { journey: read.id, href: read.href, label: read.mobileLabel, Icon: Newspaper, active: pathname !== '/' && currentJourney.id === 'read' },
+    { journey: markets.id, href: markets.href, label: markets.mobileLabel, Icon: ChartNoAxesCombined, active: currentJourney.id === 'markets' },
+    { journey: network.id, href: network.href, label: network.mobileLabel, Icon: UsersRound, active: currentJourney.id === 'network' },
+    { journey: enterprise.id, href: enterprise.href, label: enterprise.mobileLabel, Icon: Building2, active: currentJourney.id === 'enterprise' },
   ];
 
   return (
@@ -47,15 +47,6 @@ export function MobileNavigationDock() {
             <span className="max-w-full truncate">{label}</span>
           </Link>
         ))}
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event(OPEN_MOBILE_MENU_EVENT))}
-          className="flex min-h-[3.6rem] min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold leading-none text-navy/60 transition-colors hover:bg-navy/5 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy"
-          aria-label={t('nav.open_menu', 'Open complete menu')}
-        >
-          <Menu size={20} strokeWidth={1.9} aria-hidden="true" />
-          <span>{t('nav.menu', 'More')}</span>
-        </button>
       </div>
     </nav>
   );

@@ -63,19 +63,24 @@ describe('unified application navigation', () => {
     expect(nav).toContain("'mobile_menu'");
   });
 
-  it('consolidates persistent mobile navigation without removing product routes', () => {
+  it('keeps all four product journeys available in persistent mobile navigation', () => {
     const dock = readFileSync(join(process.cwd(), 'frontend/src/components/MobileNavigationDock.tsx'), 'utf8');
     const breadcrumbs = readFileSync(join(process.cwd(), 'frontend/src/components/Breadcrumbs.tsx'), 'utf8');
     const nav = readFileSync(join(process.cwd(), 'frontend/src/components/NavBar.tsx'), 'utf8');
-    expect(dock).toContain("label: t('nav.work', 'Work')");
-    expect(dock).toContain("t('group.read', read.mobileLabel)");
-    expect(dock).toContain("t('group.intelligence', markets.mobileLabel)");
+    expect(dock).toContain('label: read.mobileLabel');
+    expect(dock).toContain('label: markets.mobileLabel');
+    expect(dock).toContain('label: network.mobileLabel');
+    expect(dock).toContain('label: enterprise.mobileLabel');
     expect(dock).toContain("t('nav.mobile_primary', 'Primary mobile navigation')");
     expect(dock).toContain('grid-cols-4');
-    expect(dock).toContain("currentJourney.id === 'network' || currentJourney.id === 'enterprise'");
+    expect(dock).toContain("currentJourney.id === 'network'");
+    expect(dock).toContain("currentJourney.id === 'enterprise'");
+    expect(dock).not.toContain("t('nav.work', 'Work')");
+    expect(dock).not.toContain("t('nav.menu', 'More')");
     expect(breadcrumbs).toContain('sm:hidden');
     expect(breadcrumbs).toContain('OPEN_MOBILE_MENU_EVENT');
     expect(breadcrumbs).toContain('sm:flex');
+    expect(nav).toContain("t('nav.open_menu', 'Open complete menu')");
     expect(nav).toContain('selectedMobileJourney.links.map');
     expect(nav).toContain('role="tablist"');
     expect(nav).toContain('You never need to understand the whole platform at once.');

@@ -381,9 +381,10 @@ export async function ensureArticleTranslation(
     articleId: string,
     article: { title: string; subtitle?: string | null; summary?: string | null; content: string },
     targetLang: ReaderTranslationLanguage,
+    force = false,
 ): Promise<boolean> {
     const existing = await getTranslation(env, articleId, targetLang);
-    if (existing?.quality === 1 && existing.content) return true;
+    if (!force && existing?.quality === 1 && existing.content) return true;
 
     const lockKey = `translation:building:v1:${articleId}:${targetLang}`;
     if (await env.CACHE.get(lockKey)) return false;
@@ -598,6 +599,50 @@ export async function processArticleTranslationJob(
  * the article from being retried every tick. Self-terminates when both the
  * legacy rows and the coverage gap are exhausted.
  */
+export async function backfillGoogleLegacyTranslations(env: Env, batch: number): Promise<number> {
+    if (!env.GOOGLE_TRANSLATE_API_KEY || batch <= 0) return 0;
+    const markerKey = 'translation:google:v1:activated_at';
+    let activatedAt = await env.CACHE.get(markerKey);
+    if (!activatedAt) {
+        activatedAt = new Date().toISOString();
+        await env.CACHE.put(markerKey, activatedAt);
+    }
+    return regenerateGoogleLegacyRows(env, batch, activatedAt);
+}
+
+async function regenerateGoogleLegacyRows(env: Env, batch: number, activatedAt: string): Promise<number> {
+    const rows = await env.DB.prepare(`
+        SELECT a.id, a.title, a.subtitle, a.summary, a.content, t.language
+        FROM article_translations t JOIN articles a ON a.id = t.article_id
+        WHERE a.status = 'published' AND t.quality = 1 AND t.language != 'pt'
+          AND t.created_at < ?
+        ORDER BY a.published_at DESC, t.language ASC LIMIT ?
+    `).bind(activatedAt, batch).all<{
+        id: string; title: string; subtitle: string | null; summary: string | null;
+        content: string; language: ReaderTranslationLanguage;
+    }>();
+    return processGoogleLegacyRows(env, rows.results || []);
+}
+
+type GoogleLegacyRow = {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    summary: string | null;
+    content: string;
+    language: ReaderTranslationLanguage;
+};
+
+async function processGoogleLegacyRows(env: Env, rows: GoogleLegacyRow[]): Promise<number> {
+    let done = 0;
+    for (const row of rows) {
+        const ok = await ensureArticleTranslation(env, row.id, row, row.language, true);
+        if (!ok) break;
+        done++;
+    }
+    return done;
+}
+
 export async function backfillTranslations(env: Env, batch = 2): Promise<number> {
     const portugueseDone = await backfillMissingPortugueseTranslations(env, batch);
     const remainingBatch = batch - portugueseDone;
@@ -605,6 +650,10 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         console.log(`[translate] Generated ${portugueseDone} Portuguese translation(s).`);
         return portugueseDone;
     }
+
+    const googleDone = await backfillGoogleLegacyTranslations(env, remainingBatch);
+    const pipelineBatch = remainingBatch - googleDone;
+    if (pipelineBatch <= 0) return portugueseDone + googleDone;
 
     const rows = await env.DB.prepare(`
         SELECT t.id AS tid, t.article_id AS aid, t.language, a.title, a.subtitle, a.summary, a.content
@@ -616,9 +665,9 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         ) AND a.status = 'published'
         ORDER BY a.published_at DESC
         LIMIT ?
-    `).bind(remainingBatch).all<{ tid: string; aid: string; language: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
+    `).bind(pipelineBatch).all<{ tid: string; aid: string; language: ReaderTranslationLanguage; title: string; subtitle: string | null; summary: string | null; content: string }>();
 
-    let done = portugueseDone;
+    let done = portugueseDone + googleDone;
     for (const r of rows.results || []) {
         try {
             const ok = await ensureArticleTranslation(
@@ -639,7 +688,7 @@ export async function backfillTranslations(env: Env, batch = 2): Promise<number>
         }
     }
 
-    const spare = remainingBatch - (rows.results?.length || 0);
+    const spare = pipelineBatch - (rows.results?.length || 0);
     if (spare > 0) done += await backfillMissingTranslations(env, spare);
 
     if (done) console.log(`[translate] Regenerated ${done} translation(s).`);

@@ -216,6 +216,8 @@ Published article translations are stored for the six non-English languages and 
 
 When configured, Google Cloud Translation is also primary for public French, Arabic, German, Hindi, and Simplified Chinese article translations. Existing completeness gates still run before storage; Portuguese and English never use this provider.
 
+On the first scheduled translation run after the Google credential is configured, the Worker records an activation timestamp and progressively regenerates pre-existing non-Portuguese translations. Deep health reports the active provider and whether that legacy refresh has started.
+
 ### Discoverability and distribution
 
 - The Worker generates the XML sitemap, latest-story RSS feed, and Daily Pulse podcast feed.

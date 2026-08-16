@@ -57,7 +57,12 @@ describe('Health Check Endpoints', () => {
             expect(checkNames).toContain('source_acquisition');
             expect(checkNames).toContain('vectorize');
             expect(checkNames).toContain('editorial_generation');
+            expect(checkNames).toContain('translation_provider');
             expect(checkNames).toContain('durable_objects');
+
+            const translation = body.checks.find((check: { name: string }) => check.name === 'translation_provider');
+            expect(translation.details.primary).toBe('workers-fallback');
+            expect(translation.details.portugueseProvider).toBe('code-owned-editorial');
 
             const diversity = body.checks.find((check: { name: string }) => check.name === 'coverage_diversity');
             expect(diversity.details.unresolvedDeficits).toHaveProperty('countriesWithoutRecentEvidence');
@@ -91,6 +96,15 @@ describe('Health Check Endpoints', () => {
             const acquisitionQuery = sql.find(query => query.includes('source_acquisition_yield')) || '';
             expect(acquisitionQuery).toContain('canonical.url = s.url');
             expect(acquisitionQuery).toContain('ORDER BY canonical.created_at ASC, canonical.id ASC LIMIT 1');
+        });
+
+        it('reports Google as the active translation provider when configured', async () => {
+            const configuredEnv = createMockEnv({ GOOGLE_TRANSLATE_API_KEY: 'configured' });
+            const response = await app.fetch(new Request('http://localhost/health/deep'), configuredEnv);
+            const body = await response.json() as { checks: Array<{ name: string; status: string; details: Record<string, unknown> }> };
+            const translation = body.checks.find(check => check.name === 'translation_provider');
+            expect(translation?.status).toBe('healthy');
+            expect(translation?.details.primary).toBe('google-cloud-translation-v2');
         });
 
         it('should return unhealthy status when database fails', async () => {

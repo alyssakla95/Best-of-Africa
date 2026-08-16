@@ -700,6 +700,24 @@ router.get('/health/deep', async (c) => {
         message: emailConfigured ? undefined : 'No verified transactional email provider and sender are configured',
     });
 
+    const googleTranslationConfigured = Boolean(c.env.GOOGLE_TRANSLATE_API_KEY);
+    const googleTranslationActivatedAt = googleTranslationConfigured
+        ? await c.env.CACHE.get('translation:google:v1:activated_at').catch(() => null)
+        : null;
+    checks.push({
+        name: 'translation_provider',
+        status: googleTranslationConfigured ? 'healthy' : 'degraded',
+        responseTimeMs: 0,
+        message: googleTranslationConfigured ? undefined : 'Google Cloud Translation is not configured; Worker fallback is active',
+        details: {
+            primary: googleTranslationConfigured ? 'google-cloud-translation-v2' : 'workers-fallback',
+            activationAt: googleTranslationActivatedAt,
+            legacyRefreshStarted: Boolean(googleTranslationActivatedAt),
+            languages: ['fr', 'ar', 'de', 'hi', 'zh'],
+            portugueseProvider: 'code-owned-editorial',
+        },
+    });
+
     // Check Vectorize
     const vectorStart = Date.now();
     try {

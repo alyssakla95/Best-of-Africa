@@ -2555,6 +2555,8 @@ export const PORTUGUESE_INTERFACE_PHRASES: Readonly<Record<string, string>> = {
   'Page views are first-party article view events recorded during the latest 30 days. They are not divided or transformed into an estimate of unique monthly readers.':
     'As visualizações de página são eventos directos de leitura de artigos registados nos últimos 30 dias. Não são divididas nem transformadas numa estimativa de leitores mensais únicos.',
   'Name, email, and message are required': 'O nome, o correio electrónico e a mensagem são obrigatórios',
+  'Google Cloud Translation is not configured; Worker fallback is active':
+    'O Google Cloud Translation n\u00e3o est\u00e1 configurado; est\u00e1 activo o mecanismo de conting\u00eancia do Worker',
   'No verified transactional email provider and sender are configured':
     'Não estão configurados uma entidade e um remetente verificados para correio electrónico transaccional',
   'Thank you for your inquiry. We will respond shortly.': 'Obrigado pelo seu pedido. Responderemos em breve.',

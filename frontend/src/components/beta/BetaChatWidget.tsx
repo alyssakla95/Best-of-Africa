@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { useMember } from '../../context/MemberContext';
+import { useAudio } from '../../context/AudioContext';
 import { EditorialContent } from '../EditorialContent';
 
 type Message = {
@@ -15,6 +16,7 @@ type Message = {
 
 export const BetaChatWidget = () => {
   const { isMember } = useMember();
+  const { currentTrack } = useAudio();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +36,12 @@ export const BetaChatWidget = () => {
     }
   }, [messages, isOpen]);
 
-  // Only render for logged-in members
-  if (!isMember) return null;
+  useEffect(() => {
+    if (currentTrack) setIsOpen(false);
+  }, [currentTrack]);
+
+  // Playback owns the limited floating-control area while a track is active.
+  if (!isMember || currentTrack) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

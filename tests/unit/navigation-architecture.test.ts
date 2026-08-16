@@ -97,6 +97,17 @@ describe('unified application navigation', () => {
     expect(controls).toContain("t('nav.menu_top', 'Menu & top')");
   });
 
+  it('prevents the global player and member chat from occupying the same floating-control area', () => {
+    const chat = readFileSync(join(process.cwd(), 'frontend/src/components/beta/BetaChatWidget.tsx'), 'utf8');
+    const player = readFileSync(join(process.cwd(), 'frontend/src/components/beta/BetaGlobalPlayer.tsx'), 'utf8');
+
+    expect(player).toContain('bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3');
+    expect(chat).toContain("import { useAudio } from '../../context/AudioContext'");
+    expect(chat).toContain('const { currentTrack } = useAudio();');
+    expect(chat).toContain('if (currentTrack) setIsOpen(false);');
+    expect(chat).toContain('if (!isMember || currentTrack) return null;');
+  });
+
   it('uses compact route switching and progressive disclosure on analytical pages', () => {
     const switcher = readFileSync(join(process.cwd(), 'frontend/src/components/RouteViewSwitcher.tsx'), 'utf8');
     const intelligence = readFileSync(join(process.cwd(), 'frontend/src/pages/beta/BetaIntelligence.tsx'), 'utf8');

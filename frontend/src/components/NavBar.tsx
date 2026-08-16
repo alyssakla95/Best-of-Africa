@@ -76,7 +76,7 @@ export const NavBar: React.FC = () => {
                         <span className="flex h-9 w-9 items-center justify-center rounded-md bg-navy font-serif text-lg font-black leading-none text-white">B</span>
                         <span className="flex flex-col leading-none text-navy">
                             <span className="font-serif text-xl font-black tracking-[-.04em] md:text-2xl">BOA</span>
-                            <span className="mt-1 text-[9px] font-bold uppercase tracking-[.24em] text-navy/55">Story</span>
+                            <span className="mt-1 text-[9px] font-bold uppercase tracking-[.24em] text-navy/70">Story</span>
                         </span>
                     </Link>
 

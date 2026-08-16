@@ -91,7 +91,11 @@ describe('unified application navigation', () => {
     const breadcrumbs = readFileSync(join(process.cwd(), 'frontend/src/components/Breadcrumbs.tsx'), 'utf8');
     const pageNav = readFileSync(join(process.cwd(), 'frontend/src/components/ResponsivePageNav.tsx'), 'utf8');
     expect(nav).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2');
+    expect(nav).toContain('tracking-[.24em] text-navy/70');
     expect(breadcrumbs).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-1');
+    expect(breadcrumbs).toContain('text-navy/70 sm:shrink-0 sm:flex-none');
+    expect(breadcrumbs).toContain('<nav className="flex min-w-0');
+    expect(breadcrumbs).not.toContain('<div className="flex min-w-0 flex-1 items-center gap-2 text-xs font-semibold" aria-label="Current location"');
     expect(pageNav).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2');
   });
 

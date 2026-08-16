@@ -6,6 +6,7 @@ import { autoTranslateArticle, isReaderTranslationLanguage, LANGUAGE_CONFIG, par
 import { createMockEnv } from '../mocks/env';
 import { PUBLIC_INTERFACE_COPY as workerInterfaceCopy } from '../../src/lib/interface-copy';
 import { PUBLIC_INTERFACE_COPY as browserInterfaceCopy } from '../../frontend/src/i18n/interface-copy';
+import { translateWithGoogleCloud } from '../../src/lib/google-translate';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -173,9 +174,36 @@ describe('publication-quality translation batches', () => {
         expect(result).toBe(translated.trim());
     });
 
+    it('uses Google first for public non-Portuguese article bodies', async () => {
+        const source = `English evidence ${'documents a complete market observation. '.repeat(30)}`;
+        const translated = source.replace('English', 'French');
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+            data: { translations: [{ translatedText: translated }] },
+        }))));
+        const run = vi.fn();
+        const env = createMockEnv({ GOOGLE_TRANSLATE_API_KEY: 'key', AI: { run } as unknown as Ai });
+        await expect(translateLongText(env, source, 'fr')).resolves.toBe(translated.trim());
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it('batches long public translations within Google request limits', async () => {
+        const texts = ['a'.repeat(12_000), 'b'.repeat(12_000)];
+        const externalFetch = vi.fn(async (_url, init?: RequestInit) => {
+            const q = JSON.parse(String(init?.body)).q as string[];
+            return new Response(JSON.stringify({ data: { translations: q.map(translatedText => ({ translatedText })) } }));
+        });
+        vi.stubGlobal('fetch', externalFetch);
+        const env = createMockEnv({ GOOGLE_TRANSLATE_API_KEY: 'key' });
+        await expect(translateWithGoogleCloud(env, texts, 'de')).resolves.toEqual(texts);
+        expect(externalFetch).toHaveBeenCalledTimes(2);
+    });
+
     it('normalises long-form Portuguese output to the pre-1990 Portugal locale before storage', async () => {
         const source = 'The current sector defined a project and objective for economic activity.';
+        const externalFetch = vi.fn();
+        vi.stubGlobal('fetch', externalFetch);
         const env = createMockEnv({
+            GOOGLE_TRANSLATE_API_KEY: 'key',
             AI: {
                 run: async () => ({
                     response: JSON.stringify({
@@ -188,5 +216,6 @@ describe('publication-quality translation batches', () => {
         await expect(translateLongText(env, source, 'pt')).resolves.toBe(
             'O sector actual definiu um projecto e objectivo para a actividade económica.',
         );
+        expect(externalFetch).not.toHaveBeenCalled();
     });
 });

@@ -214,6 +214,8 @@ The interface supports:
 
 Published article translations are stored for the six non-English languages and served only after quality checks. English is the source interface. Portuguese is a code-owned reader locale maintained as Portuguese from Portugal under pre-1990 orthography. French, Arabic, German, Hindi, and Simplified Chinese resolve maintained dictionary entries first, then request missing public interface keys through the throttled and KV-cached `/api/v1/translate/interface` endpoint. That endpoint accepts only server-owned catalogue keys: it cannot send article bodies, account data, form values, private workspace text, or user contributions to an external provider. When `GOOGLE_TRANSLATE_API_KEY` is configured, Google Cloud Translation Basic is the primary provider for those five interface languages; Workers translation remains the resilience fallback. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
 
+When configured, Google Cloud Translation is also primary for public French, Arabic, German, Hindi, and Simplified Chinese article translations. Existing completeness gates still run before storage; Portuguese and English never use this provider.
+
 ### Discoverability and distribution
 
 - The Worker generates the XML sitemap, latest-story RSS feed, and Daily Pulse podcast feed.
@@ -540,6 +542,8 @@ The explicit config is essential: omitting it targets the Worker named by the de
 The three Stripe values configure a later specialist listing subscription only. The server-controlled Price ID is never accepted from the browser. The webhook endpoint is `/api/v1/specialists/stripe/webhook`; it must receive the untouched body and a valid `Stripe-Signature`. New/default deployments should keep paid listing disabled until test-mode checkout, portal, replay, failure, cancellation, and publication gating have been verified. The Alyssa deployment uses founding-network waivers and therefore does not require Stripe for current listing publication.
 
 Transactional email requires `EMAIL_FROM` on a verified sender domain plus either the Cloudflare `EMAIL` binding or `RESEND_API_KEY`. The runtime tries Cloudflare Email Sending first, then Resend, and finally a legacy MailChannels request that normally cannot deliver without a paid setup. Deep health reports email as configured only for the first two supported paths. Setting an API key without a verified sender is intentionally treated as unavailable.
+
+The Google translation key also covers public article text in those five languages. Private, account, form, and user-contributed text is excluded; the statement above about allow-listed keys applies specifically to the public interface endpoint.
 
 ## Health and operations
 

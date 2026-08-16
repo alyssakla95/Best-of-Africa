@@ -5,6 +5,7 @@
 
 import type { Env } from '../types';
 import { normalisePortuguesePortugal1945 } from './portuguese';
+import { translateWithGoogleCloud } from './google-translate';
 
 // Supported target languages for African audiences
 export type SupportedLanguage = 'en' | 'fr' | 'ar' | 'pt' | 'de' | 'hi' | 'zh';
@@ -43,6 +44,15 @@ export async function translateText(
 ): Promise<string> {
     if (sourceLang === targetLang) return text;
     if (!text || text.trim().length === 0) return text;
+
+    if (targetLang !== 'pt' && sourceLang === 'en' && env.GOOGLE_TRANSLATE_API_KEY) {
+        try {
+            const google = await translateWithGoogleCloud(env, [text.slice(0, 5000)], targetLang);
+            if (google?.[0]) return google[0];
+        } catch (error) {
+            console.error('[translate] Google Cloud short text failed; using Worker fallback', error);
+        }
+    }
 
     try {
         // Workers translation model
@@ -281,7 +291,18 @@ async function llmTranslateBatchResilient(
     env: Env,
     texts: string[],
     targetLang: ReaderTranslationLanguage,
+    allowGoogle = true,
 ): Promise<string[] | null | undefined> {
+    if (allowGoogle && targetLang !== 'pt' && env.GOOGLE_TRANSLATE_API_KEY) {
+        try {
+            const google = await translateWithGoogleCloud(env, texts, targetLang);
+            const valid = google?.length === texts.length
+                && !google.some((value, index) => looksDegenerate(texts[index], value, targetLang));
+            if (valid) return google;
+        } catch (error) {
+            console.error('[translate] Google Cloud failed; using Worker fallback', error);
+        }
+    }
     const translated = await llmTranslateBatch(env, texts, targetLang);
     if (translated || translated === undefined) return translated;
     if (texts.length === 1) {
@@ -317,9 +338,9 @@ async function llmTranslateBatchResilient(
         return null;
     }
     const middle = Math.ceil(texts.length / 2);
-    const left = await llmTranslateBatchResilient(env, texts.slice(0, middle), targetLang);
+    const left = await llmTranslateBatchResilient(env, texts.slice(0, middle), targetLang, false);
     if (!left) return left;
-    const right = await llmTranslateBatchResilient(env, texts.slice(middle), targetLang);
+    const right = await llmTranslateBatchResilient(env, texts.slice(middle), targetLang, false);
     return right ? [...left, ...right] : right;
 }
 

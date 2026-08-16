@@ -273,6 +273,10 @@ export interface AudienceMetrics {
     navigation: {
         total_selections_30d: number;
         distinct_selectors_30d: number;
+        repeat_selection_sessions_30d: number;
+        repeat_selection_rate_pct: number;
+        multi_journey_sessions_30d: number;
+        multi_journey_rate_pct: number;
         by_journey: Array<{
             journey: string;
             selections: number;

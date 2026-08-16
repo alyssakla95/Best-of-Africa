@@ -27,7 +27,16 @@ export const AdminAudienceTab = () => {
   }
 
   const data = query.data;
-  const navigation = data.navigation || { total_selections_30d: 0, distinct_selectors_30d: 0, by_journey: [], destinations: [] };
+  const navigation = data.navigation || {
+    total_selections_30d: 0,
+    distinct_selectors_30d: 0,
+    repeat_selection_sessions_30d: 0,
+    repeat_selection_rate_pct: 0,
+    multi_journey_sessions_30d: 0,
+    multi_journey_rate_pct: 0,
+    by_journey: [],
+    destinations: [],
+  };
   const journeyFunnel = data.journey_funnel || [];
   const cards = [
     { Icon: Users, label: 'Monthly active readers', value: number(data.audience.monthly_active_readers), note: 'Distinct recorded sessions in 30 days' },
@@ -69,11 +78,13 @@ export const AdminAudienceTab = () => {
           <div>
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"><Compass className="h-4 w-4 text-navy" />Navigation evidence</p>
             <h3 className="mt-2 font-serif text-3xl text-navy">Which paths readers choose</h3>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">Observed selections from the homepage gateway, desktop and mobile menus, journey bar and footer. These counts show chosen destinations, not whether a task was completed.</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">Observed selections from the homepage gateway, desktop and mobile menus, journey bar and footer. Repeat and cross-journey movement may reflect exploration or reconsideration; neither proves confusion or task failure.</p>
           </div>
-          <dl className="grid grid-cols-2 gap-3 text-right">
+          <dl className="grid grid-cols-2 gap-3 text-right lg:grid-cols-4">
             <div className="rounded-xl bg-navy/[.04] px-4 py-3"><dt className="text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Selections</dt><dd className="mt-1 font-serif text-3xl text-navy">{number(navigation.total_selections_30d)}</dd></div>
             <div className="rounded-xl bg-navy/[.04] px-4 py-3"><dt className="text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Sessions</dt><dd className="mt-1 font-serif text-3xl text-navy">{number(navigation.distinct_selectors_30d)}</dd></div>
+            <div className="rounded-xl bg-navy/[.04] px-4 py-3"><dt className="text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">3+ selections</dt><dd className="mt-1 font-serif text-3xl text-navy">{navigation.repeat_selection_rate_pct}%</dd></div>
+            <div className="rounded-xl bg-navy/[.04] px-4 py-3"><dt className="text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">Multiple journeys</dt><dd className="mt-1 font-serif text-3xl text-navy">{navigation.multi_journey_rate_pct}%</dd></div>
           </dl>
         </div>
         <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">

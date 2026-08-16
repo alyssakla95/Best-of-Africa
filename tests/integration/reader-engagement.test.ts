@@ -127,7 +127,12 @@ describe('reader engagement evidence', () => {
             audio_completion_rate_pct: 0,
         });
         expect(body.distribution.email_open_rate_pct).toBeNull();
-        expect(body.navigation).toMatchObject({ total_selections_30d: 0, distinct_selectors_30d: 0 });
+        expect(body.navigation).toMatchObject({
+            total_selections_30d: 0,
+            distinct_selectors_30d: 0,
+            repeat_selection_sessions_30d: 0,
+            multi_journey_sessions_30d: 0,
+        });
         expect(body.navigation.by_journey).toHaveLength(4);
         expect(body.journey_funnel).toHaveLength(4);
         expect(body.journey_funnel.every((item: any) => item.milestone_sessions === 0)).toBe(true);
@@ -139,6 +144,10 @@ describe('reader engagement evidence', () => {
             prepare(sql: string) {
                 return {
                     first: vi.fn(async () => {
+                        if (/repeat_selection_sessions/i.test(sql)) return {
+                            repeat_selection_sessions: 4,
+                            multi_journey_sessions: 2,
+                        };
                         if (/total_selections/i.test(sql)) return {
                             total_selections: 9, distinct_selectors: 6,
                             read_selections: 2, read_selectors: 2,
@@ -161,9 +170,17 @@ describe('reader engagement evidence', () => {
 
         expect(response.status).toBe(200);
         expect(body.navigation.total_selections_30d).toBe(9);
+        expect(body.navigation).toMatchObject({
+            repeat_selection_sessions_30d: 4,
+            repeat_selection_rate_pct: 66.7,
+            multi_journey_sessions_30d: 2,
+            multi_journey_rate_pct: 33.3,
+        });
         expect(body.navigation.by_journey.find((item: any) => item.journey === 'markets')).toMatchObject({ selections: 4, distinct_sessions: 3 });
         expect(body.navigation.destinations[0]).toMatchObject({ journey: 'markets', source: 'home_gateway', path: '/intelligence' });
         expect(body.definitions.journey_selection).toContain('not inferred intent or completed tasks');
+        expect(body.definitions.repeat_navigation).toContain('not proof of confusion');
+        expect(body.definitions.multi_journey_navigation).toContain('does not establish misnavigation');
     });
 
     it('reports session-linked progress and named milestones without claiming outcomes', async () => {

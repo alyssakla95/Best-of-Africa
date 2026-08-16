@@ -74,7 +74,7 @@ router.post('/events/batch', validate('json', z.object({
 });
 
 router.get('/audience', requireAdmin, async (c) => {
-    const [activity, returning, trend, subscribers, saved, navigation, navigationBreakdown, journeyFunnel] = await Promise.all([
+    const [activity, returning, trend, subscribers, saved, navigation, navigationBreakdown, navigationFriction, journeyFunnel] = await Promise.all([
         c.env.DB.prepare(`
             SELECT
                 COUNT(DISTINCT CASE WHEN created_at >= datetime('now', '-30 days') THEN session_hash END) AS monthly_active_readers,
@@ -144,6 +144,24 @@ router.get('/audience', requireAdmin, async (c) => {
             ORDER BY selections DESC, resource_id, path
             LIMIT 100
         `).all<{ resource_id: string; path: string; selections: number; distinct_sessions: number }>(),
+        c.env.DB.prepare(`
+            SELECT
+                SUM(CASE WHEN selection_count >= 3 THEN 1 ELSE 0 END) AS repeat_selection_sessions,
+                SUM(CASE WHEN journey_count >= 2 THEN 1 ELSE 0 END) AS multi_journey_sessions
+            FROM (
+                SELECT session_hash, COUNT(*) AS selection_count,
+                    COUNT(DISTINCT CASE
+                        WHEN resource_id LIKE 'journey:%:read' THEN 'read'
+                        WHEN resource_id LIKE 'journey:%:markets' THEN 'markets'
+                        WHEN resource_id LIKE 'journey:%:network' THEN 'network'
+                        WHEN resource_id LIKE 'journey:%:enterprise' THEN 'enterprise'
+                    END) AS journey_count
+                FROM reader_engagement_events
+                WHERE event_type = 'click' AND resource_id LIKE 'journey:%'
+                  AND created_at >= datetime('now', '-30 days')
+                GROUP BY session_hash
+            )
+        `).first<{ repeat_selection_sessions: number; multi_journey_sessions: number }>(),
         c.env.DB.prepare(`
             WITH selected AS (
                 SELECT session_hash, 'read' AS journey, MIN(created_at) AS selected_at
@@ -225,6 +243,14 @@ router.get('/audience', requireAdmin, async (c) => {
         navigation: {
             total_selections_30d: Number(navigation?.total_selections || 0),
             distinct_selectors_30d: Number(navigation?.distinct_selectors || 0),
+            repeat_selection_sessions_30d: Number(navigationFriction?.repeat_selection_sessions || 0),
+            repeat_selection_rate_pct: Number(navigation?.distinct_selectors || 0)
+                ? Math.round(Number(navigationFriction?.repeat_selection_sessions || 0) / Number(navigation?.distinct_selectors || 0) * 1000) / 10
+                : 0,
+            multi_journey_sessions_30d: Number(navigationFriction?.multi_journey_sessions || 0),
+            multi_journey_rate_pct: Number(navigation?.distinct_selectors || 0)
+                ? Math.round(Number(navigationFriction?.multi_journey_sessions || 0) / Number(navigation?.distinct_selectors || 0) * 1000) / 10
+                : 0,
             by_journey: ['read', 'markets', 'network', 'enterprise'].map(journey => ({
                 journey,
                 selections: Number(navigation?.[`${journey}_selections`] || 0),
@@ -267,6 +293,8 @@ router.get('/audience', requireAdmin, async (c) => {
             returning_reader: 'Distinct hashed session recorded on at least two separate UTC dates in 30 days.',
             high_progress_read: 'Article read event with at least 75% maximum observed scroll depth.',
             journey_selection: 'Recorded selection of a Read, Markets, Network or Enterprise destination in BOA-Story navigation. Counts are observed interactions, not inferred intent or completed tasks.',
+            repeat_navigation: 'Session with at least three recorded navigation selections in 30 days. Repetition may reflect comparison or reconsideration and is not proof of confusion.',
+            multi_journey_navigation: 'Session selecting destinations in at least two product journeys in 30 days. This records cross-journey movement and does not establish misnavigation.',
             journey_funnel: 'Session-linked product activity after a recorded journey selection. A milestone records the named in-product action only; it does not establish satisfaction, commercial success, a completed decision or real-world impact.',
             audio_completion: 'Narration playback that reached the media ended event.',
             retention: 'Raw IP addresses and one-way user-agent fingerprints are retained with events for no more than 90 days.',

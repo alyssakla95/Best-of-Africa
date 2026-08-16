@@ -14,7 +14,7 @@ interface ResponsivePageNavProps {
 }
 
 const itemClass = (current = false) =>
-  `min-h-11 rounded-lg border px-4 py-3 text-sm font-bold transition-colors ${
+  `min-h-11 rounded-lg border px-4 py-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2 ${
     current
       ? 'border-navy bg-navy text-white'
       : 'border-border bg-white text-navy hover:border-navy hover:bg-navy hover:text-white'

@@ -86,6 +86,15 @@ describe('unified application navigation', () => {
     expect(nav).toContain('You never need to understand the whole platform at once.');
   });
 
+  it('keeps desktop journey and long-page navigation visibly keyboard focused', () => {
+    const nav = readFileSync(join(process.cwd(), 'frontend/src/components/NavBar.tsx'), 'utf8');
+    const breadcrumbs = readFileSync(join(process.cwd(), 'frontend/src/components/Breadcrumbs.tsx'), 'utf8');
+    const pageNav = readFileSync(join(process.cwd(), 'frontend/src/components/ResponsivePageNav.tsx'), 'utf8');
+    expect(nav).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2');
+    expect(breadcrumbs).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-1');
+    expect(pageNav).toContain('focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2');
+  });
+
   it('codes persistent long-page controls for every interface language', () => {
     const controls = readFileSync(join(process.cwd(), 'frontend/src/components/ScrollToTopButton.tsx'), 'utf8');
     const dictionary = readFileSync(join(process.cwd(), 'frontend/src/i18n/dict.ts'), 'utf8');

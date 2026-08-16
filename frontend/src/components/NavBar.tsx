@@ -89,7 +89,7 @@ export const NavBar: React.FC = () => {
                                         <button
                                             type="button"
                                             aria-current={active ? 'page' : undefined}
-                                            className={cn('flex min-h-10 items-center gap-1.5 rounded-md px-4 text-xs font-bold uppercase tracking-[0.1em] text-navy/70 transition-colors hover:bg-navy/5 hover:text-navy xl:px-5', active && 'bg-navy text-white hover:bg-navy hover:text-white')}
+                                            className={cn('flex min-h-10 items-center gap-1.5 rounded-md px-4 text-xs font-bold uppercase tracking-[0.1em] text-navy/70 transition-colors hover:bg-navy/5 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2 xl:px-5', active && 'bg-navy text-white hover:bg-navy hover:text-white')}
                                         >
                                             {journey.label}<ChevronDown size={14} aria-hidden="true" />
                                         </button>

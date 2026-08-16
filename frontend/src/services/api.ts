@@ -1,5 +1,6 @@
 import type { Article, ArticleListItem, CalendarEvent, Country, CountryStats, Dashboard, PaginatedResponse, SearchResult, Sector, SectorBreakdown, TrendingCountry } from '../types';
 import { readThroughCache } from '@/lib/persistentQueryCache';
+import type { PublicInterfaceCopyKey } from '../i18n/interface-copy';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
 const ARTICLE_CONTENT_REVISION = 'pt1945-v4';
@@ -864,6 +865,12 @@ export interface GeneratedReport {
 }
 
 export const api = {
+    translateInterface: (language: 'fr' | 'ar' | 'de' | 'hi' | 'zh', keys: PublicInterfaceCopyKey[]) =>
+        request<{ keys: PublicInterfaceCopyKey[]; translations: string[] }>('/translate/interface', {
+            method: 'POST',
+            body: JSON.stringify({ language, keys }),
+        }),
+
     // Articles
     getArticles: (params: Record<string, string> = {}) => {
         const searchParams = new URLSearchParams({ ...params, lang: params.lang || getReaderLanguage(), content_rev: ARTICLE_CONTENT_REVISION });

@@ -1187,32 +1187,32 @@ for (const lang of Object.keys(PAGE_TRANSLATIONS)) {
 
 const TRANSLATION_STATUS: Record<string, UIDict> = {
   en: {
-    'translation.applying': 'Applying the reviewed interface language…',
-    'translation.partial': 'Reviewed navigation is translated. Longer interface passages remain in the English source language.',
+    'translation.applying': 'Translating the interface…',
+    'translation.partial': 'Navigation is translated. Some longer passages remain in English.',
   },
   fr: {
-    'translation.applying': 'Application de la langue d’interface révisée…',
-    'translation.partial': 'La navigation révisée est traduite. Les passages d’interface plus longs restent dans la langue source anglaise.',
+    'translation.applying': 'Traduction de l’interface en cours…',
+    'translation.partial': 'La navigation est traduite. Certains passages plus longs restent en anglais.',
   },
   pt: {
-    'translation.applying': 'A aplicar o idioma revisto da interface…',
-    'translation.partial': 'A navegação revista está traduzida. As passagens mais extensas da interface mantêm-se na língua de origem inglesa.',
+    'translation.applying': 'A aplicar a tradução da interface…',
+    'translation.partial': 'A navegação está traduzida. Algumas passagens mais extensas mantêm-se em inglês.',
   },
   de: {
-    'translation.applying': 'Die redaktionell geprüfte Oberflächensprache wird angewendet…',
-    'translation.partial': 'Die geprüfte Navigation ist übersetzt. Längere Oberflächentexte bleiben in der englischen Ausgangssprache.',
+    'translation.applying': 'Die Benutzeroberfläche wird übersetzt…',
+    'translation.partial': 'Die Navigation ist übersetzt. Einige längere Passagen bleiben auf Englisch.',
   },
   zh: {
-    'translation.applying': '正在应用已审核的界面语言…',
-    'translation.partial': '已审核的导航内容已翻译。较长的界面段落仍保留英文原文。',
+    'translation.applying': '正在翻译界面…',
+    'translation.partial': '导航内容已翻译。部分较长内容仍保留英文。',
   },
   ar: {
-    'translation.applying': 'جارٍ تطبيق لغة الواجهة المراجعة…',
-    'translation.partial': 'تمّت ترجمة عناصر التنقل المراجعة. وتبقى فقرات الواجهة الأطول بلغة المصدر الإنكليزية.',
+    'translation.applying': 'جارٍ ترجمة الواجهة…',
+    'translation.partial': 'تُرجمت عناصر التنقل. وتبقى بعض المقاطع الأطول باللغة الإنجليزية.',
   },
   hi: {
-    'translation.applying': 'समीक्षित इंटरफ़ेस भाषा लागू की जा रही है…',
-    'translation.partial': 'समीक्षित नेविगेशन का अनुवाद हो चुका है। इंटरफ़ेस के लंबे अंश अंग्रेज़ी स्रोत भाषा में रहते हैं।',
+    'translation.applying': 'इंटरफ़ेस का अनुवाद किया जा रहा है…',
+    'translation.partial': 'नेविगेशन का अनुवाद हो गया है। कुछ लंबे अंश अंग्रेज़ी में बने रहेंगे।',
   },
 };
 for (const lang of Object.keys(TRANSLATION_STATUS)) {

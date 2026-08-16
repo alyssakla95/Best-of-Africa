@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../types';
 import { extractAIText, MODELS } from '../lib/ai';
 import { throttle } from '../lib/ratelimit';
+import { PUBLIC_INTERFACE_COPY, type PublicInterfaceCopyKey } from '../lib/interface-copy';
 
 const router = new Hono<{ Bindings: Env }>();
 // Portuguese is a code-owned editorial locale. It is intentionally excluded
@@ -43,6 +44,38 @@ async function translateWithPrimaryModel(env: Env, language: string, texts: stri
     return parseTranslationBatch(extractAIText(response), texts.length);
 }
 
+function decodeGoogleText(value: string): string {
+    return value
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&#(\d+);/g, (_match, code) => String.fromCodePoint(Number(code)))
+        .replace(/&#x([\da-f]+);/gi, (_match, code) => String.fromCodePoint(Number.parseInt(code, 16)));
+}
+
+async function translateWithGoogleCloud(env: Env, language: string, texts: string[]): Promise<string[] | null> {
+    if (!env.GOOGLE_TRANSLATE_API_KEY) return null;
+    const response = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(env.GOOGLE_TRANSLATE_API_KEY)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({ q: texts, source: 'en', target: language, format: 'text', model: 'nmt' }),
+        },
+    );
+    if (!response.ok) {
+        throw new Error(`Google Cloud Translation returned ${response.status}: ${(await response.text()).slice(0, 240)}`);
+    }
+    const body = await response.json<{
+        data?: { translations?: Array<{ translatedText?: string }> };
+    }>();
+    const translated = body.data?.translations;
+    if (!translated || translated.length !== texts.length || translated.some(item => !item.translatedText?.trim())) return null;
+    return translated.map(item => decodeGoogleText(item.translatedText!.trim()));
+}
+
 async function translateWithFallback(env: Env, language: string, text: string): Promise<string> {
     const result = await (env.AI as Record<string, any>).run('@cf/meta/m2m100-1.2b', {
         text, source_lang: 'en', target_lang: language,
@@ -53,34 +86,52 @@ async function translateWithFallback(env: Env, language: string, text: string): 
 router.post('/interface', async c => {
     const limited = await throttle(c, 'translate-interface');
     if (limited) return limited;
-    const body: { language?: string; texts?: unknown[] } = await c.req.json<{ language?: string; texts?: unknown[] }>().catch(() => ({}));
+    const body: { language?: string; keys?: unknown[] } = await c.req.json<{ language?: string; keys?: unknown[] }>().catch(() => ({}));
     const language = body.language || '';
     if (!TARGETS.has(language)) return c.json({ error: 'unsupported_language' }, 400);
 
-    const texts = (Array.isArray(body.texts) ? body.texts : [])
+    const requestedKeys = (Array.isArray(body.keys) ? body.keys : [])
         .filter((value): value is string => typeof value === 'string')
         .map(value => value.trim())
         .filter(Boolean)
-        .map(value => value.slice(0, 6000))
         .slice(0, 24);
+    if (requestedKeys.some(key => !(key in PUBLIC_INTERFACE_COPY))) {
+        return c.json({ error: 'unsupported_interface_key' }, 400);
+    }
+    const keys = requestedKeys as PublicInterfaceCopyKey[];
+    const texts = keys.map(key => PUBLIC_INTERFACE_COPY[key]);
     if (!texts.length) return c.json({ translations: [] });
 
-    const cacheKeys = await Promise.all(texts.map(async text => `ui-translation:v2:${language}:${await hash(text)}`));
+    const cacheKeys = await Promise.all(texts.map(async text => `ui-translation:v3:${language}:${await hash(text)}`));
     const translations = await Promise.all(cacheKeys.map(key => c.env.CACHE.get(key)));
     const missingIndexes = translations.map((value, index) => value ? -1 : index).filter(index => index >= 0);
 
     if (missingIndexes.length) {
         const missingTexts = missingIndexes.map(index => texts[index]);
-        try {
-            const primary = await translateWithPrimaryModel(c.env, language, missingTexts);
-            if (!primary) throw new Error('Primary translation returned an invalid batch');
+        let primary: string[] | null = null;
+        if (c.env.GOOGLE_TRANSLATE_API_KEY) {
+            try {
+                primary = await translateWithGoogleCloud(c.env, language, missingTexts);
+                if (!primary) throw new Error('Google Cloud Translation returned an invalid batch');
+            } catch (error) {
+                console.error(`[interface-translation] Google Cloud en -> ${language} failed`, error);
+            }
+        }
+        if (!primary) {
+            try {
+                primary = await translateWithPrimaryModel(c.env, language, missingTexts);
+                if (!primary) throw new Error('Workers primary translation returned an invalid batch');
+            } catch (error) {
+                console.error(`[interface-translation] Workers primary en -> ${language} failed`, error);
+            }
+        }
+        if (primary) {
             await Promise.all(primary.map(async (translated, offset) => {
                 const index = missingIndexes[offset];
                 translations[index] = translated;
                 await c.env.CACHE.put(cacheKeys[index], translated, { expirationTtl: 60 * 60 * 24 * 90 });
             }));
-        } catch (error) {
-            console.error(`[interface-translation] primary en -> ${language} failed`, error);
+        } else {
             await Promise.all(missingIndexes.map(async index => {
                 try {
                     const translated = await translateWithFallback(c.env, language, texts[index]);
@@ -94,7 +145,7 @@ router.post('/interface', async c => {
         }
     }
 
-    return c.json({ translations: translations.map((value, index) => value || texts[index]) });
+    return c.json({ keys, translations: translations.map((value, index) => value || texts[index]) });
 });
 
 async function hash(value: string) {

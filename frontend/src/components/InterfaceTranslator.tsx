@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { TRANSLATIONS } from '../i18n/dict';
+import { api } from '../services/api';
+import { PUBLIC_INTERFACE_COPY, type PublicInterfaceCopyKey } from '../i18n/interface-copy';
 import {
   applyPortuguese1945Orthography,
   PORTUGUESE_INTERFACE_PHRASES,
@@ -10,6 +12,9 @@ import {
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const cache = new Map<string, string>();
+const REMOTE_KEY_BY_TEXT = new Map<string, PublicInterfaceCopyKey>(
+  Object.entries(PUBLIC_INTERFACE_COPY).map(([key, text]) => [text, key as PublicInterfaceCopyKey]),
+);
 const SKIP = 'script,style,code,pre,textarea,[contenteditable="true"],[data-no-translate]';
 const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'aria-label', 'title', 'alt'];
 const ENGLISH_TEXT = /\b(?:the|and|for|with|from|your|this|that|what|how|which|use|source|market|country|countries|read|view|loading|available|official|report|story|stories|member|search|save|open|evidence|performance|page|access|submit|register|settings|privacy|terms|contact|business|investment|trade|updated|current|failed|error|next|previous|learn|explore|support|apply|select|required|optional|prepared|change|higher|lower|growth|coverage|account|service|definition|value|unit|comparison|timing|boundary|section|observation|projection|freshness|review|reporting)\b/i;
@@ -33,9 +38,10 @@ export function InterfaceTranslator() {
   useEffect(() => {
     let cancelled = false;
     let timer = 0;
+    let translating = false;
 
-    // Resolve interface strings exclusively from maintained, reviewable source
-    // catalogues. Reader-facing application chrome is never generated at run time.
+    // English is the source catalogue and Portuguese is code-owned. Other
+    // languages request only allow-listed, public interface keys from the API.
     for (const [key, english] of Object.entries(TRANSLATIONS.en || {})) {
       const translated = TRANSLATIONS[language]?.[key];
       if (translated) cache.set(`${language}:${english}`, translated);
@@ -121,8 +127,9 @@ export function InterfaceTranslator() {
       return items;
     };
 
-    const translate = () => {
-      if (cancelled) return;
+    const translate = async () => {
+      if (cancelled || translating) return;
+      translating = true;
       document.documentElement.dataset.translationState = 'translating';
       setStatus('translating');
       const items = collect();
@@ -132,6 +139,24 @@ export function InterfaceTranslator() {
           const translated = translatePortugueseInterfaceText(text)
             || (applyPortuguese1945Orthography(text) !== text ? applyPortuguese1945Orthography(text) : undefined);
           if (translated) cache.set(`pt:${text}`, translated);
+        }
+      } else {
+        const remoteLanguage = language as 'fr' | 'ar' | 'de' | 'hi' | 'zh';
+        const missing = unique
+          .map(text => ({ text, key: REMOTE_KEY_BY_TEXT.get(text) }))
+          .filter((item): item is { text: string; key: PublicInterfaceCopyKey } =>
+            Boolean(item.key) && !cache.has(`${language}:${item.text}`));
+        for (let offset = 0; offset < missing.length && !cancelled; offset += 24) {
+          const batch = missing.slice(offset, offset + 24);
+          try {
+            const response = await api.translateInterface(remoteLanguage, batch.map(item => item.key));
+            response.translations.forEach((translated, index) => {
+              if (translated?.trim()) cache.set(`${language}:${batch[index].text}`, translated.trim());
+            });
+          } catch {
+            // English remains visible. A later route change retries only the
+            // uncached public interface keys; content and user text never enter.
+          }
         }
       }
       if (!cancelled) {
@@ -146,9 +171,10 @@ export function InterfaceTranslator() {
         document.documentElement.dataset.translationState = nextStatus;
         setStatus(nextStatus);
       }
+      translating = false;
     };
 
-    const schedule = () => { window.clearTimeout(timer); timer = window.setTimeout(translate, 120); };
+    const schedule = () => { window.clearTimeout(timer); timer = window.setTimeout(() => { void translate(); }, 120); };
     restore();
     schedule();
     const observer = new MutationObserver(mutations => {
@@ -199,8 +225,8 @@ export function InterfaceTranslator() {
       className="fixed bottom-4 left-4 right-4 z-[100] rounded-md bg-navy px-4 py-3 text-sm font-medium text-white shadow-xl sm:left-auto sm:max-w-sm"
     >
       {status === 'translating'
-        ? t('translation.applying', 'Applying the reviewed interface language…')
-        : t('translation.partial', 'Reviewed navigation is translated. Longer interface passages remain in the English source language.')}
+        ? t('translation.applying', 'Translating the interface…')
+        : t('translation.partial', 'Navigation is translated. Some longer passages remain in English.')}
     </div>
   );
 }

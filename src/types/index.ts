@@ -67,6 +67,8 @@ export interface Env {
     OPENAI_API_KEY?: string;
     ANTHROPIC_API_KEY?: string;
     GOOGLE_AI_API_KEY?: string;
+    // Google Cloud Translation - Basic (v2). Portuguese never uses this path.
+    GOOGLE_TRANSLATE_API_KEY?: string;
     OPENROUTER_API_KEY?: string;
     MOONSHOT_API_KEY?: string;
     // Moonshot OAuth credentials (from platform.moonshot.cn → OAuth Apps)

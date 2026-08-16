@@ -83,3 +83,4 @@ MARKETPLACE_ENABLED = "true"
 
 # Configure with `wrangler secret put --config wrangler.alyssa.toml` before rollout:
 # STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_SPECIALIST_PRICE_ID
+# GOOGLE_TRANSLATE_API_KEY enables Google Cloud Translation for fr/ar/de/hi/zh interface copy.

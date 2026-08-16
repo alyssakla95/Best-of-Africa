@@ -212,7 +212,7 @@ The interface supports:
 - Modern Standard Arabic, including right-to-left layout
 - Hindi
 
-Published article translations are stored for the six non-English languages and served only after quality checks. The frontend resolves interface copy from source-controlled catalogues rather than generating it during rendering. Portuguese has the complete maintained reader-interface catalogue, while the other non-English locales currently translate reviewed navigation and keyed product copy and explicitly preserve longer English source passages. A separate throttled and cached `/api/v1/translate/interface` fallback API exists for controlled integrations but is not called by the current frontend. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
+Published article translations are stored for the six non-English languages and served only after quality checks. English is the source interface. Portuguese is a code-owned reader locale maintained as Portuguese from Portugal under pre-1990 orthography. French, Arabic, German, Hindi, and Simplified Chinese resolve maintained dictionary entries first, then request missing public interface keys through the throttled and KV-cached `/api/v1/translate/interface` endpoint. That endpoint accepts only server-owned catalogue keys: it cannot send article bodies, account data, form values, private workspace text, or user contributions to an external provider. When `GOOGLE_TRANSLATE_API_KEY` is configured, Google Cloud Translation Basic is the primary provider for those five interface languages; Workers translation remains the resilience fallback. When a verified long-form article translation is absent or fails validation, the application preserves the English source instead of presenting a partial or invented translation.
 
 ### Discoverability and distribution
 
@@ -527,6 +527,7 @@ npx wrangler secret put STRIPE_SPECIALIST_PRICE_ID --config wrangler.alyssa.toml
 npx wrangler secret put OPENAI_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put ANTHROPIC_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put GOOGLE_AI_API_KEY --config wrangler.alyssa.toml
+npx wrangler secret put GOOGLE_TRANSLATE_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put OPENROUTER_API_KEY --config wrangler.alyssa.toml
 npx wrangler secret put MOONSHOT_CLIENT_ID --config wrangler.alyssa.toml
 npx wrangler secret put MOONSHOT_CLIENT_SECRET --config wrangler.alyssa.toml
@@ -534,7 +535,7 @@ npx wrangler secret put MOONSHOT_CLIENT_SECRET --config wrangler.alyssa.toml
 
 The explicit config is essential: omitting it targets the Worker named by the default `wrangler.toml`. Portable deployments instead use the ignored generated config and secrets file created by the setup script.
 
-`KOFI_TOKEN` verifies membership webhooks. External model credentials are optional operational/provider integrations; the information model used by the application remains the configured Workers AI path unless an explicitly supported operator workflow selects otherwise. Gemini and Moonshot also expose protected OAuth bootstrap routes, and provider records can be managed through the admin-gated agent-provider API.
+`KOFI_TOKEN` verifies membership webhooks. `GOOGLE_TRANSLATE_API_KEY` is a Google Cloud API key with Cloud Translation Basic enabled; it is used only for allow-listed French, Arabic, German, Hindi, and Simplified Chinese interface copy. Portuguese and English never use that generated interface path. External model credentials are optional operational/provider integrations; the information model used by the application remains the configured Workers AI path unless an explicitly supported operator workflow selects otherwise. Gemini and Moonshot also expose protected OAuth bootstrap routes, and provider records can be managed through the admin-gated agent-provider API.
 
 The three Stripe values configure a later specialist listing subscription only. The server-controlled Price ID is never accepted from the browser. The webhook endpoint is `/api/v1/specialists/stripe/webhook`; it must receive the untouched body and a valid `Stripe-Signature`. New/default deployments should keep paid listing disabled until test-mode checkout, portal, replay, failure, cancellation, and publication gating have been verified. The Alyssa deployment uses founding-network waivers and therefore does not require Stripe for current listing publication.
 

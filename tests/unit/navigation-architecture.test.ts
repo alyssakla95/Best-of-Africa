@@ -97,6 +97,16 @@ describe('unified application navigation', () => {
     expect(controls).toContain("t('nav.menu_top', 'Menu & top')");
   });
 
+  it('requests generated interface translations by public catalogue key, never raw DOM text', () => {
+    const translator = readFileSync(join(process.cwd(), 'frontend/src/components/InterfaceTranslator.tsx'), 'utf8');
+    const client = readFileSync(join(process.cwd(), 'frontend/src/services/api.ts'), 'utf8');
+
+    expect(translator).toContain('REMOTE_KEY_BY_TEXT.get(text)');
+    expect(translator).toContain('api.translateInterface(remoteLanguage, batch.map(item => item.key))');
+    expect(translator).not.toContain('api.translateInterface(remoteLanguage, batch.map(item => item.text))');
+    expect(client).toContain('body: JSON.stringify({ language, keys })');
+  });
+
   it('prevents the global player and member chat from occupying the same floating-control area', () => {
     const chat = readFileSync(join(process.cwd(), 'frontend/src/components/beta/BetaChatWidget.tsx'), 'utf8');
     const player = readFileSync(join(process.cwd(), 'frontend/src/components/beta/BetaGlobalPlayer.tsx'), 'utf8');

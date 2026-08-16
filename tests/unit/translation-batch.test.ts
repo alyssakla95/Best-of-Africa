@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Hono } from 'hono';
 import { parseTranslationBatch } from '../../src/routes/translation';
+import { translationRouter } from '../../src/routes/translation';
 import { autoTranslateArticle, isReaderTranslationLanguage, LANGUAGE_CONFIG, parseLongTranslationBatch, READER_TRANSLATION_LANGUAGES, translateLongText } from '../../src/lib/translate';
 import { createMockEnv } from '../mocks/env';
+import { PUBLIC_INTERFACE_COPY as workerInterfaceCopy } from '../../src/lib/interface-copy';
+import { PUBLIC_INTERFACE_COPY as browserInterfaceCopy } from '../../frontend/src/i18n/interface-copy';
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('publication-quality translation batches', () => {
     it('accepts a complete ordered translation payload', () => {
@@ -20,6 +26,66 @@ describe('publication-quality translation batches', () => {
 
     it('rejects partial batches so strings cannot silently disappear', () => {
         expect(parseTranslationBatch('{"translations":["Nur eins"]}', 2)).toBeNull();
+    });
+
+    it('keeps the browser request catalogue identical to the Worker allow-list', () => {
+        expect(browserInterfaceCopy).toEqual(workerInterfaceCopy);
+    });
+
+    it('uses Google Cloud Translation for allow-listed public interface keys', async () => {
+        const externalFetch = vi.fn(async () => new Response(JSON.stringify({
+            data: { translations: [{ translatedText: 'Lesen' }, { translatedText: 'Märkte &amp; Daten' }] },
+        }), { headers: { 'Content-Type': 'application/json' } }));
+        vi.stubGlobal('fetch', externalFetch);
+        const env = createMockEnv({
+            GOOGLE_TRANSLATE_API_KEY: 'test-google-key',
+            AI: { run: vi.fn(async () => { throw new Error('Workers fallback should not run'); }) } as unknown as Ai,
+        });
+        const app = new Hono<{ Bindings: typeof env }>();
+        app.route('/translate', translationRouter);
+
+        const response = await app.fetch(new Request('http://localhost/translate/interface', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language: 'de',
+                keys: ['journey.read.label', 'journey.markets.description'],
+            }),
+        }), env);
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({
+            keys: ['journey.read.label', 'journey.markets.description'],
+            translations: ['Lesen', 'Märkte & Daten'],
+        });
+        expect(externalFetch).toHaveBeenCalledOnce();
+        const [url, init] = externalFetch.mock.calls[0];
+        expect(String(url)).toContain('translation.googleapis.com/language/translate/v2');
+        expect(JSON.parse(String(init?.body))).toEqual({
+            q: ['Read', 'Compare countries, sectors and continental market evidence.'],
+            source: 'en',
+            target: 'de',
+            format: 'text',
+            model: 'nmt',
+        });
+    });
+
+    it('rejects unknown interface keys before contacting an external provider', async () => {
+        const externalFetch = vi.fn();
+        vi.stubGlobal('fetch', externalFetch);
+        const env = createMockEnv({ GOOGLE_TRANSLATE_API_KEY: 'test-google-key' });
+        const app = new Hono<{ Bindings: typeof env }>();
+        app.route('/translate', translationRouter);
+
+        const response = await app.fetch(new Request('http://localhost/translate/interface', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: 'fr', keys: ['private.user.text'] }),
+        }), env);
+
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: 'unsupported_interface_key' });
+        expect(externalFetch).not.toHaveBeenCalled();
     });
 
     it('parses a complete long-form translation batch and rejects a partial one', () => {

@@ -140,6 +140,7 @@ MARKETPLACE_ENABLED = "false"
 # wrangler secret put OPENAI_API_KEY
 # wrangler secret put ANTHROPIC_API_KEY
 # wrangler secret put GOOGLE_AI_API_KEY
+# wrangler secret put GOOGLE_TRANSLATE_API_KEY  # Google Cloud Translation Basic v2
 # wrangler secret put OPENROUTER_API_KEY
 # wrangler secret put MOONSHOT_CLIENT_ID      # Moonshot OAuth app client ID (platform.moonshot.cn)
 # wrangler secret put MOONSHOT_CLIENT_SECRET  # Moonshot OAuth app client secret
